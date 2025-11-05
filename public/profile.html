@@ -23,6 +23,9 @@
     .safety-pane{grid-column:1;grid-row:1;align-self:start;padding:8px}
     .working-pane{grid-column:2;grid-row:1;min-height:520px}
     .proc-pane{grid-column:3;grid-row:1;align-self:start}
+    .top-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .top-tab{padding:6px 12px;border:1px solid #e2e8f0;border-radius:999px;background:#fff;font-weight:600;font-size:12px;cursor:pointer}
+    .top-tab.active{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
 
     .dashboard-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
     .card-header{font-size:16px;font-weight:600;color:#0f172a;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #f1f5f9}
@@ -82,6 +85,7 @@
 
     <!-- Center Working Area -->
     <div class="dashboard-card working-pane">
+      <div class="top-tabs"><button id="rt_company" class="top-tab active">Company Profile</button><button id="rt_setup" class="top-tab">Setup</button></div>
       <div id="profilePane" style="display:none"></div>
 
       <div id="companyPane">
@@ -235,29 +239,44 @@
     (function(){ const params=new URLSearchParams(location.search); if(params.get('embedded')==='1'){ const hdr=document.querySelector('.dashboard-header'); if(hdr) hdr.style.display='none'; const proc=document.querySelector('.proc-pane'); if(proc) proc.style.display='none'; } })();
     function toggleProfileSidebar(){ const pane=document.querySelector('.safety-pane'); if(!pane) return; pane.style.display = (pane.style.display==='none') ? '' : 'block'; }
 
-    // Left panel: capture default and support sub-tabs for Company Profile & Profile
+    // Left panel: capture default and support sub-tabs for Company Profile, Setup
     let __leftDefaultHTML=null; let __leftHeaderDefault='Company Setup Tabs';
     function leftCaptureDefault(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(grid){ __leftDefaultHTML = grid.innerHTML; } if(hdr){ __leftHeaderDefault = hdr.textContent; } }catch(e){} }
-    function leftShowMain(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent = 'Company Setup Tabs'; grid.innerHTML = `
-        <button class=\"action-btn\" id=\"tab_company\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Company Profile</div></button>
-        <button class=\"action-btn\" id=\"tab_setup\"><div class=\"action-icon\">⚙️</div><div class=\"action-label\">Setup</div></button>
-        <button class=\"action-btn\" id=\"tab_extended\"><div class=\"action-icon\">➕</div><div class=\"action-label\">Extended</div></button>`;
-      const btnCompany=document.getElementById('tab_company'); if(btnCompany) btnCompany.onclick=()=>{ showTab('company'); };
-      const btnSetup=document.getElementById('tab_setup'); if(btnSetup) btnSetup.onclick=()=>{ showTab('setup'); };
-    }catch(e){}
-    }
-    function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Profile'; grid.innerHTML = `
+    function leftShowHome(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent = 'Company Setup'; grid.innerHTML = `<div class='muted' style='grid-column:1 / -1; text-align:center'>Use the tabs above</div>`; }catch(e){} }
+    function leftShowMain(){ leftShowHome(); }
+    function leftShowSetup(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Setup'; grid.innerHTML = `
+        <button class=\"action-btn\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Add Space</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">👥</div><div class=\"action-label\">Assign Role to User</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">🏷️</div><div class=\"action-label\">Add Product Type</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Add Assets</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">🧑‍💼</div><div class=\"action-label\">Add User</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">🧾</div><div class=\"action-label\">Add your Customer</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">✅</div><div class=\"action-label\">Add Certification</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">🏭</div><div class=\"action-label\">Add Supplier / Mfr</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">🗓️</div><div class=\"action-label\">Planning Setup</div></button>
+        <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Packaging Setup</div></button>
+        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; }catch(e){} }
+    function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Company Profile'; grid.innerHTML = `
         <button class="action-btn" id="left_back"><div class="action-icon">⬅️</div><div class="action-label">Back</div></button>
         <button class="action-btn" id="left_head"><div class="action-icon">🏢</div><div class="action-label">Head Office</div></button>
         <button class="action-btn" id="left_wh"><div class="action-icon">🏬</div><div class="action-label">Warehouse</div></button>
+        <button class="action-btn" id="left_ext"><div class="action-icon">➕</div><div class="action-label">Extended</div></button>
       `;
-      document.getElementById('left_back').onclick=()=>leftShowMain();
+      document.getElementById('left_back').onclick=()=>leftShowHome();
       document.getElementById('left_head').onclick=()=>showTab('company');
       document.getElementById('left_wh').onclick=()=>showTab('warehouses');
+      const ext=document.getElementById('left_ext'); if(ext) ext.onclick=()=>{ /* placeholder for extended */ alert('Extended Profile – coming soon'); };
     }catch(e){}
     }
 
     leftCaptureDefault();
+
+    function setTopTab(which){
+      const a=document.getElementById('rt_company'); const b=document.getElementById('rt_setup');
+      if(a&&b){ a.classList.toggle('active', which==='company'); b.classList.toggle('active', which==='setup'); }
+      if(which==='company'){ leftShowProfile(); showTab('company'); }
+      else { leftShowSetup(); showTab('none'); }
+    }
 
     // Tabs using left action buttons
     function showTab(which){
@@ -266,19 +285,19 @@
       const w=document.getElementById('warehousesPane');
       const s=document.getElementById('setupPane');
       // Default view is company profile; right pane stays visible always
-      if(which==='profile' || which==='company'){
+      if(which==='company'){
         if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
       } else if(which==='warehouses'){
         if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none';
       } else if(which==='setup'){
         if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='';
       } else {
-        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
+        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none';
       }
     }
-    document.getElementById('tab_company').onclick = ()=>{ leftShowMain(); showTab('company'); };
-    document.getElementById('tab_setup').onclick = ()=>{ leftShowMain(); showTab('setup'); };
-    (function(){ const link=document.getElementById('openProfileTabs'); if(link) link.onclick=()=>{ leftShowProfile(); showTab('company'); }; const back=document.getElementById('whBackToCompany'); if(back) back.onclick=()=>{ leftShowMain(); showTab('company'); }; })();
+    document.getElementById('rt_company').onclick = ()=> setTopTab('company');
+    document.getElementById('rt_setup').onclick = ()=> setTopTab('setup');
+    (function(){ const link=document.getElementById('openProfileTabs'); if(link) link.onclick=()=>{ setTopTab('company'); }; const back=document.getElementById('whBackToCompany'); if(back) back.onclick=()=>{ setTopTab('company'); }; })();
 
     // Load profile
     async function loadProfile(){
@@ -362,7 +381,7 @@
     loadCompany();
     loadWarehouses();
     // Default tab routing
-(function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='company'){ leftShowMain(); showTab('company'); } else if(tab==='warehouses'){ leftShowProfile(); showTab('warehouses'); } else if(tab==='profile'){ leftShowProfile(); showTab('company'); } else if(tab==='setup'){ leftShowMain(); showTab('setup'); } else { leftShowMain(); showTab('company'); } })();
+(function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='warehouses'){ setTopTab('company'); showTab('warehouses'); } else if(tab==='setup'){ setTopTab('setup'); } else { setTopTab('company'); } })();
   </script>
 </body>
 </html>
