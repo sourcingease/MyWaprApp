@@ -639,15 +639,8 @@ app.post('/api/auth/login', async (req, res) => {
     let redirect = '/dashboard';
     try { redirect = await determineRedirect(new AzureSQLConnector(), user.UserId, firstTenantId); } catch {}
 
-    // Map legacy module pages to unified app shell routes
-    const mapToApp = (p)=>{
-      const m = {
-        '/masters/safety-office.html':'/#/safety',
-        '/dashboard':'/#/profile'
-      };
-      return m[p] || p;
-    };
-    redirect = mapToApp(redirect);
+    // Return the module page directly (no app shell mapping)
+    // For Safety Officer, this will be '/masters/safety-office.html'
 
     res.json({ success: true, data: { userId: user.UserId, email: user.Email, fullName: user.FullName, tenants: tenants.recordset, tenantId: firstTenantId, redirect } });
   } catch (error) {
