@@ -82,6 +82,7 @@
 
     <!-- Center Working Area -->
     <div class="dashboard-card working-pane">
+      <div id="workHeading" class="card-header" style="margin-top:-8px">Company Setup</div>
       <div id="profilePane" style="display:none"></div>
 
       <div id="companyPane">
@@ -165,17 +166,11 @@
 
       <!-- Spaces Pane -->
       <div id="spacesPane" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <button class="btn" id="spBackBtn">Back</button>
-            <div class="card-header" style="padding:0;border:none;margin:0">Spaces</div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <input id="spSearch" placeholder="Search..." style="padding:8px;border:1px solid #e2e8f0;border-radius:8px">
-            <button class="btn" id="spExportCsv">Export Excel</button>
-            <button class="btn" id="spExportPdf">Export PDF</button>
-            <button class="btn primary" id="spNewBtn">New Space</button>
-          </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="spSearch" placeholder="Search..." style="padding:8px;border:1px solid #e2e8f0;border-radius:8px">
+          <button class="btn" id="spExportCsv">Export Excel</button>
+          <button class="btn" id="spExportPdf">Export PDF</button>
+          <button class="btn primary" id="spNewBtn">New Space</button>
         </div>
         <div class="data-table-container">
           <table class="data-table" id="spacesTable" style="width:100%">
@@ -306,6 +301,7 @@
       const btnSetup=document.getElementById('tab_setup'); if(btnSetup) btnSetup.onclick=()=>{ leftShowSetup(); showTab('setup'); };
     }catch(e){} }
     function leftShowSetup(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Setup'; grid.innerHTML = `
+        <button class=\"action-btn\" id=\"left_back_setup\"><div class=\"action-icon\">⬅️</div><div class=\"action-label\">Back</div></button>
         <button class=\"action-btn\" id=\"left_add_space\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Add Space</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">👥</div><div class=\"action-label\">Assign Role to User</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🏷️</div><div class=\"action-label\">Add Product Type</div></button>
@@ -316,7 +312,7 @@
         <button class=\"action-btn\"><div class=\"action-icon\">🏭</div><div class=\"action-label\">Add Supplier / Mfr</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🗓️</div><div class=\"action-label\">Planning Setup</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Packaging Setup</div></button>
-        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); loadSpaces(); }; }catch(e){} }
+        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); setWorkHeading('Add Space'); loadSpaces(); }; const bk=document.getElementById('left_back_setup'); if(bk) bk.onclick=()=>{ leftShowMain(); showTab('company'); }; }catch(e){} }
     function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Company Profile'; grid.innerHTML = `
         <button class="action-btn" id="left_back"><div class="action-icon">⬅️</div><div class="action-label">Back</div></button>
         <button class="action-btn" id="left_head"><div class="action-icon">🏢</div><div class="action-label">Head Office</div></button>
@@ -333,22 +329,22 @@
     leftCaptureDefault();
 
     // Tabs using left action buttons
+    function setWorkHeading(text){ const h=document.getElementById('workHeading'); if(h) h.textContent=text; }
     function showTab(which){
       const p=document.getElementById('profilePane');
       const c=document.getElementById('companyPane');
       const w=document.getElementById('warehousesPane');
       const s=document.getElementById('setupPane'); const x=document.getElementById('spacesPane');
-      // Default view is company profile; right pane stays visible always
       if(which==='company'){
-        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
+        setWorkHeading('Company Setup'); if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
       } else if(which==='warehouses'){
-        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none'; if(x) x.style.display='none';
+        setWorkHeading('Warehouses'); if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none'; if(x) x.style.display='none';
       } else if(which==='setup'){
-        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display=''; if(x) x.style.display='none';
+        setWorkHeading('Setup'); if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display=''; if(x) x.style.display='none';
       } else if(which==='spaces'){
-        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='';
+        setWorkHeading('Add Space'); if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='';
       } else {
-        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
+        setWorkHeading('Company Setup'); if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
       }
     }
     // Spaces JS
@@ -459,7 +455,7 @@
     loadCompany();
     loadWarehouses();
     // Default tab routing
-(function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='warehouses'){ leftShowProfile(); showTab('warehouses'); } else if(tab==='setup'){ leftShowSetup(); showTab('setup'); } else { leftShowMain(); showTab('company'); } const b=document.getElementById('btnSetupAddSpace'); if(b){ b.onclick=()=>{ showTab('spaces'); loadSpaces(); }; } })();
+(function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='warehouses'){ leftShowProfile(); showTab('warehouses'); } else if(tab==='setup'){ leftShowSetup(); showTab('setup'); } else { leftShowMain(); showTab('company'); } const b=document.getElementById('btnSetupAddSpace'); if(b){ b.onclick=()=>{ leftShowSetup(); showTab('spaces'); loadSpaces(); }; } })();
   </script>
 </body>
 </html>
