@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial;background:#f5f7fa;color:#0f172a}
+    /* Theme pulled from Safety Dashboard */
+    .sidebar-toggle{position:fixed;left:10px;top:10px;width:40px;height:40px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;z-index:1001;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+    .sidebar-toggle:hover{background:#f8fafc;border-color:#0ea5e9;color:#0ea5e9}
+    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding:16px 24px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
+    .header-left{display:flex;align-items:center;gap:16px}
+    .logo-small{max-height:40px;width:auto}
+    .dashboard-title{font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.025em}
+    .header-right{display:flex;align-items:center;gap:12px}
+    .status-indicator{display:flex;align-items:center;gap:8px;padding:6px 14px;background:#d1fae5;border-radius:20px;font-size:13px;font-weight:500;color:#065f46}
+    .status-dot{width:8px;height:8px;background:#10b981;border-radius:50%}
+
+    .dashboard-content{display:grid;grid-template-columns:1fr 4fr 1fr;gap:20px;margin-bottom:20px;align-items:start}
+    .safety-pane{grid-column:1;grid-row:1;align-self:start;padding:8px}
+    .working-pane{grid-column:2;grid-row:1;min-height:520px}
+    .proc-pane{grid-column:3;grid-row:1;align-self:start}
+
+    .dashboard-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+    .card-header{font-size:16px;font-weight:600;color:#0f172a;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #f1f5f9}
+
+    .action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;background:#fff;border:2px solid #e2e8f0;border-radius:8px;cursor:pointer;text-decoration:none;color:#1e293b}
+    .action-btn:hover{border-color:#0ea5e9;box-shadow:0 8px 16px rgba(14,165,233,0.15);transform:translateY(-2px)}
+    .action-icon{font-size:20px}
+    .action-label{font-size:12px;font-weight:600;text-align:center}
+
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .full{grid-column:1 / -1}
+    label{font-size:12px;color:#64748b;font-weight:600}
+    input{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit;width:100%}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+    .btn{padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-weight:700}
+    .btn.primary{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
+    .avatar{width:72px;height:72px;border-radius:999px;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px}
+    .muted{color:#64748b;font-size:12px}
+
+    /* Modal overlay */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index: 3000; padding: 10px }
+    .overlay.open { display:flex }
+    .modal { background:#fff; border-radius:12px; border:1px solid #e2e8f0; max-width:900px; width:100%; max-height:86vh; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,.2) }
+    .modal-header{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #e2e8f0 }
+    .modal-body{ padding:16px }
+
+    @media (max-width:968px){ .dashboard-content{grid-template-columns:1fr} .safety-pane{padding:0} }
+    @media (max-width:768px){ .row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="toggleProfileSidebar()">☰</button>
+  <div class="dashboard-header">
+    <div class="header-left">
+      <img src="/logo.png" alt="ComplytEX" class="logo-small">
+      <div>
+        <h1 class="dashboard-title">USER PROFILE</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-indicator"><span class="status-dot"></span> Online</div>
+      <a href="/dashboard" style="font-size:13px;color:#64748b;font-weight:500;text-decoration:none;">My Dashboard</a>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <!-- Left Tabs -->
+    <div class="dashboard-card safety-pane">
+      <div class="card-header">Company Setup Tabs</div>
+      <div class="action-buttons">
+        <button class="action-btn" id="tab_profile"><div class="action-icon">👤</div><div class="action-label">Profile</div></button>
+        <button class="action-btn" id="tab_company"><div class="action-icon">🏢</div><div class="action-label">Company Profile</div></button>
+        <button class="action-btn" id="tab_setup"><div class="action-icon">⚙️</div><div class="action-label">Setup</div></button>
+        <button class="action-btn" id="tab_extended"><div class="action-icon">➕</div><div class="action-label">Extended</div></button>
+      </div>
+    </div>
+
+    <!-- Center Working Area -->
+    <div class="dashboard-card working-pane">
+      <div id="profilePane" style="display:none"></div>
+
+      <div id="companyPane">
+        <div class="row">
+          <div class="full"><label>Head Office Address 1 *</label><input id="cpAddress1"></div>
+          <div class="full"><label>Address 2</label><input id="cpAddress2"></div>
+          <div><label>City</label><input id="cpCity"></div>
+          <div><label>State / Province</label><input id="cpState"></div>
+          <div><label>Postal Code</label><input id="cpPostal"></div>
+        </div>
+        <div class="muted" style="margin:6px 0 10px">This address will show in your Invoices</div>
+        <div class="row">
+          <div><label>Total No. of Employees *</label><input id="cpEmployees" type="number"></div>
+          <div class="full" style="display:grid;grid-template-columns:1fr 120px 1fr;gap:8px">
+            <div><label>Capacity Type</label><input id="cpCapacityType"></div>
+            <div><label>&nbsp;</label><input id="cpCapacityQty" type="number"></div>
+            <div><label>Minimum Order Qty</label><input id="cpMinOrder" type="number"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 120px;gap:8px">
+            <div><label>Sales Profit *</label><input id="cpSalesType"></div>
+            <div><label>&nbsp;</label><input id="cpSalesValue" type="number"></div>
+          </div>
+          <div><label>Minimum Wage</label><input id="cpMinWage" type="number"></div>
+          <div><label>Minimum Age</label><input id="cpMinAge" type="number"></div>
+          <div><label>Retirement Age</label><input id="cpRetAge" type="number"></div>
+        </div>
+        <div class="row full">
+          <div class="full" style="display:flex;align-items:center;gap:16px">
+            <div>
+              <label>Product You Deal In *</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label><input type="checkbox" id="cpDealGarments"> Garments</label>
+                <label><input type="checkbox" id="cpDealHome"> Home Textile</label>
+              </div>
+            </div>
+            <div>
+              <label>Upload a Logo (PNG)</label>
+              <input id="cpLogo" type="file" accept="image/png,image/jpeg">
+              <div class="muted"><a href="#" id="sampleInvoice" target="_blank">View Sample Invoice</a></div>
+            </div>
+          </div>
+        </div>
+        <div class="row full" style="margin-top:10px">
+          <div class="full"><label>Product Line</label></div>
+          <div style="display:flex;gap:8px" class="full">
+            <input id="cpNewLine" style="flex:1">
+            <button class="btn" id="cpAddLine">Add</button>
+          </div>
+          <div class="full" id="cpLines" style="margin-top:8px;border:1px solid #e2e8f0;border-radius:8px"></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="saveCompany">Save Company Profile</button>
+        </div>
+      </div>
+
+      <!-- Warehouses Pane -->
+      <div id="warehousesPane" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="card-header" style="padding:0;border:none;margin:0">Warehouses</div>
+          <button class="btn primary" id="whNewBtn">New Warehouse</button>
+        </div>
+        <div id="whList" class="full"></div>
+      </div>
+
+      <!-- Setup Pane -->
+      <div id="setupPane" style="display:none">
+        <div class="row" style="grid-template-columns:repeat(3,1fr)">
+          <div><button class="btn primary" style="width:100%">Add Space</button></div>
+          <div><button class="btn primary" style="width:100%">Assign Role to User</button></div>
+          <div><button class="btn primary" style="width:100%">Add Product Type</button></div>
+          <div><button class="btn primary" style="width:100%">Add Assets</button></div>
+          <div><button class="btn primary" style="width:100%">Add your Customer</button></div>
+          <div><button class="btn primary" style="width:100%">Add Certification</button></div>
+          <div><button class="btn primary" style="width:100%">Add User</button></div>
+          <div><button class="btn primary" style="width:100%">Add Supplier / Manufacturer</button></div>
+          <div><button class="btn primary" style="width:100%">Planning Setup</button></div>
+          <div></div><div><button class="btn primary" style="width:100%">Packaging Setup</button></div><div></div>
+          <div style="grid-column:1 / -1; display:flex; justify-content:center; margin-top:8px"><button class="btn primary">Set Sustainability Goal</button></div>
+        </div>
+      </div>
+
+      <!-- Warehouse Modal -->
+      <div id="whModal" class="overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <div style="font-weight:700">New Warehouse</div>
+            <button class="btn" id="whClose">Close</button>
+          </div>
+          <div class="modal-body">
+            <div class="row" style="grid-template-columns:2fr 1fr 1fr;align-items:end">
+              <div><label>Warehouse Name</label><input id="whmName"></div>
+              <div><label>Address Type</label>
+                <select id="whmAddressType" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                  <option>Shipping Address</option>
+                  <option>Warehouse Address</option>
+                  <option>Store Address</option>
+                  <option>Billing Address</option>
+                </select>
+              </div>
+              <div><label>Warehouse Type</label>
+                <select id="whmType" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                  <option>Retail</option>
+                  <option>Wholesale</option>
+                  <option>Distribution</option>
+                  <option>Store</option>
+                  <option>Fulfillment</option>
+                </select>
+              </div>
+              <div class="full"><label>Address 1</label><input id="whmAddress1"></div>
+              <div class="full"><label>Address 2</label><input id="whmAddress2"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px" class="full">
+                <div><label>City</label><input id="whmCity"></div>
+                <div><label>State</label><input id="whmState"></div>
+                <div><label>Postal Code</label><input id="whmPostal"></div>
+              </div>
+              <div><label>Country</label>
+                <select id="whmCountry" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></select>
+              </div>
+            </div>
+            <div class="actions" style="justify-content:flex-end;gap:8px">
+              <button class="btn" id="whResetBtn" type="button">Reset</button>
+              <button class="btn" id="whCancelBtn" type="button">Cancel</button>
+              <button class="btn primary" id="whSaveBtn" type="button">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Quick Links -->
+    <div class="dashboard-card proc-pane">
+      <div class="card-header">Quick Links</div>
+      <div class="action-buttons" style="grid-template-columns:1fr 1fr">
+        <a class="action-btn" href="/safety-audits.html"><div class="action-icon">📋</div><div class="action-label">Safety Audits</div></a>
+        <a class="action-btn" href="/training.html"><div class="action-icon">🎓</div><div class="action-label">Training</div></a>
+        <a class="action-btn" href="/attendance/scan.html"><div class="action-icon">🧾</div><div class="action-label">Attendance Scan</div></a>
+        <a class="action-btn" href="/ai/analyst.html"><div class="action-icon">🤖</div><div class="action-label">AI Analyst</div></a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    // Hide local header when embedded in app shell
+    (function(){ const params=new URLSearchParams(location.search); if(params.get('embedded')==='1'){ const hdr=document.querySelector('.dashboard-header'); if(hdr) hdr.style.display='none'; const proc=document.querySelector('.proc-pane'); if(proc) proc.style.display='none'; } })();
+    function toggleProfileSidebar(){ const pane=document.querySelector('.safety-pane'); if(!pane) return; pane.style.display = (pane.style.display==='none') ? '' : 'block'; }
+
+    // Left panel: capture default and support sub-tabs for Company Profile & Profile
+    let __leftDefaultHTML=null; let __leftHeaderDefault='Company Setup Tabs';
+    function leftCaptureDefault(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(grid){ __leftDefaultHTML = grid.innerHTML; } if(hdr){ __leftHeaderDefault = hdr.textContent; } }catch(e){} }
+    function leftShowMain(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent = 'Company Setup Tabs'; grid.innerHTML = `
+        <button class=\"action-btn\" id=\"tab_profile\"><div class=\"action-icon\">👤</div><div class=\"action-label\">Profile</div></button>
+        <button class=\"action-btn\" id=\"tab_company\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Company Profile</div></button>
+        <button class=\"action-btn\" id=\"tab_setup\"><div class=\"action-icon\">⚙️</div><div class=\"action-label\">Setup</div></button>
+        <button class=\"action-btn\" id=\"tab_extended\"><div class=\"action-icon\">➕</div><div class=\"action-label\">Extended</div></button>`;
+      const btnCompany=document.getElementById('tab_company'); if(btnCompany) btnCompany.onclick=()=>{ showTab('company'); };
+      const btnProfile=document.getElementById('tab_profile'); if(btnProfile) btnProfile.onclick=()=>{ leftShowProfile(); showTab('company'); };
+      const btnSetup=document.getElementById('tab_setup'); if(btnSetup) btnSetup.onclick=()=>{ showTab('setup'); };
+    }catch(e){}
+    }
+    function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Profile'; grid.innerHTML = `
+        <button class="action-btn" id="left_back"><div class="action-icon">⬅️</div><div class="action-label">Back</div></button>
+        <button class="action-btn" id="left_head"><div class="action-icon">🏢</div><div class="action-label">Head Office</div></button>
+        <button class="action-btn" id="left_wh"><div class="action-icon">🏬</div><div class="action-label">Warehouse</div></button>
+      `;
+      document.getElementById('left_back').onclick=()=>leftShowMain();
+      document.getElementById('left_head').onclick=()=>showTab('company');
+      document.getElementById('left_wh').onclick=()=>showTab('warehouses');
+    }catch(e){}
+    }
+
+    leftCaptureDefault();
+
+    // Tabs using left action buttons
+    function showTab(which){
+      const p=document.getElementById('profilePane');
+      const c=document.getElementById('companyPane');
+      const w=document.getElementById('warehousesPane');
+      const s=document.getElementById('setupPane');
+      // Default view is company profile; right pane stays visible always
+      if(which==='profile' || which==='company'){
+        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
+      } else if(which==='warehouses'){
+        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none';
+      } else if(which==='setup'){
+        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='';
+      } else {
+        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
+      }
+    }
+    document.getElementById('tab_profile').onclick = ()=>{ leftShowProfile(); showTab('company'); };
+    document.getElementById('tab_company').onclick = ()=>{ leftShowMain(); showTab('company'); };
+    document.getElementById('tab_setup').onclick = ()=>{ leftShowMain(); showTab('setup'); };
+
+    // Load profile
+    async function loadProfile(){
+      const firstNameEl = document.getElementById('firstName');
+      if(!firstNameEl) return; // Profile form not present on this screen
+      const r = await fetch('/api/profile', { credentials:'include' }); const j = await r.json(); if(!j.success) return;
+      const fn = (j.data.fullName||'').split(' ');
+      firstNameEl.value = fn.shift()||'';
+      const lastNameEl = document.getElementById('lastName'); if(lastNameEl) lastNameEl.value = fn.join(' ');
+      const emailEl = document.getElementById('email'); if(emailEl) emailEl.value = j.data.email||'';
+      const desEl = document.getElementById('designation'); if(desEl) desEl.value = j.data.designation||'';
+      const cellEl = document.getElementById('cellPhone'); if(cellEl) cellEl.value = j.data.cellPhone||'';
+      const img = document.getElementById('avatarImg'); if(img) img.src = j.data.avatarUrl || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2272%22 height=%2272%22><rect width=%2272%22 height=%2272%22 fill=%230ea5e9/><text x=%2236%22 y=%2239%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22white%22 font-family=%22Arial%22>SS</text></svg>';
+    }
+
+    // Save profile
+    (function(){ const btn=document.getElementById('saveProfile'); if(btn) btn.onclick = async ()=>{
+      const payload = {
+        firstName: (document.getElementById('firstName')?.value||'').trim(),
+        lastName: (document.getElementById('lastName')?.value||'').trim(),
+        designation: (document.getElementById('designation')?.value||'').trim(),
+        cellPhone: (document.getElementById('cellPhone')?.value||'').trim(),
+      };
+      await fetch('/api/profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' });
+      alert('Profile saved');
+    }; })();
+
+    // Change password
+    (function(){ const btn=document.getElementById('changePwd'); if(btn) btn.onclick = async ()=>{
+      const cur = document.getElementById('curPwd')?.value; const n1 = document.getElementById('newPwd')?.value; const n2 = document.getElementById('newPwd2')?.value;
+      if(!cur||!n1||n1!==n2){ alert('Please enter passwords correctly'); return; }
+      const r = await fetch('/api/profile/change-password', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ currentPassword: cur, newPassword: n1 }), credentials:'include' });
+      const j = await r.json(); if(j.success) alert('Password changed'); else alert(j.error||'Failed');
+    }; })();
+
+    // Avatar upload -> data URL
+    (function(){ const inp=document.getElementById('avatarFile'); if(inp) inp.onchange = async (ev)=>{
+      const f = ev.target.files[0]; if(!f) return; if(f.size>10*1024*1024){ alert('Max 10MB'); return; }
+      const reader = new FileReader(); reader.onload = async ()=>{
+        const dataUrl = reader.result; const r = await fetch('/api/profile/avatar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ dataUrl }), credentials:'include' }); const j = await r.json(); if(j.success){ const img=document.getElementById('avatarImg'); if(img) img.src = j.url; } else { alert(j.error||'Upload failed'); }
+      }; reader.readAsDataURL(f);
+    }; })();
+
+    // Company profile
+    async function loadCompany(){
+      const r = await fetch('/api/company/profile', { credentials:'include' }); const j = await r.json(); if(!j.success) return;
+      const d = j.data || {};
+      cpAddress1.value=d.Address1||''; cpAddress2.value=d.Address2||''; cpCity.value=d.City||''; cpState.value=d.State||''; cpPostal.value=d.PostalCode||'';
+      cpEmployees.value=d.Employees||''; cpCapacityType.value=d.CapacityType||''; cpCapacityQty.value=d.CapacityQty||''; cpMinOrder.value=d.MinOrderQty||''; cpSalesType.value=d.SalesProfitType||''; cpSalesValue.value=d.SalesProfitValue||''; cpMinWage.value=d.MinWage||''; cpMinAge.value=d.MinAge||''; cpRetAge.value=d.RetirementAge||''; cpDealGarments.checked = !!d.DealInGarments; cpDealHome.checked=!!d.DealInHomeTextile;
+      renderLines(j.productLines||[]);
+    }
+    function renderLines(rows){
+      const box = document.getElementById('cpLines'); box.innerHTML = rows.length? rows.map(r=>`<div style='display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #e2e8f0'><div>${r.Name}</div><button class="btn" onclick="deleteLine(${r.Id})">Delete</button></div>`).join('') : '<div class="muted" style="padding:8px">No product lines</div>';
+    }
+    document.getElementById('cpAddLine').onclick = async ()=>{
+      const name = document.getElementById('cpNewLine').value.trim(); if(!name) return; const r = await fetch('/api/company/product-lines', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }), credentials:'include' }); const j = await r.json(); if(j.success){ document.getElementById('cpNewLine').value=''; const rl = await fetch('/api/company/product-lines', { credentials:'include' }); renderLines((await rl.json()).data||[]); }
+    };
+    window.deleteLine = async (id)=>{ await fetch('/api/company/product-lines/'+id, { method:'DELETE', credentials:'include' }); const rl = await fetch('/api/company/product-lines', { credentials:'include' }); renderLines((await rl.json()).data||[]); };
+    document.getElementById('saveCompany').onclick = async ()=>{
+      const payload = {
+        address1: cpAddress1.value.trim(), address2: cpAddress2.value.trim(), city: cpCity.value.trim(), state: cpState.value.trim(), postalCode: cpPostal.value.trim(), employees: parseInt(cpEmployees.value||''), capacityType: cpCapacityType.value.trim(), capacityQty: parseInt(cpCapacityQty.value||''), minOrderQty: parseInt(cpMinOrder.value||''), salesProfitType: cpSalesType.value.trim(), salesProfitValue: parseFloat(cpSalesValue.value||''), minWage: parseFloat(cpMinWage.value||''), minAge: parseInt(cpMinAge.value||''), retirementAge: parseInt(cpRetAge.value||''), dealInGarments: cpDealGarments.checked, dealInHomeTextile: cpDealHome.checked };
+      await fetch('/api/company/profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' }); alert('Company profile saved');
+    };
+    document.getElementById('cpLogo').onchange = async (ev)=>{ const f=ev.target.files[0]; if(!f) return; if(f.size>10*1024*1024){ alert('Max 10MB'); return; } const reader=new FileReader(); reader.onload=async()=>{ const r=await fetch('/api/company/logo',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ dataUrl: reader.result }), credentials:'include' }); const j=await r.json(); if(!j.success) alert(j.error||'Upload failed'); }; reader.readAsDataURL(f); };
+
+    // Warehouses UI
+    async function loadWarehouses(){ const r=await fetch('/api/company/warehouses',{credentials:'include'}); const j=await r.json(); if(!j.success) { document.getElementById('whList').innerHTML='<div class="muted">No warehouses yet</div>'; return; } renderWhList(j.data||[]); }
+    function renderWhList(rows){ const box=document.getElementById('whList'); if(!box) return; if(rows.length===0){ box.innerHTML='<div class="muted">No warehouses yet</div>'; return; } box.innerHTML = rows.map(w=>`<div class=\"dashboard-card\" style=\"padding:12px;margin-bottom:8px\"><div style=\"display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap\"><div style=\"font-weight:700\">${w.Name}</div><div class=\"muted\">${w.WarehouseType||''}</div><div><button class=\"btn\" onclick=\"deleteWarehouse(${w.Id})\">Delete</button></div></div><div class=\"muted\">${[w.Address1,w.Address2,w.City,w.State,w.PostalCode,w.Country].filter(Boolean).join(', ')}</div></div>`).join(''); }
+    // New warehouse modal handlers
+    const whModal=document.getElementById('whModal');
+    function fillCountries(){ const sel=document.getElementById('whmCountry'); if(!sel) return; const list=['Bangladesh','China','India','Pakistan','United States','United Kingdom','Germany','France','Spain','Canada','Mexico','Australia','UAE','Saudi Arabia']; sel.innerHTML = '<option value="">Select</option>' + list.map(c=>`<option>${c}</option>`).join(''); }
+    document.getElementById('whNewBtn').onclick=()=>{ fillCountries(); whModal.classList.add('open'); setTimeout(()=>document.getElementById('whmName')?.focus(),0); };
+    document.getElementById('whClose').onclick=()=> whModal.classList.remove('open');
+    document.getElementById('whCancelBtn').onclick=()=> whModal.classList.remove('open');
+    document.getElementById('whResetBtn').onclick=()=>{ ['whmName','whmAddress1','whmAddress2','whmCity','whmState','whmPostal'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); };
+    whModal.addEventListener('click',(e)=>{ if(e.target.id==='whModal') whModal.classList.remove('open'); });
+    document.getElementById('whSaveBtn').onclick = async ()=>{ const payload={ name:whmName.value.trim(), addressType:whmAddressType.value, warehouseType:whmType.value, address1:whmAddress1.value.trim(), address2:whmAddress2.value.trim(), city:whmCity.value.trim(), state:whmState.value.trim(), postalCode:whmPostal.value.trim(), country:document.getElementById('whmCountry').value.trim() }; if(!payload.name){ alert('Name required'); return; } const btn=document.getElementById('whSaveBtn'); btn.disabled=true; try{ const r=await fetch('/api/company/warehouses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),credentials:'include'}); const j=await r.json(); if(j.success){ whModal.classList.remove('open'); loadWarehouses(); } else alert(j.error||'Failed'); } catch(e){ alert('Failed to save'); } finally { btn.disabled=false; } };
+    window.deleteWarehouse = async (id)=>{ if(!confirm('Delete this warehouse?')) return; await fetch('/api/company/warehouses/'+id,{method:'DELETE',credentials:'include'}); loadWarehouses(); };
+
+    loadProfile();
+    loadCompany();
+    loadWarehouses();
+    // Default tab routing
+(function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='company'){ leftShowMain(); showTab('company'); } else if(tab==='warehouses'){ leftShowProfile(); showTab('warehouses'); } else if(tab==='profile'){ leftShowProfile(); showTab('company'); } else if(tab==='setup'){ leftShowMain(); showTab('setup'); } else { leftShowMain(); showTab('company'); } })();
+  </script>
+</body>
+</html>

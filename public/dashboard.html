@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Owner Dashboard • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    input,select{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
+    .stat{font-size:26px;font-weight:700}
+    .muted{color:#94a3b8}
+    .modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .mod{background:#111827;border:1px solid #1f2a3b;border-radius:10px;padding:10px}
+    a{color:#a78bfa}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Owner Dashboard</h2>
+    <div class="row" style="margin-top:8px">
+      <label>Tenant ID <input id="tenantId" placeholder="e.g. 1"/></label>
+      <label>Business Type
+        <select id="businessType">
+          <option>Manufacturer</option>
+          <option>Buyer</option>
+          <option>Supplier</option>
+          <option>Designer</option>
+          <option>SafetyAuditor</option>
+          <option>SafetyOffice</option>
+          <option>Inspection</option>
+        </select>
+      </label>
+      <button class="btn" onclick="loadSummary()">Load</button>
+      <div class="muted">Quick links: <a href="/employees">Employees</a> • <a href="/roles">Roles</a></div>
+    </div>
+
+    <div id="info" class="muted" style="margin-top:10px"></div>
+
+    <div class="cards">
+      <div class="card"><div class="muted">Employees</div><div id="statEmployees" class="stat">-</div></div>
+      <div class="card"><div class="muted">Customers</div><div id="statCustomers" class="stat">-</div></div>
+      <div class="card"><div class="muted">Suppliers</div><div id="statSuppliers" class="stat">-</div></div>
+      <div class="card"><div class="muted">Certifications</div><div id="statCerts" class="stat">-</div></div>
+    </div>
+
+    <h3 style="margin-top:18px">Modules</h3>
+    <div id="modules" class="modules"></div>
+  </div>
+ 
+  <script src="/app.js" defer></script>
+  <script>
+    function qp(name){return new URLSearchParams(location.search).get(name)}
+    document.getElementById('tenantId').value = qp('tenantId')||'';
+    if(qp('businessType')) document.getElementById('businessType').value = qp('businessType');
+
+    async function loadSummary(){
+      const tenantId = document.getElementById('tenantId').value.trim();
+      if(!tenantId){ alert('Enter Tenant ID'); return; }
+      const res = await fetch(`/api/tenant/${tenantId}/summary`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed'); return; }
+      const t = data.data.tenant;
+      document.getElementById('info').textContent = t? `${t.TenantName} • ${t.BusinessType}` : 'Tenant not found';
+      const c = data.data.counts||{};
+      document.getElementById('statEmployees').textContent = c.Employees ?? '-';
+      document.getElementById('statCustomers').textContent = c.Customers ?? '-';
+      document.getElementById('statSuppliers').textContent = c.Suppliers ?? '-';
+      document.getElementById('statCerts').textContent = c.Certifications ?? '-';
+
+      const mods = data.data.modules || [];
+      const bt = (t?.BusinessType || document.getElementById('businessType').value);
+      const emphasis = {
+        Manufacturer: ['HR','CRM','ACCOUNTING','CERTIFICATION','TASKS','EMAIL'],
+        Buyer: ['CRM','WHOLESALE','RETAIL','EMAIL','CHAT'],
+        Supplier: ['SUPPLIERS','ACCOUNTING','TASKS','EMAIL'],
+        Designer: ['MARKETING','CRM','TASKS','EMAIL'],
+        SafetyAuditor: ['CERTIFICATION','TASKS','EMAIL'],
+        SafetyOffice: ['CERTIFICATION','HR','TASKS','EMAIL'],
+        Inspection: ['CERTIFICATION','TASKS','EMAIL']
+      }[bt] || [];
+
+      document.getElementById('modules').innerHTML = mods.map(m=>{
+        const hl = emphasis.includes(m.Code);
+        return `<div class="mod" style="border-color:${hl?'#7c3aed':'#1f2a3b'}">
+          <div style="font-weight:700">${m.Name}</div>
+          <div class="muted" style="font-size:12px">${m.Code}</div>
+        </div>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

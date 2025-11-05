@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComplytEX • Application</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial;background:#f5f7fa;color:#0f172a}
+    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:12px 20px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
+    .header-left{display:flex;align-items:center;gap:12px}
+    .logo-small{max-height:40px}
+    .dashboard-title{font-size:18px;font-weight:700}
+    .dashboard-content{display:grid;grid-template-columns:220px 1fr;gap:12px;padding:12px}
+    .dashboard-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    .nav{display:grid;gap:8px}
+    .nav a{display:flex;align-items:center;gap:8px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-decoration:none;color:#0f172a}
+    .nav a:hover{border-color:#0ea5e9}
+    #appFrame{width:100%;border:0;border-radius:8px;background:#fff}
+    footer{margin:8px 12px;padding:10px;color:#64748b;font-size:12px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div class="header-left">
+      <img src="/logo.png" class="logo-small"/>
+      <div><div class="dashboard-title">ComplytEX</div></div>
+    </div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="dashboard-content">
+    <div class="dashboard-card">
+      <div style="font-weight:700;margin-bottom:6px">Modules</div>
+      <div class="nav">
+        <a href="#/profile">👤 Company Setup</a>
+        <a href="#/safety">🦺 Safety Office</a>
+        <a href="#/hr">👥 HR & Payroll</a>
+        <a href="#/accounting">💰 Accounting</a>
+        <a href="#/crm">🧩 CRM</a>
+      </div>
+    </div>
+    <div class="dashboard-card" style="padding:0">
+      <iframe id="appFrame" title="Application"></iframe>
+    </div>
+  </div>
+
+  <footer>© ComplytEX</footer>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    function resizeFrame(){ const hdr=document.querySelector('.dashboard-header'); const h=window.innerHeight - (hdr?.offsetHeight||0) - 90; document.getElementById('appFrame').style.height = Math.max(400,h)+'px'; }
+    window.addEventListener('resize', resizeFrame);
+    function navigate(){
+      const hash=location.hash||'#/profile';
+      const map={
+        '#/profile':'/profile.html?embedded=1',
+        '#/safety':'/masters/safety-office.html?embedded=1',
+        '#/hr':'/hr/index.html',
+        '#/accounting':'/accounting/index.html',
+        '#/crm':'/crm/index.html'
+      };
+      const url = map[hash] || map['#/profile'];
+      document.getElementById('appFrame').src = url;
+      resizeFrame();
+    }
+    window.addEventListener('hashchange', navigate);
+    navigate();
+  </script>
+</body>
+</html>

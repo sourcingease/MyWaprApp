@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accounts Receivable • ComplytEX Accounting</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1200px;margin:0 auto;padding:22px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    input,select{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-top:12px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:10px;border-bottom:1px solid #1f2a3b;text-align:left}
+    .muted{color:#94a3b8}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Accounts Receivable</h2>
+    <div class="card">
+      <div style="font-weight:700">Customer Invoices</div>
+      <table>
+        <thead><tr><th>Customer</th><th>Invoice</th><th>Issue</th><th>Due</th><th>Amount</th><th>Received</th><th>Status</th></tr></thead>
+        <tbody id="rows"><tr><td class="muted" colspan="7">No receivables</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    const key='acct_receivables';
+    const data=JSON.parse(localStorage.getItem(key)||'[]');
+    const tbody=document.getElementById('rows');
+    tbody.innerHTML = (data.map(r=>`<tr>
+      <td>${r.customerName}</td>
+      <td>${r.invoiceNumber}</td>
+      <td>${r.issueDate||''}</td>
+      <td>${r.dueDate||''}</td>
+      <td>${(+r.amount||0).toFixed(2)}</td>
+      <td>${(+r.amountReceived||0).toFixed(2)}</td>
+      <td>${r.status||''}</td>
+    </tr>`).join('')) || `<tr><td class="muted" colspan="7">No receivables</td></tr>`;
+  </script>
+</body>
+</html>

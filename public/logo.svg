@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <!-- ComplytEX Logo Recreation -->
+  
+  <!-- Check mark and ribbons -->
+  <g transform="translate(10, 10)">
+    <!-- Orange ribbon -->
+    <path d="M0 20 L40 10 L50 15 L45 35 L5 45 Z" fill="#F97316" stroke="#EA580C" stroke-width="1"/>
+    
+    <!-- Blue ribbon -->
+    <path d="M5 35 L45 25 L55 30 L50 50 L10 60 Z" fill="#3B82F6" stroke="#2563EB" stroke-width="1"/>
+    
+    <!-- Green check mark -->
+    <circle cx="35" cy="35" r="25" fill="#22C55E"/>
+    <path d="M25 35 L32 42 L45 28" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- COMPLY text -->
+  <g transform="translate(80, 15)">
+    <text x="0" y="35" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#22C55E">COMPLY</text>
+  </g>
+  
+  <!-- T (orange) -->
+  <g transform="translate(220, 15)">
+    <text x="0" y="35" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#F97316" font-style="italic">T</text>
+  </g>
+  
+  <!-- EX (blue and green) -->
+  <g transform="translate(240, 15)">
+    <text x="0" y="35" font-family="Arial, sans-serif" font-size="28" font-weight="bold">
+      <tspan fill="#3B82F6">E</tspan><tspan fill="#22C55E">X</tspan>
+    </text>
+  </g>
+  
+  <!-- Tagline -->
+  <text x="80" y="65" font-family="Arial, sans-serif" font-size="10" fill="#6B7280">Data driven Sustainable reporting for textiles</text>
+</svg>

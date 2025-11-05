@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat • ComplytEX CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .grid{display:grid;grid-template-columns:260px 1fr;gap:10px}
+    .panel{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:12px;min-height:420px}
+    .muted{color:#94a3b8}
+    input{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb;width:100%}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Chat</h2>
+    <div class="grid" style="margin-top:10px">
+      <div class="panel">
+        <div style="font-weight:700">Conversations</div>
+        <div class="muted" style="margin-top:8px">No conversations</div>
+      </div>
+      <div class="panel">
+        <div style="height:320px" class="muted">Select a chat to view messages.</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input placeholder="Type a message"/>
+          <button class="btn" onclick="alert('Send (placeholder)')">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

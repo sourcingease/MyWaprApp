@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance • Scan</title>
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:800px;margin:0 auto;padding:22px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-bottom:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    label{font-size:13px;font-weight:600;color:#cbd5e1}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#111827;color:#e5e7eb}
+    video{width:100%;border-radius:12px;border:1px solid #1f2a3b}
+    .ok{color:#10b981}
+    .err{color:#ef4444}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Attendance • Scan</h2>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:1 1 220px"><label>Manual Input</label><input id="manual" placeholder="Scan/Type barcode and press Enter" onkeydown="if(event.key==='Enter') submitCode(this.value)" style="width:100%"/></div>
+        <div><label>&nbsp;</label><button class="btn" onclick="startCam()">Start Camera</button></div>
+        <div><label>&nbsp;</label><button class="btn sec" onclick="stopCam()">Stop</button></div>
+      </div>
+      <div style="margin-top:10px"><video id="preview" autoplay muted playsinline></video></div>
+      <div id="status" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card" id="userBox" style="display:none">
+      <div class="row">
+        <img id="userPhoto" src="" style="height:80px;border-radius:8px;border:1px solid #1f2a3b" onerror="this.style.display='none'" />
+        <div>
+          <div id="userName" style="font-size:18px;font-weight:700"></div>
+          <div id="userEmail" class="muted"></div>
+          <div id="lastStatus" class="muted"></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" onclick="clock('In')">Clock In</button>
+        <button class="btn sec" onclick="clock('Out')">Clock Out</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    const tenantId = 1;
+    let stream = null;
+    let _lastUser = null;
+    let _detecting = false;
+
+    async function startCam(){
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        const video = document.getElementById('preview');
+        video.srcObject = stream;
+        detectLoop();
+      }catch(e){ setStatus('Camera error: '+e.message, true); }
+    }
+    function stopCam(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } _detecting=false; }
+
+    async function detectLoop(){
+      if(_detecting) return; _detecting=true; const vid=document.getElementById('preview');
+      // Try BarcodeDetector if available
+      if('BarcodeDetector' in window){
+        const det = new BarcodeDetector({ formats:['code_128','qr_code','ean_13','code_39','codabar'] });
+        while(_detecting && stream){
+          try{
+            const codes = await det.detect(vid);
+            if(codes && codes.length>0){ await submitCode(codes[0].rawValue); await new Promise(r=>setTimeout(r, 1200)); }
+          }catch{}
+          await new Promise(r=>setTimeout(r, 150));
+        }
+      } else {
+        setStatus('BarcodeDetector not supported. Use manual input.', true);
+      }
+    }
+
+    async function submitCode(code){
+      const trimmed = (code||'').trim(); if(!trimmed) return;
+      try{
+        const res = await SafetyAPI.postAttendanceLog({ tenantId, barcode: trimmed });
+        setStatus('Recorded '+res.data.direction+' for '+trimmed, false);
+        await showUserByBarcode(trimmed);
+      }catch(e){ setStatus(e.message, true); }
+    }
+
+    async function showUserByBarcode(code){
+      const list = await SafetyAPI.listAttendanceBarcodes({ tenantId, q: code });
+      const m = (list.data||[]).find(x=>x.Barcode===code);
+      if(!m){ document.getElementById('userBox').style.display='none'; return; }
+      _lastUser = m;
+      document.getElementById('userName').textContent = m.FullName||'';
+      document.getElementById('userEmail').textContent = m.Email||'';
+      const img = document.getElementById('userPhoto'); img.src = m.PhotoUrl||''; img.style.display = m.PhotoUrl? 'block':'none';
+      const st = await SafetyAPI.getAttendanceStatus({ tenantId, userId: m.UserId });
+      document.getElementById('lastStatus').textContent = st.data? (`Last: ${st.data.Direction} at ${new Date(st.data.Timestamp).toLocaleString()}`) : 'No prior record';
+      document.getElementById('userBox').style.display='block';
+    }
+
+    async function clock(direction){
+      if(!_lastUser) return;
+      await SafetyAPI.postAttendanceLog({ tenantId, userId: _lastUser.UserId, direction, source: 'Manual' });
+      setStatus('Recorded '+direction+' for '+(_lastUser.FullName||''), false);
+      const st = await SafetyAPI.getAttendanceStatus({ tenantId, userId: _lastUser.UserId });
+      document.getElementById('lastStatus').textContent = st.data? (`Last: ${st.data.Direction} at ${new Date(st.data.Timestamp).toLocaleString()}`) : 'No prior record';
+    }
+
+    function setStatus(msg, isErr){ const el=document.getElementById('status'); el.className = isErr? 'err':'ok'; el.textContent=msg; }
+  </script>
+</body>
+</html>

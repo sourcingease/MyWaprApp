@@ -1,0 +1,29 @@
+{
+  "i18n": { "lang": "Idioma" },
+  "login": {
+    "title": "Iniciar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "signIn": "Acceder"
+  },
+  "safety": {
+    "audits": {
+      "title": "Auditorías de seguridad",
+      "quoteDashboard": "Panel de cotizaciones"
+    },
+    "officer": { "dashboard": "TABLERO DEL OFICIAL DE SEGURIDAD" },
+    "training": {
+      "title": "Capacitación de seguridad",
+      "name": "Nombre",
+      "related": "Relacionado con",
+      "date": "Fecha",
+      "by": "Impartido por",
+      "description": "Descripción",
+      "attendees": "Asistentes",
+      "save": "Guardar capacitación",
+      "reset": "Restablecer",
+      "search": "Buscar",
+      "downloadCsv": "Descargar CSV"
+    }
+  }
+}

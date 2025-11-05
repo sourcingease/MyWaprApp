@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phone Notes • ComplytEX CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:10px;border-bottom:1px solid #1f2a3b;text-align:left}
+    .muted{color:#94a3b8}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Phone Notes</h2>
+    <div class="row" style="margin-top:8px">
+      <input placeholder="Contact Name" style="flex:1"/>
+      <textarea rows="2" placeholder="Call summary" style="flex:2"></textarea>
+      <button class="btn" onclick="alert('Saved (placeholder)')">Save</button>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Contact</th><th>Note</th><th>By</th></tr></thead>
+      <tbody>
+        <tr><td class="muted" colspan="4">No phone notes yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safety Training • ComplytEX</title>
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f5f7fa;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    label{font-size:13px;font-weight:600;color:#334155}
+    input,select,textarea{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;font-weight:700;cursor:pointer}
+    .btn.sec{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:14px}
+    th{background:#f8fafc;text-align:left;text-transform:uppercase;font-size:12px;color:#475569}
+    .muted{color:#64748b;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2 data-i18n="safety.training.title">Safety Training</h2>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:1 1 240px"><label data-i18n="safety.training.name">Name</label><input id="tName" style="width:100%"/></div>
+        <div style="flex:1 1 200px"><label data-i18n="safety.training.related">Related To</label><input id="tRelated" style="width:100%"/></div>
+        <div style="flex:1 1 200px"><label data-i18n="safety.training.date">Date</label><input id="tDate" type="date" style="width:100%"/></div>
+        <div style="flex:1 1 200px"><label data-i18n="safety.training.by">Conducted By</label><input id="tBy" style="width:100%"/></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1 1 100%"><label data-i18n="safety.training.description">Description</label><textarea id="tDesc" rows="2" style="width:100%"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1 1 100%">
+          <label data-i18n="safety.training.attendees">Attendees</label>
+          <select id="tAttendees" multiple size="6" style="width:100%"></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" onclick="saveTraining()" data-i18n="safety.training.save">Save Training</button>
+        <button class="btn sec" onclick="resetForm()" data-i18n="safety.training.reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:1 1 220px"><label data-i18n="safety.training.search">Search</label><input id="q" placeholder="name or related" style="width:100%" oninput="loadList()"/></div>
+        <div style="flex:0 0 auto"><label>&nbsp;</label><button class="btn sec" onclick="downloadCSV()" data-i18n="safety.training.downloadCsv">Download CSV</button></div>
+      </div>
+      <div class="data-table-container" style="margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Name</th><th>Related To</th><th>Conducted By</th><th>Attendees</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    let currentId = null;
+    let employees = [];
+
+    async function loadEmployees(){
+      try{
+        const t = 1; // optionally read from session
+        const res = await fetch(`/api/tenant/${t}/employees`);
+        const data = await res.json();
+        if(data.success){ employees = data.data; const sel=document.getElementById('tAttendees'); sel.innerHTML = employees.map(e=>`<option value="${e.UserId}">${e.FullName||e.Email}</option>`).join(''); }
+      }catch(e){ console.warn(e); }
+    }
+
+    async function saveTraining(){
+      const payload = {
+        tenantId: 1,
+        name: document.getElementById('tName').value.trim(),
+        description: document.getElementById('tDesc').value.trim(),
+        relatedTo: document.getElementById('tRelated').value.trim(),
+        trainingDate: document.getElementById('tDate').value || null,
+        conductedBy: document.getElementById('tBy').value.trim(),
+        attendees: Array.from(document.getElementById('tAttendees').selectedOptions).map(o=>({ employeeId: parseInt(o.value), name: o.text }))
+      };
+      if(!payload.name){ alert('Name required'); return; }
+      await SafetyAPI.createTrainingSession(payload);
+      resetForm();
+      loadList();
+    }
+
+    function resetForm(){ currentId=null; document.getElementById('tName').value=''; document.getElementById('tDesc').value=''; document.getElementById('tRelated').value=''; document.getElementById('tDate').value=''; document.getElementById('tBy').value=''; document.getElementById('tAttendees').selectedIndex=-1; }
+
+    async function loadList(){
+      const q = document.getElementById('q').value.trim();
+      const res = await SafetyAPI.listTrainingSessions({ tenantId: 1, q });
+      const data = res.data || [];
+      const tbody = document.getElementById('rows');
+      tbody.innerHTML = '';
+      for(const s of data){
+        const det = await SafetyAPI.getTrainingSession(s.Id);
+        const count = (det.data?.attendees||[]).length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${s.TrainingDate? new Date(s.TrainingDate).toLocaleDateString():''}</td>
+          <td>${s.Name}</td>
+          <td>${s.RelatedTo||''}</td>
+          <td>${s.ConductedBy||''}</td>
+          <td>${count}</td>
+          <td>
+            <button class="btn sec" onclick="edit(${s.Id})">Edit</button>
+            <button class="btn sec" onclick="removeSession(${s.Id})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function edit(id){
+      const det = await SafetyAPI.getTrainingSession(id);
+      currentId = id;
+      const s = det.data.session;
+      document.getElementById('tName').value = s.Name||'';
+      document.getElementById('tDesc').value = s.Description||'';
+      document.getElementById('tRelated').value = s.RelatedTo||'';
+      document.getElementById('tDate').value = s.TrainingDate? s.TrainingDate.substring(0,10):'';
+      document.getElementById('tBy').value = s.ConductedBy||'';
+      const sel = document.getElementById('tAttendees');
+      const ids = new Set((det.data.attendees||[]).map(a=>String(a.EmployeeId||'')));
+      Array.from(sel.options).forEach(o=> o.selected = ids.has(o.value));
+    }
+
+    async function removeSession(id){
+      if(!confirm('Delete this training?')) return;
+      await SafetyAPI.deleteTrainingSession(id);
+      loadList();
+    }
+
+    function downloadCSV(){
+      const rows = Array.from(document.querySelectorAll('#rows tr')).map(tr=> Array.from(tr.children).slice(0,5).map(td=> '"'+td.textContent.replace(/"/g,'""')+'"').join(','));
+      const csv = 'Date,Name,Related To,Conducted By,Attendees\n'+rows.join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'training.csv'; a.click();
+    }
+
+    loadEmployees();
+    loadList();
+  </script>
+</body>
+</html>

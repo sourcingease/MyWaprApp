@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fire Safety Form Test</title>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .form-group { margin: 15px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    button { padding: 10px 20px; margin: 10px 5px; font-size: 16px; cursor: pointer; }
+    .save-btn { background: #4CAF50; color: white; border: none; }
+    .test-btn { background: #2196F3; color: white; border: none; }
+    #result { margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 5px; }
+</style>
+  <script src="/js/safety-api-client.js"></script>
+</head>
+<body>
+  <h1>🔥 Fire Safety Form Test</h1>
+  <p>This page tests if the Fire Safety API is working correctly.</p>
+
+  <form id="testForm">
+    <div class="form-group">
+      <label>Smoking prohibited inside all buildings:</label>
+      <label><input type="radio" name="smokingProhibited" value="Yes" checked> Yes</label>
+      <label><input type="radio" name="smokingProhibited" value="No"> No</label>
+      <label><input type="radio" name="smokingProhibited" value="N/A"> N/A</label>
+    </div>
+
+    <div class="form-group">
+      <label>No Smoking signs in Urdu & English:</label>
+      <label><input type="radio" name="noSmokingSigns" value="Yes" checked> Yes</label>
+      <label><input type="radio" name="noSmokingSigns" value="No"> No</label>
+      <label><input type="radio" name="noSmokingSigns" value="N/A"> N/A</label>
+    </div>
+
+    <div class="form-group">
+      <label>Designated outdoor smoking areas:</label>
+      <label><input type="radio" name="outdoorSmokingAreas" value="Yes"> Yes</label>
+      <label><input type="radio" name="outdoorSmokingAreas" value="No"> No</label>
+      <label><input type="radio" name="outdoorSmokingAreas" value="N/A" checked> N/A</label>
+    </div>
+
+    <button type="submit" class="save-btn">💾 Save to Database</button>
+    <button type="button" class="test-btn" onclick="loadData()">📥 Load from Database</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('testForm');
+    const resultDiv = document.getElementById('result');
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      
+      // Use robust collector to include inputs by name or id (includes unchecked checkboxes=false)
+      const data = (window.SafetyAPI && SafetyAPI.collectFormData)
+        ? SafetyAPI.collectFormData(form)
+        : Object.fromEntries(new FormData(form).entries());
+      
+      resultDiv.innerHTML = '🔄 Saving...';
+      console.log('Sending data:', { formData: data });
+      
+      try {
+        const response = await fetch('/api/safety/fire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+          body: JSON.stringify({ formData: data }),
+          credentials: 'same-origin'
+        });
+        
+        const result = await response.json();
+        console.log('Response:', result);
+        
+        if (response.ok && result?.success) {
+          resultDiv.innerHTML = `
+            <h3>✅ Success!</h3>
+            <p>Data saved with ID: ${result.id}</p>
+            <pre>${JSON.stringify(result, null, 2)}</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <h3>❌ Error</h3>
+            <p>${result?.error || 'Unexpected response from server'}</p>
+            <pre>${await response.text().catch(()=> '')}</pre>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <h3>❌ Failed</h3>
+          <p>${error.message}</p>
+        `;
+        console.error(error);
+      }
+    };
+
+    async function loadData() {
+      resultDiv.innerHTML = '🔄 Loading...';
+      
+      try {
+        const response = await fetch('/api/safety/fire', {
+          credentials: 'same-origin'
+        });
+        
+        const result = await response.json();
+        console.log('Loaded data:', result);
+        
+        if (result.success && result.data.length > 0) {
+          const latest = result.data[0];
+          resultDiv.innerHTML = `
+            <h3>📥 Latest Record (ID: ${latest.Id})</h3>
+            <p><strong>Created:</strong> ${new Date(latest.CreatedDate).toLocaleString()}</p>
+            <p><strong>Data:</strong></p>
+            <pre>${JSON.stringify(JSON.parse(latest.FormData), null, 2)}</pre>
+          `;
+          
+          // Populate form with loaded data
+          const formData = JSON.parse(latest.FormData);
+          Object.keys(formData).forEach(key => {
+            const radio = form.querySelector(`input[name="${key}"][value="${formData[key]}"]`);
+            if (radio) radio.checked = true;
+          });
+        } else {
+          resultDiv.innerHTML = '<p>No data found in database.</p>';
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <h3>❌ Failed to load</h3>
+          <p>${error.message}</p>
+        `;
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

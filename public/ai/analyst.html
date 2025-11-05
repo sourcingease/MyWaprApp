@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Data Analyst • Prompts</title>
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f5f7fa;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:22px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    label{font-size:13px;font-weight:600;color:#334155}
+    input,select,textarea{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit}
+    textarea{min-height:120px}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;font-weight:700;cursor:pointer}
+    .btn.sec{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:14px}
+    th{background:#f8fafc;text-align:left;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>AI Data Analyst • Prompt Manager</h2>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:1 1 220px"><label>Name</label><input id="pName" style="width:100%"/></div>
+        <div style="flex:1 1 180px"><label>Category</label><input id="pCat" placeholder="e.g. Safety, HR" style="width:100%"/></div>
+        <div style="flex:0 0 auto"><label>&nbsp;</label><button class="btn" onclick="savePrompt()">Save Prompt</button></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1 1 100%"><label>Prompt</label><textarea id="pContent" style="width:100%" placeholder="Write your prompt..."></textarea></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1 1 260px"><label>Saved Prompts</label><select id="pList" style="width:100%" onchange="loadSelectedPrompt()"></select></div>
+        <div><button class="btn sec" onclick="removePrompt()">Delete</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:1 1 220px"><label>Search</label><input id="q" placeholder="name or text" style="width:100%" oninput="listPrompts()"/></div>
+        <div style="flex:0 0 200px"><label>Category</label><input id="qCat" placeholder="filter category" style="width:100%" oninput="listPrompts()"/></div>
+      </div>
+      <div class="data-table-container" style="margin-top:10px">
+        <table>
+          <thead><tr><th>Name</th><th>Category</th><th>Preview</th><th>Actions</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    let currentId = null;
+
+    async function listPrompts(){
+      const q = document.getElementById('q').value.trim();
+      const category = document.getElementById('qCat').value.trim();
+      const res = await SafetyAPI.listPrompts({ tenantId: 1, q, category });
+      const data = res.data || [];
+      const rows = document.getElementById('rows'); rows.innerHTML = '';
+      data.forEach(p=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.Name}</td><td>${p.Category||''}</td><td>${(p.Content||'').slice(0,80)}</td>
+          <td><button class='btn sec' onclick='applyToEditor(${p.Id})'>Use</button> <button class='btn sec' onclick='editPrompt(${p.Id})'>Edit</button></td>`;
+        rows.appendChild(tr);
+      });
+      // refresh dropdown
+      const sel = document.getElementById('pList');
+      sel.innerHTML = data.map(p=>`<option value='${p.Id}'>${p.Name}${p.Category? ' • '+p.Category:''}</option>`).join('');
+    }
+
+    async function savePrompt(){
+      const name = document.getElementById('pName').value.trim();
+      const category = document.getElementById('pCat').value.trim();
+      const content = document.getElementById('pContent').value.trim();
+      if(!name || !content){ alert('Name and prompt are required'); return; }
+      if(currentId){
+        await SafetyAPI.updatePrompt(currentId, { name, category, content });
+      }else{
+        await SafetyAPI.createPrompt({ tenantId: 1, name, category, content, createdBy: 'SafetyOfficer' });
+      }
+      currentId = null; document.getElementById('pName').value=''; document.getElementById('pCat').value='';
+      listPrompts();
+    }
+
+    async function editPrompt(id){
+      const r = await SafetyAPI.getPrompt(id);
+      const p = r.data; currentId = id;
+      document.getElementById('pName').value = p.Name||'';
+      document.getElementById('pCat').value = p.Category||'';
+      document.getElementById('pContent').value = p.Content||'';
+    }
+
+    function applyToEditor(id){
+      const opt = Array.from(document.getElementById('pList').options).find(o=> parseInt(o.value)===id);
+      document.getElementById('pList').value = id;
+      loadSelectedPrompt();
+    }
+
+    async function loadSelectedPrompt(){
+      const id = parseInt(document.getElementById('pList').value||'');
+      if(!id) return;
+      const r = await SafetyAPI.getPrompt(id);
+      document.getElementById('pContent').value = r.data?.Content || '';
+    }
+
+    async function removePrompt(){
+      const id = parseInt(document.getElementById('pList').value||'');
+      if(!id) return; if(!confirm('Delete this prompt?')) return;
+      await SafetyAPI.deletePrompt(id);
+      listPrompts();
+    }
+
+    listPrompts();
+  </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employees • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    input,select{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{border-bottom:1px solid #1f2a3b;padding:10px;text-align:left}
+    a{color:#a78bfa}
+    .muted{color:#94a3b8}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Employees</h2>
+    <div class="row">
+      <label>Tenant ID <input id="tenantId" placeholder="e.g. 1"/></label>
+      <button class="btn" onclick="loadEmployees()">Load</button>
+      <div class="muted">Manage roles at <a href="/roles">Roles</a></div>
+    </div>
+
+    <h3 style="margin-top:18px">Add employee</h3>
+    <div class="row">
+      <input id="email" placeholder="email" value="hr@demo.example" />
+      <input id="fullName" placeholder="full name" value="Demo HR" />
+      <input id="password" type="password" placeholder="password (optional)" value="Welcome123!" />
+      <input id="title" placeholder="title" value="HR Manager" />
+      <input id="roleName" placeholder="role name (optional)" value="HR Manager" />
+      <button class="btn" onclick="addEmployee()">Add</button>
+    </div>
+
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Title</th><th>Owner</th><th>Roles</th></tr></thead>
+      <tbody id="rows"><tr><td class="muted" colspan="5">No data</td></tr></tbody>
+    </table>
+  </div>
+
+  <script>
+    function qp(name){return new URLSearchParams(location.search).get(name)}
+    document.getElementById('tenantId').value = qp('tenantId')||'';
+
+    async function getContext(){
+      try{
+        const me = await (await fetch('/api/auth/me')).json();
+        if(me.success && !document.getElementById('tenantId').value){
+          document.getElementById('tenantId').value = me.data.tenantId || '';
+        }
+        const perms = await (await fetch('/api/permissions')).json();
+        window._perms = (perms.success? perms.data.map(p=>p.Code): []);
+        const canManage = window._perms.includes('USER_MANAGE');
+        document.querySelectorAll('input,button').forEach(el=>{
+          if(el.closest('.row') && el.closest('.row').querySelector('#email')){
+            el.disabled = !canManage;
+          }
+        });
+      }catch{}
+    }
+    getContext();
+
+    async function loadEmployees(){
+      const t = document.getElementById('tenantId').value.trim();
+      if(!t){ alert('Enter Tenant ID'); return; }
+      const res = await fetch(`/api/tenant/${t}/employees`);
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed'); return; }
+      const rows = data.data.map(e=>
+        `<tr><td>${e.FullName||'-'}</td><td>${e.Email}</td><td>${e.Title||''}</td><td>${e.IsOwner?'Yes':'No'}</td><td>${e.Roles||''}</td></tr>`
+      ).join('');
+      document.getElementById('rows').innerHTML = rows || `<tr><td class="muted" colspan="5">Empty</td></tr>`;
+    }
+
+    async function addEmployee(){
+      const t = document.getElementById('tenantId').value.trim();
+      const payload = {
+        email: document.getElementById('email').value.trim(),
+        fullName: document.getElementById('fullName').value.trim(),
+        password: document.getElementById('password').value,
+        title: document.getElementById('title').value.trim(),
+        roleName: document.getElementById('roleName').value.trim() || null
+      };
+      if(!t||!payload.email){ alert('Tenant ID and email required'); return; }
+      const res = await fetch(`/api/tenant/${t}/employees`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed'); return; }
+      loadEmployees();
+    }
+  </script>
+</body>
+</html>

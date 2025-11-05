@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing • Complytex</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb} .shell{max-width:900px;margin:0 auto;padding:22px} .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}</style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Billing</h2>
+    <p>Start subscription for your tenant.</p>
+    <label>Tenant ID <input id="tenantId"/></label>
+    <button class="btn" onclick="subscribe()">Subscribe</button>
+    <div id="msg" style="margin-top:10px"></div>
+  </div>
+  <script>
+    async function subscribe(){
+      const t = document.getElementById('tenantId').value.trim();
+      if(!t){ alert('Tenant ID required'); return; }
+      const res = await fetch(`/api/billing/subscribe?tenantId=${encodeURIComponent(t)}`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({})});
+      const data = await res.json();
+      if(data.success && data.data?.url){ window.location.href = data.data.url; }
+      else document.getElementById('msg').textContent = data.error || 'Failed';
+    }
+  </script>
+</body>
+</html>

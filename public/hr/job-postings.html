@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Postings • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .muted{color:#94a3b8}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    input,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb;width:100%}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Job Postings</h2>
+    <p class="muted">Placeholder page. Wire to real API later.</p>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Post New Job</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px">
+        <input placeholder="Job Title"/>
+        <textarea rows="3" placeholder="Description"></textarea>
+        <button class="btn" onclick="alert('Posted (placeholder)')">Post Job</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div style="font-weight:700;margin-bottom:8px">Active Jobs</div>
+      <div class="muted">No jobs yet</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+This file contains the DSA tab HTML structure that needs to be inserted into the safety-office.html file.
+
+The DSA tab includes:
+1. Detailed Structural Assessment Checklist with 5 main sections
+2. Detailed Structural Assessment - Documentation & Submission Checklist with 8 sections
+
+All items have Yes/No/N/A radio buttons as shown in the screenshot.

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Audits • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial;background:#f5f7fa;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    label{font-size:13px;font-weight:600;color:#334155}
+    input,select,textarea{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;font-weight:700;cursor:pointer}
+    .btn.sec{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:14px}
+    th{background:#f8fafc;text-align:left;text-transform:uppercase;font-size:12px;color:#475569}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase}
+    .pill.new{background:#dbeafe;color:#1e40af}
+    .pill.pending{background:#fed7aa;color:#92400e}
+    .pill.open{background:#fef3c7;color:#b45309}
+    .pill.closed{background:#d1fae5;color:#065f46}
+    a.link-btn{color:#0891b2;text-decoration:none;font-weight:600}
+    a.link-btn:hover{text-decoration:underline}
+    .grid{display:grid;gap:12px}
+    .grid.two{grid-template-columns:1fr 1fr}
+    .muted{color:#64748b;font-size:13px}
+    .hidden{display:none}
+    /* Overlay */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:2000}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:960px;width:96%;max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e2e8f0}
+    .modal-body{padding:12px 16px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1 style="font-size:28px;font-weight:800;margin-bottom:8px">SAFETY AUDITS</h1>
+    <p class="muted">Plan audits, track issues, and manage corrective actions.</p>
+
+    <!-- Top Actions Bar -->
+    <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <input id="searchBar" placeholder="Search by name, type, or status..." style="flex:1 1 300px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit" oninput="loadAudits()">
+      <button class="btn" onclick="openPlanModal()" style="background:#0891b2;display:flex;align-items:center;gap:8px"><span style="font-size:18px">⊕</span> Plan New Audit</button>
+      <button class="btn sec" onclick="exportToExcel()">Export to Excel</button>
+    </div>
+
+    <!-- Plan New Audit Modal -->
+    <div id="planModal" class="overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div style="font-weight:700">Plan New Audit</div>
+          <button class="btn sec" onclick="closePlanModal()">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="font-weight:700">Audit Details</div>
+            </div>
+            <div class="row">
+              <div style="flex:1 1 220px">
+                <label>Audit Name</label>
+                <input id="planName" placeholder="e.g. Q3 Fire Safety Review" style="width:100%">
+              </div>
+              <div style="flex:1 1 200px">
+                <label>Audit Type / Related To</label>
+                <select id="planType" style="width:100%">
+                  <option>FIRE</option>
+                  <option>STRUCTURAL, DSA</option>
+                  <option>UNIFIED SAFETY</option>
+                  <option>ELECTRICAL</option>
+                  <option>HEALTH HAZARD</option>
+                </select>
+              </div>
+              <div style="flex:1 1 220px">
+                <label>Audit Company</label>
+                <input id="planCompany" placeholder="e.g. SafeCert Ltd" style="width:100%">
+              </div>
+              <div style="flex:1 1 200px">
+                <label>Audit Date</label>
+                <input id="planDate" type="date" style="width:100%">
+              </div>
+              <div>
+                <button class="btn" onclick="createPlan()">Save Audit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Quote Dashboard -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:700" data-i18n="safety.audits.quoteDashboard">Quote Dashboard</div>
+        <div class="muted">Click a counter to view list</div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="card" style="flex:1 1 200px"><div class="muted">Submitted</div><div id="qStatSubmitted" class="stat">0</div><button class="btn sec" onclick="renderQuoteList('Submitted')">View</button></div>
+        <div class="card" style="flex:1 1 200px"><div class="muted">Approved</div><div id="qStatApproved" class="stat">0</div><button class="btn sec" onclick="renderQuoteList('Approved')">View</button></div>
+        <div class="card" style="flex:1 1 200px"><div class="muted">Delivered</div><div id="qStatDelivered" class="stat">0</div><button class="btn sec" onclick="renderQuoteList('Delivered')">View</button></div>
+      </div>
+      <div class="row" style="margin-top:10px; align-items:flex-end">
+        <div style="flex:1 1 200px"><label>Item</label><input id="qdItem" placeholder="search item" style="width:100%"></div>
+        <div style="flex:1 1 200px"><label>Supplier</label><input id="qdSupplier" placeholder="name or email" style="width:100%"></div>
+        <div style="flex:0 0 160px"><label>Status</label>
+          <select id="qdStatus" style="width:100%">
+            <option value="">All</option>
+            <option>Submitted</option>
+            <option>Approved</option>
+            <option>Delivered</option>
+          </select>
+        </div>
+        <div style="flex:0 0 140px"><label>Min Amount</label><input id="qdMin" type="number" step="0.01" style="width:100%"></div>
+        <div style="flex:0 0 140px"><label>Max Amount</label><input id="qdMax" type="number" step="0.01" style="width:100%"></div>
+        <div style="flex:0 0 200px"><label>Sort</label>
+          <select id="qdSort" style="width:100%">
+            <option value="date_desc">Date (newest)</option>
+            <option value="date_asc">Date (oldest)</option>
+            <option value="amount_desc">Amount (high→low)</option>
+            <option value="amount_asc">Amount (low→high)</option>
+            <option value="item_asc">Item (A→Z)</option>
+            <option value="item_desc">Item (Z→A)</option>
+          </select>
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="btn sec" onclick="resetQuoteFilters()">Reset</button>
+          <button class="btn" onclick="renderQuoteList()">Apply</button>
+        </div>
+      </div>
+
+      <div class="data-table-container" style="margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>Audit Name</th>
+              <th>Item Name</th>
+              <th>Detail</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Amount</th>
+              <th>PO Number</th>
+              <th>View Terms</th>
+              <th>View Quotes</th>
+              <th>View Invoice</th>
+            </tr>
+          </thead>
+          <tbody id="quoteListRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quotes Overlay -->
+    <div id="quotesOverlay" class="overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div style="font-weight:700">Quotes</div>
+          <button class="btn sec" onclick="closeQuotes()">Close</button>
+        </div>
+        <div class="modal-body">
+          <div id="quotesMeta" class="muted" style="margin-bottom:8px"></div>
+          <div class="data-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Price</th>
+                  <th>Ship</th>
+                  <th>Tax</th>
+                  <th>Discount</th>
+                  <th>Total</th>
+                  <th>Arrival</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="quotesRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit List Table -->
+    <div class="card">
+      <div class="data-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('date')" style="cursor:pointer">Audit Date <span id="sortIcon">▼</span></th>
+              <th>Audit Name</th>
+              <th>Related To</th>
+              <th>Status</th>
+              <th>ACTION</th>
+              <th>CERTIFICATE</th>
+            </tr>
+          </thead>
+          <tbody id="auditRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detail -->
+    <div id="detail" class="card hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700" id="dTitle">Audit Details</div>
+          <div class="muted" id="dMeta"></div>
+        </div>
+        <div>
+          <button class="btn sec" onclick="closeDetail()">Back</button>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-weight:600;margin:10px 0">Open Issues</div>
+        <div id="issueRows" class="grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    let currentTenantId = 1;
+    let audits = [];
+    let currentDetail = null;
+
+    async function createPlan(){
+      const payload = {
+        tenantId: currentTenantId,
+        auditName: document.getElementById('planName').value.trim(),
+        auditType: document.getElementById('planType').value,
+        auditCompany: document.getElementById('planCompany').value.trim(),
+        auditDate: document.getElementById('planDate').value || null,
+        createdBy: 'SafetyOfficer'
+      };
+      if(!payload.auditName){ return SafetyAPI.showErrorMessage('Audit name required'); }
+      try{
+        await SafetyAPI.createAuditPlan(payload);
+        SafetyAPI.showSuccessMessage('Audit planned successfully');
+        document.getElementById('planName').value='';
+        document.getElementById('planCompany').value='';
+        document.getElementById('planDate').value='';
+        closePlanModal();
+        loadAudits();
+      }catch(e){ SafetyAPI.showErrorMessage(e.message); }
+    }
+
+    async function loadAudits(){
+      try{
+        const q = document.getElementById('searchBar').value.trim();
+        const res = await SafetyAPI.searchAudits({ tenantId: currentTenantId, q, status: '' });
+        audits = res.data || [];
+        // Default sort by date descending
+        audits.sort((a,b)=> new Date(b.AuditDate || 0) - new Date(a.AuditDate || 0));
+        renderRows();
+        loadQuoteStats();
+      }catch(e){ console.error(e); }
+    }
+
+    function renderRows(){
+      const tbody = document.getElementById('auditRows');
+      tbody.innerHTML = '';
+      audits.forEach(a=>{
+        const tr = document.createElement('tr');
+        const hasCertificate = a.Status === 'Closed';
+        tr.innerHTML = `
+          <td>${a.AuditDate? new Date(a.AuditDate).toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\/(\d{4})$/, '-$1'):''}</td>
+          <td>${a.AuditName}</td>
+          <td>${a.AuditType}</td>
+          <td>${renderStatus(a.Status)}</td>
+          <td><a href="#" class="link-btn" onclick="viewAudit(${a.Id}); return false;">View</a></td>
+          <td>${hasCertificate ? `<a href="#" class="link-btn" onclick="viewCertificate(${a.Id}); return false;">View</a>` : 'N/A'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderStatus(s){
+      const statusMap = {
+        'Planned': {class: 'pill new', text: 'NEW'},
+        'OpenIssues': {class: 'pill pending', text: 'PENDING CORRECTION'},
+        'CorrectiveSubmitted': {class: 'pill new', text: 'NEW'},
+        'Closed': {class: 'pill closed', text: 'CLOSED'}
+      };
+      const status = statusMap[s] || {class: 'pill new', text: 'NEW'};
+      return `<span class="${status.class}">${status.text}</span>`;
+    }
+
+    function viewCertificate(id){
+      alert('Certificate for Audit ID: ' + id);
+      // TODO: Implement certificate viewing logic
+    }
+
+    function openPlanModal(){
+      document.getElementById('planModal').classList.add('open');
+    }
+
+    function closePlanModal(){
+      document.getElementById('planModal').classList.remove('open');
+    }
+
+    function exportToExcel(){
+      alert('Export to Excel functionality');
+      // TODO: Implement Excel export
+    }
+
+    let sortOrder = 'desc';
+    function sortBy(field){
+      if(field === 'date'){
+        sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+        audits.sort((a,b)=>{
+          const dateA = new Date(a.AuditDate || 0);
+          const dateB = new Date(b.AuditDate || 0);
+          return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+        document.getElementById('sortIcon').textContent = sortOrder === 'desc' ? '▼' : '▲';
+        renderRows();
+      }
+    }
+
+    async function viewAudit(id){
+      try{
+        const res = await SafetyAPI.getAuditDetails(id);
+        currentDetail = res.data;
+        document.getElementById('detail').classList.remove('hidden');
+        document.getElementById('dTitle').textContent = `${currentDetail.plan.AuditName} — ${currentDetail.plan.AuditType}`;
+        document.getElementById('dMeta').textContent = `Company: ${currentDetail.plan.AuditCompany||'-'} • Date: ${currentDetail.plan.AuditDate?new Date(currentDetail.plan.AuditDate).toLocaleDateString():'-'} • Status: ${currentDetail.plan.Status}`;
+        // Render issues (items with NoIssue = 0)
+        const container = document.getElementById('issueRows');
+        container.innerHTML = '';
+        (currentDetail.items||[]).filter(i=>!i.NoIssue).forEach(it=>{
+          const row = document.createElement('div');
+          row.className = 'card';
+          row.innerHTML = `
+            <div class="grid two">
+              <div><label>Head</label><div class="muted">${it.Head||''}</div></div>
+              <div><label>Value</label><div class="muted">${it.Value||''}</div></div>
+              <div class="full"><label>Issue details</label><div class="muted">${it.IssueDetails||'-'}</div></div>
+              <div class="full"><label>Suggested Action</label><div class="muted">${it.SuggestedAction||'-'}</div></div>
+              <div><label>Informed To</label><div class="muted">${it.InformedTo||'-'}</div></div>
+            </div>
+            <div class="grid two" style="margin-top:10px">
+              <div>
+                <label>Corrective Action Taken</label>
+                <textarea id="ca_${it.Id}" rows="3" style="width:100%" placeholder="Describe corrective action..."></textarea>
+              </div>
+              <div>
+                <label>Attachments (URLs)</label>
+                <input id="caAtt_${it.Id}" placeholder="Comma separated URLs" style="width:100%"/>
+              </div>
+              <div>
+                <label>Corrective Action By</label>
+                <input id="caBy_${it.Id}" placeholder="Person/Dept" style="width:100%"/>
+              </div>
+              <div>
+                <label>Corrective Action On</label>
+                <input id="caOn_${it.Id}" type="date" style="width:100%"/>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn" onclick="saveCA(${currentDetail.plan.Id}, ${it.Id})">Save Corrective Action</button>
+            </div>
+            <div style="margin-top:14px; border-top:1px solid #e2e8f0; padding-top:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="font-weight:700">RFQ</div>
+                <button class="btn sec" onclick="toggleRFQ(${it.Id})">+ Create RFQ</button>
+              </div>
+              <div id="rfqForm_${it.Id}" class="hidden">
+                <div class="grid two">
+                  <div><label>Item Name</label><input id="rfqItem_${it.Id}" style="width:100%" placeholder="e.g. Fire Extinguisher"/></div>
+                  <div><label>Qty</label><input id="rfqQty_${it.Id}" type="number" step="0.01" style="width:100%"/></div>
+                  <div><label>Unit</label>
+                    <select id="rfqUnit_${it.Id}" style="width:100%"></select>
+                    <div style="margin-top:6px"><input id="rfqUnitNew_${it.Id}" placeholder="Add new unit" style="width:70%"/> <button class="btn sec" onclick="addUnitInline(${it.Id})" type="button">Add</button></div>
+                  </div>
+                  <div><label>Needed By</label><input id="rfqNeed_${it.Id}" type="date" style="width:100%"/></div>
+                  <div class="full"><label>Detail</label><textarea id="rfqDetail_${it.Id}" rows="2" style="width:100%"></textarea></div>
+                  <div class="full"><label>Recipients (emails, comma)</label><input id="rfqRecipients_${it.Id}" style="width:100%"/></div>
+                  <div class="full"><label>Shipping Terms</label><input id="rfqShip_${it.Id}" style="width:100%"/></div>
+                  <div class="full"><label>Payment Terms</label><input id="rfqPay_${it.Id}" style="width:100%"/></div>
+                  <div class="full"><label>Other Terms</label><input id="rfqOther_${it.Id}" style="width:100%"/></div>
+                </div>
+                <div style="margin-top:8px"><button class="btn" onclick="createRFQFor(${currentDetail.plan.Id}, ${it.Id})">Send RFQ</button></div>
+              </div>
+              <div id="rfqList_${it.Id}" class="muted" style="margin-top:8px"></div>
+            </div>
+          `;
+          container.appendChild(row);
+          // Load units and existing RFQs
+          loadUnitsInto(`rfqUnit_${it.Id}`);
+          loadRFQs(${it.Id});
+        });
+      }catch(e){ SafetyAPI.showErrorMessage(e.message); }
+    }
+
+    function toggleRFQ(itemId){
+      const el = document.getElementById(`rfqForm_${itemId}`);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    async function loadUnitsInto(selectId){
+      try{
+        const units = await SafetyAPI.listUnits();
+        const sel = document.getElementById(selectId);
+        if(sel){ sel.innerHTML = units.map(u=>`<option>${u.Name}</option>`).join(''); }
+      }catch(e){ console.warn(e); }
+    }
+
+    async function addUnitInline(itemId){
+      const name = document.getElementById(`rfqUnitNew_${itemId}`).value.trim();
+      if(!name) return;
+      await SafetyAPI.addUnit(name);
+      await loadUnitsInto(`rfqUnit_${itemId}`);
+    }
+
+    async function createRFQFor(auditId, itemId){
+      try{
+        const data = {
+          tenantId: currentTenantId,
+          auditId,
+          auditItemId: itemId,
+          itemName: document.getElementById(`rfqItem_${itemId}`).value.trim(),
+          detail: document.getElementById(`rfqDetail_${itemId}`).value.trim(),
+          qty: parseFloat(document.getElementById(`rfqQty_${itemId}`).value || '0'),
+          unit: document.getElementById(`rfqUnit_${itemId}`).value,
+          neededBy: document.getElementById(`rfqNeed_${itemId}`).value || null,
+          shippingTerms: document.getElementById(`rfqShip_${itemId}`).value.trim(),
+          paymentTerms: document.getElementById(`rfqPay_${itemId}`).value.trim(),
+          otherTerms: document.getElementById(`rfqOther_${itemId}`).value.trim(),
+          recipients: document.getElementById(`rfqRecipients_${itemId}`).value.trim(),
+          createdBy: 'SafetyOfficer'
+        };
+        await SafetyAPI.createRFQ(data);
+        SafetyAPI.showSuccessMessage('RFQ sent');
+        loadRFQs(itemId);
+      }catch(e){ SafetyAPI.showErrorMessage(e.message); }
+    }
+
+    async function loadQuoteStats(){
+      try{
+        const stats = (await SafetyAPI.getQuoteStats({ tenantId: currentTenantId })).data || {};
+        document.getElementById('qStatSubmitted').textContent = stats.Submitted || 0;
+        document.getElementById('qStatApproved').textContent = stats.Approved || 0;
+        document.getElementById('qStatDelivered').textContent = stats.Delivered || 0;
+      }catch(e){ console.warn(e); }
+    }
+
+    function resetQuoteFilters(){
+      document.getElementById('qdItem').value='';
+      document.getElementById('qdSupplier').value='';
+      document.getElementById('qdStatus').value='';
+      document.getElementById('qdMin').value='';
+      document.getElementById('qdMax').value='';
+      document.getElementById('qdSort').value='date_desc';
+      renderQuoteList();
+    }
+
+    let _rfqQuotesCache = new Map();
+
+    async function renderQuoteList(filterStatus){
+      try{
+        const res = await SafetyAPI.listRFQ({ tenantId: currentTenantId });
+        let rfqs = res.data || [];
+        const tbody = document.getElementById('quoteListRows');
+        tbody.innerHTML = '';
+        const auditMap = Object.fromEntries((audits||[]).map(a=>[a.Id, a]));
+
+        // Filters
+        if(filterStatus){ document.getElementById('qdStatus').value = filterStatus; }
+        const fItem = document.getElementById('qdItem').value.trim().toLowerCase();
+        const fSupplier = document.getElementById('qdSupplier').value.trim().toLowerCase();
+        const fStatus = document.getElementById('qdStatus').value;
+        const fMin = parseFloat(document.getElementById('qdMin').value || '');
+        const fMax = parseFloat(document.getElementById('qdMax').value || '');
+        const sort = document.getElementById('qdSort').value;
+
+        // Build aggregated rows with quotes
+        const rows = [];
+        for(const r of rfqs){
+          let qs;
+          if(_rfqQuotesCache.has(r.Id)){
+            qs = _rfqQuotesCache.get(r.Id);
+          } else {
+            const qres = await SafetyAPI.listQuotes(r.Id);
+            qs = qres.data || [];
+            _rfqQuotesCache.set(r.Id, qs);
+          }
+          const approved = qs.find(x=>x.Status==='Approved') || null;
+          const submitted = qs.filter(x=>x.Status==='Submitted');
+          const delivered = qs.filter(x=>x.Status==='Delivered');
+          // choose amount to display: approved total, else min submitted total, else first total
+          let amount = null; let po = '';
+          if(approved){ amount = approved.Total||0; po = approved.PONumber||''; }
+          else if(submitted.length>0){ amount = Math.min(...submitted.map(x=>x.Total||0)); }
+          else if(qs.length>0){ amount = qs[0].Total||0; }
+          // Apply filters
+          if(fItem && !(r.ItemName||'').toLowerCase().includes(fItem)) continue;
+          if(fStatus){
+            const has = (fStatus==='Approved' && !!approved) || (fStatus==='Submitted' && submitted.length>0) || (fStatus==='Delivered' && delivered.length>0);
+            if(!has) continue;
+          }
+          if(!isNaN(fMin) && (amount===null || amount < fMin)) continue;
+          if(!isNaN(fMax) && (amount===null || amount > fMax)) continue;
+          if(fSupplier){
+            const match = qs.some(q=> (q.SupplierName||'').toLowerCase().includes(fSupplier) || (q.SupplierEmail||'').toLowerCase().includes(fSupplier));
+            if(!match) continue;
+          }
+          rows.push({ r, qs, approved, amount, po, auditName: auditMap[r.AuditId]?.AuditName || '-', date: r.CreatedDate });
+        }
+        // Sort
+        rows.sort((a,b)=>{
+          switch(sort){
+            case 'date_asc': return new Date(a.date) - new Date(b.date);
+            case 'date_desc': return new Date(b.date) - new Date(a.date);
+            case 'amount_asc': return (a.amount||0) - (b.amount||0);
+            case 'amount_desc': return (b.amount||0) - (a.amount||0);
+            case 'item_asc': return (a.r.ItemName||'').localeCompare(b.r.ItemName||'');
+            case 'item_desc': return (b.r.ItemName||'').localeCompare(a.r.ItemName||'');
+            default: return 0;
+          }
+        });
+        // Render
+        for(const row of rows){
+          const r = row.r; const approved = row.approved; const amount = row.amount; const po = row.po;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.auditName}</td>
+            <td>${r.ItemName}</td>
+            <td>${(r.Detail||'').slice(0,60)}</td>
+            <td>${r.Qty||''}</td>
+            <td>${r.Unit||''}</td>
+            <td>${amount??''}</td>
+            <td>${po}</td>
+            <td><button class="btn sec" onclick="alertTerms(${r.Id})">Terms</button></td>
+            <td><button class="btn sec" onclick="showQuotes(${r.Id})">Quotes</button></td>
+            <td><button class="btn sec" onclick="showInvoice(${approved?.Id||0})" ${approved?'':'disabled'}>Invoice</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }catch(e){ console.warn(e); }
+    }
+
+    function alertTerms(rfqId){
+      // Fetch RFQ and show its terms
+      (async ()=>{
+        const all = (await SafetyAPI.listRFQ({ tenantId: currentTenantId })).data || [];
+        const r = all.find(x=>x.Id===rfqId);
+        alert(`Shipping: ${r?.ShippingTerms||''}\nPayment: ${r?.PaymentTerms||''}\nOther: ${r?.OtherTerms||''}`);
+      })();
+    }
+
+    let currentRFQForOverlay = null;
+    async function showQuotes(rfqId){
+      currentRFQForOverlay = rfqId;
+      const meta = (await SafetyAPI.listRFQ({ tenantId: currentTenantId })).data.find(x=>x.Id===rfqId);
+      document.getElementById('quotesMeta').textContent = `RFQ #${rfqId} • ${meta?.ItemName||''} • Qty ${meta?.Qty||''} ${meta?.Unit||''}`;
+      const qres = await SafetyAPI.listQuotes(rfqId);
+      const qs = qres.data || [];
+      const tbody = document.getElementById('quotesRows');
+      tbody.innerHTML = '';
+      qs.forEach(q=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${q.SupplierName||''}</td>
+          <td>${q.Price||0}</td>
+          <td>${q.ShippingCost||0}</td>
+          <td>${q.Tax||0}</td>
+          <td>${q.Discount||0}</td>
+          <td>${q.Total||0}</td>
+          <td>${q.ArrivalDate? new Date(q.ArrivalDate).toLocaleDateString():''}</td>
+          <td>${q.Status||''}</td>
+          <td>
+            <input id="po_${q.Id}" placeholder="PO#" style="width:100px;margin-right:6px"/>
+            <button class="btn" onclick="approveQuoteInline(${q.Id})">Approve</button>
+            <button class="btn sec" onclick="markDelivered(${q.Id})">Mark Delivered</button>
+            <button class="btn sec" onclick="invoiceInline(${q.Id})">Invoice</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('quotesOverlay').classList.add('open');
+    }
+    function closeQuotes(){ document.getElementById('quotesOverlay').classList.remove('open'); }
+    async function approveQuoteInline(id){
+      const po = document.getElementById(`po_${id}`).value.trim();
+      await SafetyAPI.approveQuote(id, po||null);
+      await showQuotes(currentRFQForOverlay);
+      loadQuoteStats();
+    }
+    async function markDelivered(id){
+      await SafetyAPI.updateQuoteStatus(id, 'Delivered');
+      await showQuotes(currentRFQForOverlay);
+      loadQuoteStats();
+    }
+    async function invoiceInline(id){
+      const inv = (await SafetyAPI.getInvoice(id)).data;
+      if(inv){ alert(`Invoice ${inv.InvoiceNumber} • Total ${inv.Total}`); return; }
+      const num = prompt('Invoice number:');
+      if(!num) return; const total = prompt('Total:');
+      await SafetyAPI.createInvoice(id, { invoiceNumber: num, total: parseFloat(total||'0') });
+      await showQuotes(currentRFQForOverlay);
+    }
+
+    async function showInvoice(quoteId){
+      if(!quoteId){ alert('No approved quote'); return; }
+      const inv = (await SafetyAPI.getInvoice(quoteId)).data;
+      if(inv){
+        alert(`Invoice ${inv.InvoiceNumber}\nTotal: ${inv.Total}`);
+      }else{
+        const num = prompt('No invoice. Enter invoice number to create:');
+        if(!num) return;
+        const total = prompt('Total amount:');
+        await SafetyAPI.createInvoice(quoteId,{ invoiceNumber:num, total: parseFloat(total||'0') });
+        alert('Invoice created');
+      }
+    }
+
+    async function loadRFQs(itemId){
+      try{
+        const res = await SafetyAPI.listRFQByItem(itemId);
+        const listEl = document.getElementById(`rfqList_${itemId}`);
+        if(!listEl) return;
+        const arr = (res.data||[]);
+        listEl.innerHTML = arr.length===0 ? 'No RFQs yet' : arr.map(r=>`#${r.Id} • ${r.ItemName} • Qty ${r.Qty} ${r.Unit||''} • Status: ${r.Status}`).join('<br/>');
+      }catch(e){ console.warn(e); }
+    }
+
+    function closeDetail(){
+      document.getElementById('detail').classList.add('hidden');
+      currentDetail = null;
+    }
+
+    async function saveCA(auditId, itemId){
+      try{
+        const payload = {
+          correctiveActionTaken: document.getElementById(`ca_${itemId}`).value.trim(),
+          attachments: document.getElementById(`caAtt_${itemId}`).value.trim(),
+          correctiveActionBy: document.getElementById(`caBy_${itemId}`).value.trim(),
+          correctiveActionOn: document.getElementById(`caOn_${itemId}`).value || null
+        };
+        await SafetyAPI.submitCorrectiveAction(auditId, itemId, payload);
+        SafetyAPI.showSuccessMessage('Corrective action submitted');
+        loadAudits();
+      }catch(e){ SafetyAPI.showErrorMessage(e.message); }
+    }
+
+    loadAudits();
+  </script>
+</body>
+</html>

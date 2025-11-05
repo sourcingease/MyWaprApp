@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Safety Auditor • ComplytEX</title>
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-bottom:16px}
+    a{color:#a78bfa}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#111827;color:#e5e7eb}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #1f2a3b;font-size:14px}
+    th{text-align:left;color:#94a3b8;letter-spacing:.05em;text-transform:uppercase;font-size:12px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .pill.new{background:#1f2937;color:#e5e7eb}
+    .pill.open{background:#784317;color:#fde68a;color:#fff}
+    .pill.closed{background:#065f46;color:#a7f3d0}
+    .grid{display:grid;gap:12px}
+    .grid.two{grid-template-columns:1fr 1fr}
+    .muted{color:#94a3b8;font-size:13px}
+    .hidden{display:none}
+    label{font-size:13px;color:#e5e7eb}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Safety Auditor Dashboard</h2>
+    <p class="muted">Work queue for new audits, open issues, reaudit, and closed audits.</p>
+
+    <!-- New Audits -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700">New Audits</div>
+        <div class="muted">Click Details to perform audit</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Audit Name</th>
+            <th>Audit For</th>
+            <th>Created On</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="newAuditRows"></tbody>
+      </table>
+    </div>
+
+    <!-- Audits with open issues -->
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Audits with open issues</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Audit Name</th>
+            <th>Audit For</th>
+            <th>Status</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="openAuditRows"></tbody>
+      </table>
+    </div>
+
+    <!-- Reaudit -->
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Reaudit</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Audit Name</th>
+            <th>Audit For</th>
+            <th>Created By</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="reauditRows"></tbody>
+      </table>
+    </div>
+
+    <!-- Closed Audits -->
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Closed Audits</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Audit Name</th>
+            <th>Audit For</th>
+            <th>Created On</th>
+            <th>View</th>
+          </tr>
+        </thead>
+        <tbody id="closedAuditRows"></tbody>
+      </table>
+    </div>
+
+    <!-- Detail / Perform Audit -->
+    <div id="detail" class="card hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700" id="dTitle">Audit</div>
+          <div class="muted" id="dMeta"></div>
+        </div>
+        <div>
+          <button class="btn" onclick="closeDetail()">Back</button>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="muted">Add safety data rows. Uncheck "No Issue" to provide details.</div>
+        <div id="itemsContainer" class="grid"></div>
+        <div style="margin-top:8px">
+          <button class="btn" onclick="addItem()">+ Add Row</button>
+          <button class="btn" style="background:#10b981" onclick="saveItems()">Save Items</button>
+        </div>
+      </div>
+      <div style="margin-top:16px" id="reauditBox" class="hidden">
+        <div style="font-weight:700;margin-bottom:6px">Reaudit</div>
+        <div class="grid two">
+          <div>
+            <label>Reaudit Notes</label>
+            <textarea id="reauditNotes" rows="3" style="width:100%"></textarea>
+          </div>
+          <div>
+            <label>Attachments (URLs)</label>
+            <input id="reauditAtt" style="width:100%" placeholder="Comma separated URLs" />
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <button class="btn" onclick="closeAudit()">Close Audit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    let currentTenantId = 1;
+    let audits = [];
+    let current = null;
+
+    async function load(){
+      const all = (await SafetyAPI.searchAudits({ tenantId: currentTenantId })).data || [];
+      audits = all;
+      renderLists();
+    }
+
+    function renderLists(){
+      const newRows = document.getElementById('newAuditRows');
+      const openRows = document.getElementById('openAuditRows');
+      const reauditRows = document.getElementById('reauditRows');
+      const closedRows = document.getElementById('closedAuditRows');
+      newRows.innerHTML = openRows.innerHTML = reauditRows.innerHTML = closedRows.innerHTML = '';
+      audits.filter(a=>a.Status==='Planned').forEach(a=> newRows.appendChild(rowNew(a)));
+      audits.filter(a=>a.Status==='OpenIssues').forEach(a=> openRows.appendChild(rowOpen(a)));
+      audits.filter(a=>a.Status==='CorrectiveSubmitted').forEach(a=> reauditRows.appendChild(rowReaudit(a)));
+      audits.filter(a=>a.Status==='Closed').forEach(a=> closedRows.appendChild(rowClosed(a)));
+    }
+
+    function rowNew(a){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${new Date(a.CreatedDate).toLocaleDateString()}</td><td><button class='btn' onclick='view(${a.Id})'>Details</button></td>`;
+      return tr;
+    }
+    function rowOpen(a){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td><span class='pill open'>${a.Status}</span></td><td><button class='btn' onclick='view(${a.Id})'>Details</button></td>`;
+      return tr;
+    }
+    function rowReaudit(a){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${a.CreatedBy||'-'}</td><td><button class='btn' onclick='view(${a.Id})'>Details</button></td>`;
+      return tr;
+    }
+    function rowClosed(a){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${new Date(a.CreatedDate).toLocaleDateString()}</td><td><button class='btn' onclick='view(${a.Id})'>View</button></td>`;
+      return tr;
+    }
+
+    async function view(id){
+      const res = await SafetyAPI.getAuditDetails(id);
+      current = res.data;
+      document.getElementById('detail').classList.remove('hidden');
+      document.getElementById('dTitle').textContent = `${current.plan.AuditName} — ${current.plan.AuditType}`;
+      document.getElementById('dMeta').textContent = `Company: ${current.plan.AuditCompany||'-'} • Date: ${current.plan.AuditDate?new Date(current.plan.AuditDate).toLocaleDateString():'-'} • Status: ${current.plan.Status}`;
+      document.getElementById('reauditBox').classList.toggle('hidden', current.plan.Status!=='CorrectiveSubmitted');
+      // Render items (existing) and allow adding more
+      const container = document.getElementById('itemsContainer');
+      container.innerHTML = '';
+      (current.items||[]).forEach(addItemFromRecord);
+      if((current.items||[]).length===0) addItem();
+    }
+
+    function closeDetail(){
+      current = null;
+      document.getElementById('detail').classList.add('hidden');
+    }
+
+    function addItemFromRecord(it){
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <div class='grid two'>
+          <div><label>Head</label><input value="${it.Head||''}" data-k="Head" style='width:100%'/></div>
+          <div><label>Value</label><input value="${it.Value||''}" data-k="Value" style='width:100%'/></div>
+          <div><label><input type='checkbox' ${it.NoIssue? 'checked':''} data-k='NoIssue'/> No Issue</label></div>
+          <div><label>Informed To</label><input value="${it.InformedTo||''}" data-k="InformedTo" style='width:100%'/></div>
+          <div class='full'><label>Issue Details</label><textarea rows='2' data-k='IssueDetails' style='width:100%'>${it.IssueDetails||''}</textarea></div>
+          <div class='full'><label>Suggested Action</label><textarea rows='2' data-k='SuggestedAction' style='width:100%'>${it.SuggestedAction||''}</textarea></div>
+          <div class='full'><label>Attachments (URLs)</label><input value="${it.Attachments||''}" data-k="Attachments" style='width:100%'/></div>
+        </div>`;
+      document.getElementById('itemsContainer').appendChild(div);
+    }
+
+    function addItem(){
+      addItemFromRecord({NoIssue:true});
+    }
+
+    async function saveItems(){
+      if(!current) return;
+      const container = document.getElementById('itemsContainer');
+      const blocks = Array.from(container.children);
+      const items = blocks.map(b=>{
+        const m = {};
+        b.querySelectorAll('[data-k]').forEach(el=>{
+          const k = el.getAttribute('data-k');
+          if(el.type==='checkbox') m[k] = el.checked; else m[k] = el.value;
+        });
+        return m;
+      });
+      await SafetyAPI.saveAuditItems(current.plan.Id, items);
+      await load();
+      alert('Audit items saved');
+    }
+
+    async function closeAudit(){
+      if(!current) return;
+      const payload = { status:'Closed', notes: document.getElementById('reauditNotes').value.trim(), attachments: document.getElementById('reauditAtt').value.trim(), createdBy: 'Auditor' };
+      await SafetyAPI.updateAuditStatus(current.plan.Id, payload);
+      await load();
+      alert('Audit marked as Closed');
+    }
+
+    load();
+  </script>
+</body>
+</html>

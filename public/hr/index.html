@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HR & Payroll • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1200px;margin:0 auto;padding:22px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
+    .title{font-size:22px;font-weight:800;margin-bottom:4px}
+    .muted{color:#94a3b8}
+    a{color:#a78bfa;text-decoration:none}
+    .btn{display:inline-block;margin-top:10px;background:#7c3aed;border:0;color:#fff;padding:10px 14px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <script src="/js/master-layout.js"></script>
+  <div class="shell">
+    <div class="title">HR & Payroll</div>
+    <div class="muted">Entry point for the React-based HR module (DashboardLayout → EmployeeManagement, HRDashboard, etc.).
+      This placeholder links to existing pages until the React app is wired.</div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="card">
+        <div style="font-weight:700">Employees</div>
+        <div class="muted">Add, view and edit employee records.</div>
+        <a class="btn" href="/employees.html">Open Employees</a>
+      </div>
+      <div class="card">
+        <div style="font-weight:700">Job Postings</div>
+        <div class="muted">Create and manage job postings; track applicants.</div>
+        <a class="btn" href="/hr/job-postings.html">Open Job Postings</a>
+      </div>
+      <div class="card">
+        <div style="font-weight:700">Applicants</div>
+        <div class="muted">Review applicants for open roles.</div>
+        <a class="btn" href="/hr/applicants.html">Open Applicants</a>
+      </div>
+      <div class="card">
+        <div style="font-weight:700">Payroll (Coming Soon)</div>
+        <div class="muted">Run payroll and manage salary scales.</div>
+        <a class="btn" href="#" onclick="alert('Coming soon')">Coming Soon</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div style="font-weight:700;margin-bottom:6px">Architecture Blueprint</div>
+      <div class="muted">DashboardLayout (router/shell) → EmployeeManagement (view controller) → EmployeeForm (smart form) • HRDashboard (job postings) • Strongly typed models (Employee, SalaryScale, JobPosting, Applicant).</div>
+    </div>
+  </div>
+</body>
+</html>

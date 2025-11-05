@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supplier RFQs • ComplytEX</title>
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-bottom:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    input,select,textarea{padding:8px;border-radius:8px;border:1px solid #1f2a3b;background:#111827;color:#e5e7eb}
+    .btn{padding:8px 12px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #1f2a3b;font-size:14px}
+    th{text-align:left;color:#94a3b8;letter-spacing:.05em;text-transform:uppercase;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Supplier RFQs</h2>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>Your Email</label>
+          <input id="supplierEmail" placeholder="supplier@example.com" />
+        </div>
+        <button class="btn" onclick="loadMyRFQs()">Load</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">My RFQs</div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="rfqRows"></tbody>
+      </table>
+    </div>
+
+    <div id="quoteBox" class="card" style="display:none">
+      <div style="font-weight:700;margin-bottom:8px">Submit Quote</div>
+      <div class="row">
+        <input id="qSupplierName" placeholder="Supplier Name" />
+        <input id="qPrice" placeholder="Price" type="number" step="0.01" />
+        <input id="qShipping" placeholder="Shipping Cost" type="number" step="0.01" />
+        <input id="qTax" placeholder="Tax" type="number" step="0.01" />
+        <input id="qDiscount" placeholder="Discount" type="number" step="0.01" />
+        <input id="qTotal" placeholder="Total" type="number" step="0.01" />
+        <input id="qArrival" placeholder="Arrival Date" type="date" />
+        <input id="qShipTerms" placeholder="Shipping Terms" />
+        <input id="qPayTerms" placeholder="Payment Terms" />
+        <input id="qOther" placeholder="Other Terms" />
+        <button class="btn" onclick="submitMyQuote()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    let currentRFQId = null;
+
+    async function loadMyRFQs(){
+      const email = document.getElementById('supplierEmail').value.trim();
+      if(!email){ alert('Enter email'); return; }
+      // For demo: list all RFQs (filtering can be added by recipients matching email)
+      const res = await SafetyAPI.listRFQ({});
+      const rows = document.getElementById('rfqRows');
+      rows.innerHTML = '';
+      (res.data||[]).forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.Id}</td><td>${r.ItemName}</td><td>${r.Qty||''}</td><td>${r.Unit||''}</td><td>${r.Status}</td>
+          <td><button class="btn" onclick="openQuote(${r.Id})">Quote</button></td>`;
+        rows.appendChild(tr);
+      });
+    }
+
+    function openQuote(rfqId){
+      currentRFQId = rfqId;
+      document.getElementById('quoteBox').style.display='block';
+    }
+
+    async function submitMyQuote(){
+      const email = document.getElementById('supplierEmail').value.trim();
+      if(!currentRFQId){ alert('Select RFQ'); return; }
+      const payload = {
+        supplierName: document.getElementById('qSupplierName').value.trim(),
+        supplierEmail: email,
+        price: parseFloat(document.getElementById('qPrice').value||'0'),
+        shippingCost: parseFloat(document.getElementById('qShipping').value||'0'),
+        tax: parseFloat(document.getElementById('qTax').value||'0'),
+        discount: parseFloat(document.getElementById('qDiscount').value||'0'),
+        total: parseFloat(document.getElementById('qTotal').value||'0'),
+        arrivalDate: document.getElementById('qArrival').value||null,
+        shippingTerms: document.getElementById('qShipTerms').value.trim(),
+        paymentTerms: document.getElementById('qPayTerms').value.trim(),
+        otherTerms: document.getElementById('qOther').value.trim()
+      };
+      await SafetyAPI.submitQuote(currentRFQId, payload);
+      alert('Quote submitted');
+      document.getElementById('quoteBox').style.display='none';
+    }
+  </script>
+</body>
+</html>

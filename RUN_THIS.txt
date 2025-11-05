@@ -1,0 +1,31 @@
+========================================
+  FIRE SAFETY FORM - FIXED
+========================================
+
+Run these 2 commands:
+
+1. Start server:
+   .\start.ps1
+
+2. Open browser:
+   http://localhost:3000/test-fire-form.html
+
+3. Click "Save to Database" button
+
+That's it! It will work now.
+
+========================================
+
+What was fixed:
+✅ Connection pool won't close anymore
+✅ Keeps 2 connections alive always
+✅ 5 minute timeout instead of 30 seconds
+✅ Added connection health checks
+
+========================================
+
+If you see any errors, check:
+- .env file has AZURE_SQL_PASSWORD set
+- Run: node test-fire-api.js (should work)
+
+========================================

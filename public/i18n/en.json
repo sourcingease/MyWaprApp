@@ -1,0 +1,29 @@
+{
+  "i18n": { "lang": "Lang" },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In"
+  },
+  "safety": {
+    "audits": {
+      "title": "Safety Audits",
+      "quoteDashboard": "Quote Dashboard"
+    },
+    "officer": { "dashboard": "SAFETY OFFICER DASHBOARD" },
+    "training": {
+      "title": "Safety Training",
+      "name": "Name",
+      "related": "Related To",
+      "date": "Date",
+      "by": "Conducted By",
+      "description": "Description",
+      "attendees": "Attendees",
+      "save": "Save Training",
+      "reset": "Reset",
+      "search": "Search",
+      "downloadCsv": "Download CSV"
+    }
+  }
+}

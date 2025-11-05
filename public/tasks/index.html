@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tasks • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1200px;margin:0 auto;padding:22px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
+    .title{font-size:22px;font-weight:800;margin-bottom:4px}
+    .muted{color:#94a3b8}
+    a{color:#a78bfa;text-decoration:none}
+    .btn{display:inline-block;margin-top:10px;background:#7c3aed;border:0;color:#fff;padding:10px 14px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="title">Task Management</div>
+    <div class="muted">Interactive Task Scheduler: TaskPlanningPage → MiniCalendar → TaskFormModal (React TS blueprint). This hub links to a simple planner stub for now.</div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="card">
+        <div style="font-weight:700">Task Planner</div>
+        <div class="muted">Visual daily timeline with drag-and-drop (stub).</div>
+        <a class="btn" href="/tasks/planning.html">Open Planner</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div style="font-weight:700;margin-bottom:6px">Architecture Blueprint</div>
+      <div class="muted">Container (TaskPlanningPage) manages tasks/users/currentDate; MiniCalendar selects date; TaskFormModal edits tasks; CSS Grid timeline (24 columns); HTML5 drag-and-drop.</div>
+    </div>
+  </div>
+</body>
+</html>

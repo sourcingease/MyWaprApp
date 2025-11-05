@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support • Complytex</title>
+  <style>body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb} .shell{max-width:900px;margin:0 auto;padding:22px} .row{display:flex;gap:8px;flex-wrap:wrap} input,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb} .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer} table{width:100%;border-collapse:collapse;margin-top:16px} th,td{border-bottom:1px solid #1f2a3b;padding:8px;text-align:left}</style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Support Tickets</h2>
+    <div class="row">
+      <input id="tenantId" placeholder="Tenant ID"/>
+      <input id="subject" placeholder="Subject" style="flex:1"/>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <textarea id="message" rows="3" style="flex:1" placeholder="Describe your issue"></textarea>
+    </div>
+    <button class="btn" onclick="createTicket()">Create ticket</button>
+
+    <table>
+      <thead><tr><th>ID</th><th>Subject</th><th>Status</th><th>Created</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="4">No data</td></tr></tbody>
+    </table>
+  </div>
+  <script>
+    async function load(){
+      const r = await fetch('/api/support/tickets');
+      const d = await r.json();
+      if(!d.success) return;
+      document.getElementById('rows').innerHTML = d.data.map(t=>`<tr><td>${t.TicketId}</td><td>${t.Subject}</td><td>${t.Status}</td><td>${new Date(t.CreatedAt).toLocaleString()}</td></tr>`).join('');
+    }
+    async function createTicket(){
+      const payload={ tenantId: document.getElementById('tenantId').value.trim()||null, subject: document.getElementById('subject').value.trim(), message: document.getElementById('message').value.trim() };
+      const r = await fetch('/api/support/tickets',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      const d = await r.json();
+      if(d.success){ load(); document.getElementById('message').value=''; }
+      else alert(d.error||'Failed');
+    }
+    load();
+  </script>
+</body>
+</html>

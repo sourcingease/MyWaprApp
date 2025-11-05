@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Formal Business Theme Colors */
+      --primary: #1f2937;
+      --primary-dark: #111827;
+      --secondary: #374151;
+      --accent: #3b82f6;
+      --accent-dark: #2563eb;
+      --background: #f9fafb;
+      --card-bg: #ffffff;
+      --text-primary: #111827;
+      --text-secondary: #4b5563;
+      --text-muted: #6b7280;
+      --border: #d1d5db;
+      --border-focus: #3b82f6;
+      --error: #dc2626;
+      --success: #059669;
+      --error-bg: #fef2f2;
+      --success-bg: #ecfdf5;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--background);
+      background-image: 
+        linear-gradient(45deg, rgba(59, 130, 246, 0.05) 25%, transparent 25%), 
+        linear-gradient(-45deg, rgba(59, 130, 246, 0.05) 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, rgba(59, 130, 246, 0.05) 75%), 
+        linear-gradient(-45deg, transparent 75%, rgba(59, 130, 246, 0.05) 75%);
+      background-size: 60px 60px;
+      background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .register-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      padding: clamp(24px, 5vw, 48px);
+      width: 100%;
+      max-width: 900px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .register-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+    }
+
+    .register-header {
+      text-align: center;
+      margin-bottom: clamp(24px, 4vw, 40px);
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: clamp(16px, 3vw, 24px);
+    }
+
+    .logo {
+      max-height: clamp(60px, 8vw, 80px);
+      width: auto;
+      object-fit: contain;
+    }
+
+    .register-title {
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.025em;
+    }
+
+    .register-subtitle {
+      color: var(--text-secondary);
+      font-size: clamp(14px, 2.5vw, 16px);
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(16px, 3vw, 20px);
+      margin-bottom: clamp(16px, 3vw, 20px);
+    }
+
+    .form-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .form-grid.two-cols {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0; /* Prevents overflow in grid */
+    }
+
+    .form-label {
+      font-size: clamp(13px, 2.5vw, 14px);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .form-label .required {
+      color: var(--error);
+      font-size: 16px;
+    }
+
+    .form-input {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--card-bg);
+      transition: all 0.2s ease;
+      font-family: inherit;
+      width: 100%;
+      min-width: 0;
+      height: 42px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .form-input.error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    .form-select {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--card-bg);
+      cursor: pointer;
+      font-family: inherit;
+      width: 100%;
+      min-width: 0;
+      height: 42px;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .phone-input-group {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .country-code {
+      width: 60px;
+      text-align: center;
+      flex-shrink: 0;
+      background: #f8f9fa;
+    }
+
+    .phone-number {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .register-as-group {
+      margin: clamp(20px, 4vw, 32px) 0;
+      padding: clamp(16px, 3vw, 24px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.02);
+    }
+
+    .register-as-title {
+      font-size: clamp(14px, 2.5vw, 15px);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: clamp(12px, 2.5vw, 16px);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .register-as-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: clamp(8px, 2vw, 12px);
+    }
+
+    .radio-group {
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1.5vw, 10px);
+      padding: clamp(8px, 2vw, 12px);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .radio-group:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .radio-input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .radio-label {
+      font-size: clamp(13px, 2.5vw, 14px);
+      color: var(--text-primary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .terms-group {
+      margin: clamp(20px, 4vw, 32px) 0;
+      padding: clamp(16px, 3vw, 20px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--background);
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(8px, 2vw, 12px);
+    }
+
+    .checkbox-input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .terms-text {
+      font-size: clamp(13px, 2.5vw, 14px);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .terms-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .terms-link:hover {
+      text-decoration: underline;
+      color: var(--accent-dark);
+    }
+
+    .recaptcha-container {
+      margin: clamp(20px, 4vw, 32px) 0;
+      display: flex;
+      justify-content: center;
+      padding: clamp(12px, 2.5vw, 16px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--background);
+    }
+
+    .register-btn {
+      width: 100%;
+      padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 32px);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: clamp(15px, 2.5vw, 16px);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: clamp(20px, 4vw, 32px) 0 clamp(16px, 3vw, 20px) 0;
+      box-shadow: var(--shadow);
+    }
+
+    .register-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+    }
+
+    .register-btn:active {
+      transform: translateY(0);
+    }
+
+    .register-btn:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: var(--shadow);
+    }
+
+    .cancel-btn {
+      width: 100%;
+      padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 32px);
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: clamp(15px, 2.5vw, 16px);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: clamp(8px, 2vw, 12px);
+    }
+
+    .cancel-btn:hover {
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
+      background: rgba(75, 85, 99, 0.05);
+      transform: translateY(-1px);
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 2vw, 12px);
+      margin: clamp(20px, 4vw, 32px) 0 clamp(16px, 3vw, 20px) 0;
+    }
+
+    .register-btn.in-group {
+      width: 100%;
+      margin: 0;
+      order: 1;
+    }
+
+    .status-message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin: 16px 0;
+      display: none;
+    }
+
+    .status-message.success {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-message.error {
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid #fecaca;
+    }
+
+    .field-error {
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 4px;
+      display: none;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .login-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Enhanced Mobile Responsiveness */
+    @media (max-width: 1024px) {
+      .form-grid:not(.single) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+      }
+
+      .register-container {
+        padding: clamp(16px, 4vw, 24px);
+        margin: 0;
+        border-radius: 8px;
+        max-width: 100%;
+      }
+
+      .register-header {
+        margin-bottom: clamp(16px, 4vw, 24px);
+        padding-bottom: 16px;
+      }
+
+      .form-grid:not(.single) {
+        grid-template-columns: 1fr;
+        gap: clamp(12px, 3vw, 16px);
+      }
+
+      .register-as-options {
+        grid-template-columns: 1fr;
+        gap: clamp(6px, 2vw, 10px);
+      }
+
+      .phone-input-group {
+        flex-direction: row;
+        gap: clamp(8px, 2vw, 12px);
+      }
+
+      .country-code {
+        width: 60px;
+        text-align: center;
+      }
+
+      .button-group {
+        flex-direction: column;
+        gap: clamp(8px, 2vw, 12px);
+        margin: clamp(16px, 4vw, 24px) 0;
+      }
+
+      .recaptcha-container {
+        padding: clamp(8px, 2vw, 12px);
+      }
+
+      .terms-group {
+        padding: clamp(12px, 3vw, 16px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .register-container::before {
+        height: 2px;
+      }
+
+      .register-title {
+        font-size: 22px;
+      }
+
+      .register-subtitle {
+        font-size: 14px;
+      }
+
+      .form-input,
+      .form-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+
+      .register-as-options {
+        gap: 8px;
+      }
+
+      .radio-group {
+        padding: 10px;
+        justify-content: flex-start;
+      }
+    }
+
+    /* Larger screens optimization */
+    @media (min-width: 1024px) {
+      .button-group {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .cancel-btn {
+        width: 48%;
+        margin-bottom: 0;
+        order: 0;
+      }
+
+      .register-btn.in-group {
+        width: 48%;
+        order: 1;
+      }
+
+      .phone-input-group {
+        flex-direction: row;
+      }
+
+      .country-code {
+        width: 90px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-container">
+    <div class="register-header">
+      <div class="logo-container">
+        <img src="/logo.png" alt="ComplytEX" class="logo" />
+      </div>
+      <h1 class="register-title">REGISTER</h1>
+      <p class="register-subtitle">Create your ComplytEX account to get started</p>
+    </div>
+
+    <form id="registrationForm" novalidate>
+      <!-- First Row: First Name, Last Name, Country -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">First Name <span class="required">*</span></label>
+          <input type="text" id="firstName" class="form-input" required>
+          <div class="field-error" id="firstNameError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name <span class="required">*</span></label>
+          <input type="text" id="lastName" class="form-input" required>
+          <div class="field-error" id="lastNameError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country <span class="required">*</span></label>
+          <select id="country" class="form-select" required>
+            <option value="">United States (+1)</option>
+            <option value="US">United States (+1)</option>
+            <option value="CA">Canada (+1)</option>
+            <option value="GB">United Kingdom (+44)</option>
+            <option value="AU">Australia (+61)</option>
+            <option value="IN">India (+91)</option>
+            <option value="DE">Germany (+49)</option>
+            <option value="FR">France (+33)</option>
+            <option value="JP">Japan (+81)</option>
+            <option value="CN">China (+86)</option>
+            <option value="BR">Brazil (+55)</option>
+            <option value="MX">Mexico (+52)</option>
+            <option value="IT">Italy (+39)</option>
+            <option value="ES">Spain (+34)</option>
+            <option value="KR">South Korea (+82)</option>
+            <option value="NL">Netherlands (+31)</option>
+            <option value="SG">Singapore (+65)</option>
+            <option value="UAE">UAE (+971)</option>
+            <option value="SA">Saudi Arabia (+966)</option>
+            <option value="ZA">South Africa (+27)</option>
+            <option value="BD">Bangladesh (+880)</option>
+            <option value="PK">Pakistan (+92)</option>
+            <option value="LK">Sri Lanka (+94)</option>
+            <option value="VN">Vietnam (+84)</option>
+            <option value="TH">Thailand (+66)</option>
+            <option value="ID">Indonesia (+62)</option>
+            <option value="MY">Malaysia (+60)</option>
+            <option value="PH">Philippines (+63)</option>
+          </select>
+          <div class="field-error" id="countryError"></div>
+        </div>
+      </div>
+
+      <!-- Second Row: Cell Phone, Company Phone, Company Name -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Cell Phone</label>
+          <div class="phone-input-group">
+            <input type="text" id="cellCountryCode" class="form-input country-code" placeholder="01" readonly>
+            <input type="tel" id="cellPhone" class="form-input phone-number" placeholder="___-____">
+          </div>
+          <div class="field-error" id="cellPhoneError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Company Phone <span class="required">*</span></label>
+          <div class="phone-input-group">
+            <input type="text" id="companyCountryCode" class="form-input country-code" placeholder="01" readonly>
+            <input type="tel" id="companyPhone" class="form-input phone-number" placeholder="___-____" required>
+          </div>
+          <div class="field-error" id="companyPhoneError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Company Name <span class="required">*</span></label>
+          <input type="text" id="companyName" class="form-input" required>
+          <div class="field-error" id="companyNameError"></div>
+        </div>
+      </div>
+
+      <!-- Third Row: Company Email, Password, Re-type Password -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Company Email <span class="required">*</span></label>
+          <input type="email" id="companyEmail" class="form-input" required>
+          <div class="field-error" id="companyEmailError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password <span class="required">*</span></label>
+          <input type="password" id="password" class="form-input" required>
+          <div class="field-error" id="passwordError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Re type Password <span class="required">*</span></label>
+          <input type="password" id="confirmPassword" class="form-input" required>
+          <div class="field-error" id="confirmPasswordError"></div>
+        </div>
+      </div>
+
+      <!-- Fourth Row: Designation -->
+      <div class="form-grid single">
+        <div class="form-group">
+          <label class="form-label">Designation</label>
+          <input type="text" id="designation" class="form-input" placeholder="Your job title or position">
+        </div>
+      </div>
+
+      <!-- Register As -->
+      <div class="register-as-group">
+        <div class="register-as-title">Register as <span class="required">*</span></div>
+        <div class="register-as-options">
+          <div class="radio-group">
+            <input type="radio" id="buyer" name="registerAs" value="buyer" class="radio-input" checked>
+            <label for="buyer" class="radio-label">Buyer</label>
+          </div>
+          <div class="radio-group">
+            <input type="radio" id="designer" name="registerAs" value="designer" class="radio-input">
+            <label for="designer" class="radio-label">Designer</label>
+          </div>
+          <div class="radio-group">
+            <input type="radio" id="manufacturer" name="registerAs" value="manufacturer" class="radio-input">
+            <label for="manufacturer" class="radio-label">Manufacturer/Factory</label>
+          </div>
+          <div class="radio-group">
+            <input type="radio" id="vendor" name="registerAs" value="vendor" class="radio-input">
+            <label for="vendor" class="radio-label">Vendor/Supplier</label>
+          </div>
+          <div class="radio-group">
+            <input type="radio" id="inspection" name="registerAs" value="inspection" class="radio-input">
+            <label for="inspection" class="radio-label">Inspection</label>
+          </div>
+          <div class="radio-group">
+            <input type="radio" id="buyingAgent" name="registerAs" value="buyingAgent" class="radio-input">
+            <label for="buyingAgent" class="radio-label">Buying Agent</label>
+          </div>
+          <div class="radio-group">
+            <input type="radio" id="safetyAuditor" name="registerAs" value="safetyAuditor" class="radio-input">
+            <label for="safetyAuditor" class="radio-label">Safety Auditor</label>
+          </div>
+        </div>
+        <div class="field-error" id="registerAsError"></div>
+      </div>
+
+      <!-- Terms and Conditions -->
+      <div class="terms-group">
+        <input type="checkbox" id="termsAccepted" class="checkbox-input" required>
+        <label for="termsAccepted" class="terms-text">
+          This is B2B application. Please accept our <a href="#" class="terms-link" target="_blank">Terms of Service</a> • <a href="#" class="terms-link" target="_blank">The ComplytEX Membership Agreement</a>
+          <br><br>
+          Please read our terms and conditions and click agree to complete the registration
+        </label>
+      </div>
+      <div class="field-error" id="termsError"></div>
+
+      <!-- reCAPTCHA -->
+      <div class="recaptcha-container">
+        <div id="recaptcha"></div>
+      </div>
+      <div class="field-error" id="recaptchaError" style="text-align: center;"></div>
+
+      <!-- Status Message -->
+      <div id="statusMessage" class="status-message"></div>
+
+      <!-- Buttons -->
+      <div class="button-group">
+        <button type="button" class="cancel-btn" onclick="window.location.href='/login'">Cancel</button>
+        <button type="submit" class="register-btn in-group">Save</button>
+      </div>
+    </form>
+
+    <div class="login-link">
+      Already have an account? <a href="/login">Sign in here</a>
+    </div>
+  </div>
+
+  <!-- reCAPTCHA Script -->
+  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+
+  <script>
+    // Country code mapping
+    const countryCodes = {
+      'US': '+1', 'CA': '+1', 'GB': '+44', 'AU': '+61', 'IN': '+91',
+      'DE': '+49', 'FR': '+33', 'JP': '+81', 'CN': '+86', 'BR': '+55',
+      'MX': '+52', 'IT': '+39', 'ES': '+34', 'KR': '+82', 'NL': '+31',
+      'SG': '+65', 'UAE': '+971', 'SA': '+966', 'ZA': '+27', 'BD': '+880',
+      'PK': '+92', 'LK': '+94', 'VN': '+84', 'TH': '+66', 'ID': '+62',
+      'MY': '+60', 'PH': '+63'
+    };
+
+    // reCAPTCHA
+    let recaptchaWidget = null;
+    const RECAPTCHA_SITE_KEY = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Test site key
+
+    window.onload = function() {
+      if (typeof grecaptcha !== 'undefined') {
+        recaptchaWidget = grecaptcha.render('recaptcha', {
+          sitekey: RECAPTCHA_SITE_KEY,
+          theme: 'light'
+        });
+      }
+    };
+
+    // Update country codes when country changes
+    document.getElementById('country').addEventListener('change', function() {
+      const countryCode = countryCodes[this.value] || '01';
+      // For US, show '01' instead of '+1'
+      const displayCode = this.value === 'US' ? '01' : countryCode.replace('+', '0');
+      document.getElementById('cellCountryCode').value = displayCode;
+      document.getElementById('companyCountryCode').value = displayCode;
+    });
+
+    // Set default country code
+    document.getElementById('cellCountryCode').value = '01';
+    document.getElementById('companyCountryCode').value = '01';
+
+    // Form validation functions
+    function showError(fieldId, message) {
+      const field = document.getElementById(fieldId);
+      const errorElement = document.getElementById(fieldId + 'Error');
+      field.classList.add('error');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+    }
+
+    function clearError(fieldId) {
+      const field = document.getElementById(fieldId);
+      const errorElement = document.getElementById(fieldId + 'Error');
+      field.classList.remove('error');
+      errorElement.style.display = 'none';
+    }
+
+    function clearAllErrors() {
+      const errorElements = document.querySelectorAll('.field-error');
+      errorElements.forEach(el => el.style.display = 'none');
+      
+      const inputElements = document.querySelectorAll('.form-input, .form-select');
+      inputElements.forEach(el => el.classList.remove('error'));
+    }
+
+    function validateEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+
+    function validatePhone(phone) {
+      const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+      return phoneRegex.test(phone) && phone.replace(/[\s\-\+\(\)]/g, '').length >= 7;
+    }
+
+    function validatePassword(password) {
+      return password.length >= 8;
+    }
+
+    function validateForm() {
+      clearAllErrors();
+      let isValid = true;
+
+      // First Name
+      const firstName = document.getElementById('firstName').value.trim();
+      if (!firstName) {
+        showError('firstName', 'First name is required');
+        isValid = false;
+      }
+
+      // Last Name
+      const lastName = document.getElementById('lastName').value.trim();
+      if (!lastName) {
+        showError('lastName', 'Last name is required');
+        isValid = false;
+      }
+
+      // Country
+      const country = document.getElementById('country').value;
+      if (!country) {
+        showError('country', 'Please select a country');
+        isValid = false;
+      }
+
+      // Company Phone
+      const companyPhone = document.getElementById('companyPhone').value.trim();
+      if (!companyPhone) {
+        showError('companyPhone', 'Company phone is required');
+        isValid = false;
+      } else if (!validatePhone(companyPhone)) {
+        showError('companyPhone', 'Please enter a valid phone number');
+        isValid = false;
+      }
+
+      // Cell Phone (optional but validate if provided)
+      const cellPhone = document.getElementById('cellPhone').value.trim();
+      if (cellPhone && !validatePhone(cellPhone)) {
+        showError('cellPhone', 'Please enter a valid phone number');
+        isValid = false;
+      }
+
+      // Company Name
+      const companyName = document.getElementById('companyName').value.trim();
+      if (!companyName) {
+        showError('companyName', 'Company name is required');
+        isValid = false;
+      }
+
+      // Company Email
+      const companyEmail = document.getElementById('companyEmail').value.trim();
+      if (!companyEmail) {
+        showError('companyEmail', 'Company email is required');
+        isValid = false;
+      } else if (!validateEmail(companyEmail)) {
+        showError('companyEmail', 'Please enter a valid email address');
+        isValid = false;
+      }
+
+      // Password
+      const password = document.getElementById('password').value;
+      if (!password) {
+        showError('password', 'Password is required');
+        isValid = false;
+      } else if (!validatePassword(password)) {
+        showError('password', 'Password must be at least 8 characters long');
+        isValid = false;
+      }
+
+      // Confirm Password
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      if (!confirmPassword) {
+        showError('confirmPassword', 'Please confirm your password');
+        isValid = false;
+      } else if (password !== confirmPassword) {
+        showError('confirmPassword', 'Passwords do not match');
+        isValid = false;
+      }
+
+      // Register As
+      const registerAs = document.querySelector('input[name="registerAs"]:checked');
+      if (!registerAs) {
+        showError('registerAs', 'Please select your registration type');
+        isValid = false;
+      }
+
+      // Terms
+      const termsAccepted = document.getElementById('termsAccepted').checked;
+      if (!termsAccepted) {
+        showError('terms', 'Please accept the terms and conditions');
+        isValid = false;
+      }
+
+      // reCAPTCHA
+      if (recaptchaWidget !== null) {
+        const recaptchaResponse = grecaptcha.getResponse(recaptchaWidget);
+        if (!recaptchaResponse) {
+          showError('recaptcha', 'Please complete the reCAPTCHA verification');
+          isValid = false;
+        }
+      }
+
+      return isValid;
+    }
+
+    function showStatus(message, isSuccess = false) {
+      const statusElement = document.getElementById('statusMessage');
+      statusElement.textContent = message;
+      statusElement.className = `status-message ${isSuccess ? 'success' : 'error'}`;
+      statusElement.style.display = 'block';
+    }
+
+    function hideStatus() {
+      document.getElementById('statusMessage').style.display = 'none';
+    }
+
+    // Form submission
+    document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (!validateForm()) {
+        return;
+      }
+
+      hideStatus();
+      const submitBtn = document.querySelector('.register-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
+
+      try {
+        const formData = {
+          firstName: document.getElementById('firstName').value.trim(),
+          lastName: document.getElementById('lastName').value.trim(),
+          fullName: document.getElementById('firstName').value.trim() + ' ' + document.getElementById('lastName').value.trim(),
+          country: document.getElementById('country').value,
+          cellPhone: document.getElementById('cellPhone').value.trim(),
+          companyPhone: document.getElementById('companyPhone').value.trim(),
+          companyName: document.getElementById('companyName').value.trim(),
+          email: document.getElementById('companyEmail').value.trim(),
+          password: document.getElementById('password').value,
+          designation: document.getElementById('designation').value.trim(),
+          registerAs: document.querySelector('input[name="registerAs"]:checked').value,
+          businessType: document.querySelector('input[name="registerAs"]:checked').value,
+          tenantName: document.getElementById('companyName').value.trim(),
+          termsAccepted: document.getElementById('termsAccepted').checked,
+          captchaToken: recaptchaWidget ? grecaptcha.getResponse(recaptchaWidget) : ''
+        };
+
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showStatus('Account created successfully! Please check your email to verify your account.', true);
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else {
+          showStatus(result.error || 'Registration failed. Please try again.');
+          if (recaptchaWidget) {
+            grecaptcha.reset(recaptchaWidget);
+          }
+        }
+      } catch (error) {
+        showStatus('An error occurred. Please try again.');
+        if (recaptchaWidget) {
+          grecaptcha.reset(recaptchaWidget);
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save';
+      }
+    });
+
+    // Real-time validation
+    document.getElementById('firstName').addEventListener('blur', function() {
+      if (!this.value.trim()) {
+        showError('firstName', 'First name is required');
+      } else {
+        clearError('firstName');
+      }
+    });
+
+    document.getElementById('lastName').addEventListener('blur', function() {
+      if (!this.value.trim()) {
+        showError('lastName', 'Last name is required');
+      } else {
+        clearError('lastName');
+      }
+    });
+
+    document.getElementById('companyEmail').addEventListener('blur', function() {
+      const email = this.value.trim();
+      if (!email) {
+        showError('companyEmail', 'Company email is required');
+      } else if (!validateEmail(email)) {
+        showError('companyEmail', 'Please enter a valid email address');
+      } else {
+        clearError('companyEmail');
+      }
+    });
+
+    document.getElementById('confirmPassword').addEventListener('blur', function() {
+      const password = document.getElementById('password').value;
+      const confirmPassword = this.value;
+      
+      if (!confirmPassword) {
+        showError('confirmPassword', 'Please confirm your password');
+      } else if (password !== confirmPassword) {
+        showError('confirmPassword', 'Passwords do not match');
+      } else {
+        clearError('confirmPassword');
+      }
+    });
+  </script>
+</body>
+</html>

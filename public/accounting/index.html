@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accounting • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1200px;margin:0 auto;padding:22px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
+    .title{font-size:22px;font-weight:800;margin-bottom:4px}
+    .muted{color:#94a3b8}
+    a{color:#a78bfa;text-decoration:none}
+    .btn{display:inline-block;margin-top:10px;background:#7c3aed;border:0;color:#fff;padding:10px 14px;border-radius:8px}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+    .kpi{background:#111827;border:1px solid #1f2a3b;border-radius:10px;padding:12px}
+    .kpi .n{font-size:22px;font-weight:800}
+  </style>
+</head>
+<body>
+  <script src="/js/master-layout.js"></script>
+  <div class="shell">
+    <div class="title">Accounting</div>
+    <div class="muted">Petty Cash • Accounts Payable • Accounts Receivable. React TS blueprint with local state and mock API.</div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="muted">Cash Balance</div><div id="kCash" class="n">0</div></div>
+      <div class="kpi"><div class="muted">Open Payables</div><div id="kAP" class="n">0</div></div>
+      <div class="kpi"><div class="muted">Open Receivables</div><div id="kAR" class="n">0</div></div>
+    </div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="card">
+        <div style="font-weight:700">Petty Cash</div>
+        <div class="muted">Ledger, filters, CSV export.</div>
+        <a class="btn" href="/accounting/petty-cash.html">Open Petty Cash</a>
+      </div>
+      <div class="card">
+        <div style="font-weight:700">Accounts Payable</div>
+        <div class="muted">Supplier invoices and status.</div>
+        <a class="btn" href="/accounting/payables.html">Open Payables</a>
+      </div>
+      <div class="card">
+        <div style="font-weight:700">Accounts Receivable</div>
+        <div class="muted">Customer invoices and status.</div>
+        <a class="btn" href="/accounting/receivables.html">Open Receivables</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div style="font-weight:700;margin-bottom:6px">Architecture Blueprint</div>
+      <div class="muted">AccountingPage container with tabs → PettyCash (transactions, balance, filters, newTx) • AccountsPayable • AccountsReceivable. Mock API in services/db.ts (localStorage) and exportService for CSV.</div>
+    </div>
+  </div>
+
+  <script>
+    // Lightweight KPI calc from localStorage stores
+    const tx = JSON.parse(localStorage.getItem('acct_petty_cash')||'[]');
+    const cash = tx.reduce((s,t)=> s + (t.type==='Credit'?+t.amount:-+t.amount), 0);
+    document.getElementById('kCash').textContent = cash.toFixed(2);
+    const ap = JSON.parse(localStorage.getItem('acct_payables')||'[]');
+    document.getElementById('kAP').textContent = (ap.filter(x=>x.status!=='Paid').length)||0;
+    const ar = JSON.parse(localStorage.getItem('acct_receivables')||'[]');
+    document.getElementById('kAR').textContent = (ar.filter(x=>x.status!=='Paid').length)||0;
+  </script>
+</body>
+</html>

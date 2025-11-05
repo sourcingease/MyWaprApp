@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roles • Complytex</title>
+  <style>
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    .shell{max-width:1100px;margin:0 auto;padding:22px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{border-bottom:1px solid #1f2a3b;padding:10px;text-align:left}
+    a{color:#a78bfa}
+    .muted{color:#94a3b8}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .list{max-height:280px;overflow:auto;border:1px solid #1f2a3b;border-radius:8px}
+    .item{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #1f2a3b}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h2>Roles</h2>
+    <div class="row">
+      <label>Tenant ID <input id="tenantId" placeholder="e.g. 1"/></label>
+      <button class="btn" onclick="loadRoles()">Load</button>
+      <div class="muted">Back to <a href="/employees">Employees</a></div>
+    </div>
+
+    <div class="grid" style="margin-top:18px">
+      <div>
+        <h3>Create role</h3>
+        <div class="row"><input id="roleName" placeholder="Role name (e.g. HR Manager)" style="flex:1"/></div>
+        <div class="muted" style="margin:8px 0">Select permissions</div>
+        <div id="permList" class="list"></div>
+        <button class="btn" style="margin-top:10px" onclick="createRole()">Create role</button>
+      </div>
+      <div>
+        <h3>Existing roles</h3>
+        <table>
+          <thead><tr><th>Name</th><th>System</th></tr></thead>
+          <tbody id="roleRows"><tr><td class="muted" colspan="2">No data</td></tr></tbody>
+        </table>
+
+        <h3 style="margin-top:18px">Assign role to user</h3>
+        <div class="row">
+          <input id="userId" placeholder="User ID" />
+          <input id="assignRoleId" placeholder="Role ID" />
+          <button class="btn" onclick="assignRole()">Assign</button>
+        </div>
+        <div class="muted">Tip: see user IDs on the Employees page.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function qp(name){return new URLSearchParams(location.search).get(name)}
+    document.getElementById('tenantId').value = qp('tenantId')||'';
+    let permissions=[];
+
+    async function initContext(){
+      try{
+        const me = await (await fetch('/api/auth/me')).json();
+        if(me.success && !document.getElementById('tenantId').value){
+          document.getElementById('tenantId').value = me.data.tenantId || '';
+        }
+      }catch{}
+    }
+    initContext();
+
+    async function loadPermissions(){
+      const res = await fetch('/api/permissions');
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed to load permissions'); return; }
+      permissions = data.data;
+      document.getElementById('permList').innerHTML = permissions.map(p=>
+        `<label class="item"><input type="checkbox" value="${p.Code}"/> <span>${p.Code}</span> <span class="muted">${p.ModuleName||''}</span></label>`
+      ).join('');
+    }
+
+    async function loadRoles(){
+      const t = document.getElementById('tenantId').value.trim();
+      if(!t){ alert('Enter Tenant ID'); return; }
+      const res = await fetch(`/api/tenant/${t}/roles`);
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed'); return; }
+      document.getElementById('roleRows').innerHTML = (data.data||[]).map(r=>
+        `<tr><td>${r.Name}</td><td>${r.IsSystem?'Yes':'No'}</td></tr>`
+      ).join('') || `<tr><td class="muted" colspan="2">Empty</td></tr>`;
+    }
+
+    async function createRole(){
+      const t = document.getElementById('tenantId').value.trim();
+      const roleName = document.getElementById('roleName').value.trim();
+      if(!t||!roleName){ alert('Tenant ID and role name required'); return; }
+      const codes=[...document.querySelectorAll('#permList input[type=checkbox]:checked')].map(x=>x.value);
+      const res = await fetch(`/api/tenant/${t}/roles`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roleName, permissionCodes:codes})});
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed'); return; }
+      loadRoles();
+    }
+
+    async function assignRole(){
+      const t = document.getElementById('tenantId').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      const roleId = document.getElementById('assignRoleId').value.trim();
+      if(!t||!userId||!roleId){ alert('Tenant ID, User ID and Role ID required'); return; }
+      const res = await fetch(`/api/tenant/${t}/assign-role`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:+userId, roleId:+roleId})});
+      const data = await res.json();
+      if(!data.success){ alert(data.error||'Failed'); return; }
+      alert('Assigned');
+    }
+
+    loadPermissions();
+  </script>
+</body>
+</html>
