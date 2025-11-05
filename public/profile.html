@@ -149,7 +149,7 @@
       <!-- Setup Pane -->
       <div id="setupPane" style="display:none">
         <div class="row" style="grid-template-columns:repeat(3,1fr)">
-          <div><button class="btn primary" style="width:100%">Add Space</button></div>
+          <div><button id="btnSetupAddSpace" class="btn primary" style="width:100%">Add Space</button></div>
           <div><button class="btn primary" style="width:100%">Assign Role to User</button></div>
           <div><button class="btn primary" style="width:100%">Add Product Type</button></div>
           <div><button class="btn primary" style="width:100%">Add Assets</button></div>
@@ -160,6 +160,70 @@
           <div><button class="btn primary" style="width:100%">Planning Setup</button></div>
           <div></div><div><button class="btn primary" style="width:100%">Packaging Setup</button></div><div></div>
           <div style="grid-column:1 / -1; display:flex; justify-content:center; margin-top:8px"><button class="btn primary">Set Sustainability Goal</button></div>
+        </div>
+      </div>
+
+      <!-- Spaces Pane -->
+      <div id="spacesPane" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <div class="card-header" style="padding:0;border:none;margin:0">Spaces</div>
+          <div style="display:flex;gap:8px">
+            <input id="spSearch" placeholder="Search..." style="padding:8px;border:1px solid #e2e8f0;border-radius:8px">
+            <button class="btn" id="spExportCsv">Export Excel</button>
+            <button class="btn" id="spExportPdf">Export PDF</button>
+            <button class="btn primary" id="spNewBtn">New Space</button>
+          </div>
+        </div>
+        <div class="data-table-container">
+          <table class="data-table" id="spacesTable" style="width:100%">
+            <thead>
+              <tr>
+                <th data-s="Name" style="cursor:pointer">Space Name</th>
+                <th data-s="Purpose" style="cursor:pointer">Purpose</th>
+                <th data-s="Floor" style="cursor:pointer">Floor</th>
+                <th data-s="Type" style="cursor:pointer">Space Type</th>
+                <th data-s="Width" style="cursor:pointer">Width</th>
+                <th data-s="Length" style="cursor:pointer">Length</th>
+                <th data-s="Height" style="cursor:pointer">Height</th>
+                <th data-s="Unit" style="cursor:pointer">Unit</th>
+                <th data-s="Capacity" style="cursor:pointer">Capacity</th>
+                <th data-s="Ventilation" style="cursor:pointer">Ventilation</th>
+                <th>Exit Plan</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="spacesTBody"><tr><td colspan="12" style="text-align:center;padding:12px;color:#94a3b8">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Space Modal -->
+      <div id="spModal" class="overlay">
+        <div class="modal">
+          <div class="modal-header"><div style="font-weight:700">New Space</div><button class="btn" id="spClose">Close</button></div>
+          <div class="modal-body">
+            <div class="row" style="grid-template-columns:1fr 1fr;gap:12px">
+              <div><label>Space name *</label><input id="spName"></div>
+              <div><label>Type *</label><input id="spType" value="Space"></div>
+              <div class="full"><label>Purpose</label><input id="spPurpose"></div>
+              <div><label>Width</label><input id="spWidth" type="number" step="0.01"></div>
+              <div><label>Length</label><input id="spLength" type="number" step="0.01"></div>
+              <div><label>Height</label><input id="spHeight" type="number" step="0.01"></div>
+              <div><label>Unit</label>
+                <select id="spUnit" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                  <option>Meter</option>
+                  <option>Feet</option>
+                </select>
+              </div>
+              <div><label>Floor</label><input id="spFloor" type="number" value="0"></div>
+              <div class="full"><label>Capacity per unit / # of equipments</label><input id="spCapacity"></div>
+              <div><label>Ventilation</label><input id="spVentilation"></div>
+              <div><label># Doors</label><input id="spDoors" type="number" value="0"></div>
+              <div><label># Windows</label><input id="spWindows" type="number" value="0"></div>
+              <div class="full"><label>Emergency Exit plan (image)</label><input id="spExitFile" type="file" accept="image/*"></div>
+            </div>
+            <div class="actions"><button class="btn" id="spCancel" type="button">Cancel</button><button class="btn primary" id="spSave" type="button">Save</button></div>
+          </div>
         </div>
       </div>
 
@@ -239,7 +303,7 @@
       const btnSetup=document.getElementById('tab_setup'); if(btnSetup) btnSetup.onclick=()=>{ leftShowSetup(); showTab('setup'); };
     }catch(e){} }
     function leftShowSetup(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Setup'; grid.innerHTML = `
-        <button class=\"action-btn\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Add Space</div></button>
+        <button class=\"action-btn\" id=\"left_add_space\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Add Space</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">👥</div><div class=\"action-label\">Assign Role to User</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🏷️</div><div class=\"action-label\">Add Product Type</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Add Assets</div></button>
@@ -249,7 +313,7 @@
         <button class=\"action-btn\"><div class=\"action-icon\">🏭</div><div class=\"action-label\">Add Supplier / Mfr</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🗓️</div><div class=\"action-label\">Planning Setup</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Packaging Setup</div></button>
-        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; }catch(e){} }
+        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); loadSpaces(); }; }catch(e){} }
     function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Company Profile'; grid.innerHTML = `
         <button class="action-btn" id="left_back"><div class="action-icon">⬅️</div><div class="action-label">Back</div></button>
         <button class="action-btn" id="left_head"><div class="action-icon">🏢</div><div class="action-label">Head Office</div></button>
@@ -270,19 +334,43 @@
       const p=document.getElementById('profilePane');
       const c=document.getElementById('companyPane');
       const w=document.getElementById('warehousesPane');
-      const s=document.getElementById('setupPane');
+      const s=document.getElementById('setupPane'); const x=document.getElementById('spacesPane');
       // Default view is company profile; right pane stays visible always
       if(which==='company'){
-        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
+        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
       } else if(which==='warehouses'){
-        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none';
+        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none'; if(x) x.style.display='none';
       } else if(which==='setup'){
-        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='';
+        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display=''; if(x) x.style.display='none';
+      } else if(which==='spaces'){
+        if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='';
       } else {
-        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
+        if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
       }
     }
-    // No additional buttons needed - navigation handled by left panel
+    // Spaces JS
+    let _spaces=[], _spSortField='Name', _spSortDir='asc';
+    function renderSpaces(){
+      const q=(document.getElementById('spSearch')?.value||'').toLowerCase();
+      const rows=_spaces.filter(s=>{ const hay=`${s.Name||''} ${s.Purpose||''} ${s.Type||''}`.toLowerCase(); return !q || hay.includes(q); }).sort((a,b)=>{ const av=a[_spSortField]; const bv=b[_spSortField]; if(['Width','Length','Height','Capacity','Floor'].includes(_spSortField)) return _spSortDir==='asc'? (Number(av||0)-Number(bv||0)):(Number(bv||0)-Number(av||0)); return _spSortDir==='asc'? String(av||'').localeCompare(String(bv||'')):String(bv||'').localeCompare(String(av||'')); });
+      const tbody=document.getElementById('spacesTBody'); if(!tbody) return; if(rows.length===0){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:12px;color:#94a3b8">No spaces</td></tr>'; return; }
+      tbody.innerHTML = rows.map(s=>`<tr>
+        <td>${s.Name||''}</td><td>${s.Purpose||''}</td><td>${s.Floor??''}</td><td>${s.Type||''}</td>
+        <td>${s.Width??''}</td><td>${s.Length??''}</td><td>${s.Height??''}</td><td>${s.Unit||''}</td>
+        <td>${s.Capacity||''}</td><td>${s.Ventilation||''}</td>
+        <td>${s.ExitPlanUrl? `<img src='${s.ExitPlanUrl}' style='height:36px;border-radius:6px'>`:''}</td>
+        <td><button class='btn' onclick='editSpace(${s.Id})'>Edit</button> <button class='btn' onclick='deleteSpace(${s.Id})'>Delete</button></td>
+      </tr>`).join('');
+    }
+    async function loadSpaces(){ try{ const r=await fetch('/api/company/spaces',{credentials:'include'}); const j=await r.json(); if(j.success){ _spaces=j.data||[]; renderSpaces(); const head=document.querySelectorAll('#spacesTable thead th[data-s]'); head.forEach(th=>th.onclick=()=>{ const f=th.getAttribute('data-s'); if(_spSortField===f){ _spSortDir=_spSortDir==='asc'?'desc':'asc'; } else { _spSortField=f; _spSortDir='asc'; } renderSpaces(); }); const inp=document.getElementById('spSearch'); if(inp) inp.oninput=()=>renderSpaces(); } }catch(e){}
+      const e1=document.getElementById('spExportCsv'); if(e1) e1.onclick=()=>{ const rows=[['Space Name','Purpose','Floor','Type','Width','Length','Height','Unit','Capacity','Ventilation']].concat((_spaces||[]).map(s=>[s.Name||'',s.Purpose||'',s.Floor||'',s.Type||'',s.Width||'',s.Length||'',s.Height||'',s.Unit||'',s.Capacity||'',s.Ventilation||''])); const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='spaces.csv'; a.click(); URL.revokeObjectURL(url); };
+      const e2=document.getElementById('spExportPdf'); if(e2) e2.onclick=()=>{ const w=window.open(''); const tableHtml=document.getElementById('spacesTable').outerHTML; w.document.write(`<html><head><meta name='viewport' content='width=device-width, initial-scale=1'><title>Spaces</title><style>body{font-family:Inter,Segoe UI,system-ui,Arial} table{width:100%;border-collapse:collapse} th,td{border:1px solid #e2e8f0;padding:8px} th{background:#f8fafc;text-transform:uppercase;font-size:12px}</style></head><body><h3>Spaces</h3>${tableHtml}</body></html>`); w.document.close(); w.focus(); w.print(); w.close(); };
+      const btn=document.getElementById('spNewBtn'); if(btn) btn.onclick=()=>{ document.getElementById('spModal').classList.add('open'); setTimeout(()=>document.getElementById('spName')?.focus(),0); };
+      const close=()=>document.getElementById('spModal').classList.remove('open'); const c1=document.getElementById('spClose'); if(c1) c1.onclick=close; const c2=document.getElementById('spCancel'); if(c2) c2.onclick=close; document.getElementById('spModal').addEventListener('click',(e)=>{ if(e.target.id==='spModal') close(); });
+      const save=document.getElementById('spSave'); if(save) save.onclick=async ()=>{ const payload={ name:spName.value.trim(), type:spType.value.trim(), purpose:spPurpose.value.trim(), width:parseFloat(spWidth.value||''), length:parseFloat(spLength.value||''), height:parseFloat(spHeight.value||''), unit:spUnit.value, floor:parseInt(spFloor.value||'0'), capacity:spCapacity.value.trim(), ventilation:spVentilation.value.trim(), doors:parseInt(spDoors.value||'0'), windows:parseInt(spWindows.value||'0') }; if(!payload.name){ alert('Name required'); return; } const r=await fetch('/api/company/spaces',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); const j=await r.json(); if(j.success){ const file=document.getElementById('spExitFile').files?.[0]; if(file && j.id){ const reader=new FileReader(); reader.onload=async ()=>{ await fetch('/api/company/spaces/'+j.id+'/exit-plan',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({dataUrl: reader.result})}); loadSpaces(); }; reader.readAsDataURL(file); } else { loadSpaces(); } document.getElementById('spModal').classList.remove('open'); } else { alert(j.error||'Failed'); } };
+    }
+    window.deleteSpace = async (id)=>{ if(!confirm('Delete this space?')) return; await fetch('/api/company/spaces/'+id,{method:'DELETE',credentials:'include'}); loadSpaces(); };
+    window.editSpace = (id)=>{ alert('Edit space coming soon'); };
 
     // Load profile
     async function loadProfile(){

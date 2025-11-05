@@ -1211,6 +1211,27 @@ async function ensureCompanyProfileTables(connector){
         CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
         UpdatedAt DATETIME2 NULL
       );
+    END;
+    IF OBJECT_ID('dbo.CompanySpace','U') IS NULL BEGIN
+      CREATE TABLE dbo.CompanySpace(
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        TenantId INT NOT NULL,
+        Name NVARCHAR(255) NOT NULL,
+        Type NVARCHAR(100) NULL,
+        Purpose NVARCHAR(255) NULL,
+        Floor INT NULL,
+        Width DECIMAL(18,2) NULL,
+        Length DECIMAL(18,2) NULL,
+        Height DECIMAL(18,2) NULL,
+        Unit NVARCHAR(20) NULL,
+        Capacity NVARCHAR(100) NULL,
+        Ventilation NVARCHAR(50) NULL,
+        Doors INT NULL,
+        Windows INT NULL,
+        ExitPlanUrl NVARCHAR(MAX) NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
+        UpdatedAt DATETIME2 NULL
+      );
     END;`);
 }
 
@@ -1333,8 +1354,36 @@ app.put('/api/company/warehouses/:id', requireAuth, async (req, res)=>{
       .input('Country', p.country||null)
       .query('UPDATE CompanyWarehouse SET Name=COALESCE(@Name,Name), AddressType=COALESCE(@AddressType,AddressType), WarehouseType=COALESCE(@WarehouseType,WarehouseType), Address1=COALESCE(@Address1,Address1), Address2=COALESCE(@Address2,Address2), City=COALESCE(@City,City), State=COALESCE(@State,State), PostalCode=COALESCE(@PostalCode,PostalCode), Country=COALESCE(@Country,Country), UpdatedAt=GETDATE() WHERE Id=@Id AND TenantId=@tid'); await connector.disconnect(); return res.json({ success:true }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
 });
-app.delete('/api/company/warehouses/:id', requireAuth, async (req, res)=>{
-  try{ const connector=new AzureSQLConnector(); await connector.connect(); await ensureCompanyProfileTables(connector); await connector.pool.request().input('tid', req.auth.tid).input('Id', parseInt(req.params.id)).query('DELETE FROM CompanyWarehouse WHERE Id=@Id AND TenantId=@tid'); await connector.disconnect(); return res.json({ success:true }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+app.delete('/api/company/warehouses/:id', requireAuth, async (req, res)=>{  try{ const connector=new AzureSQLConnector(); await connector.connect(); await ensureCompanyProfileTables(connector); await connector.pool.request().input('tid', req.auth.tid).input('Id', parseInt(req.params.id)).query('DELETE FROM CompanyWarehouse WHERE Id=@Id AND TenantId=@tid'); await connector.disconnect(); return res.json({ success:true }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// Spaces CRUD
+app.get('/api/company/spaces', requireAuth, async (req, res)=>{
+  try{ const connector=new AzureSQLConnector(); await connector.connect(); await ensureCompanyProfileTables(connector); const r=await connector.pool.request().input('tid', req.auth.tid).query('SELECT * FROM CompanySpace WHERE TenantId=@tid ORDER BY Name'); await connector.disconnect(); return res.json({ success:true, data:r.recordset }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+app.post('/api/company/spaces', requireAuth, async (req, res)=>{
+  try{ const p=req.body||{}; if(!p.name) return res.status(400).json({ success:false, error:'name required' }); const connector=new AzureSQLConnector(); await connector.connect(); await ensureCompanyProfileTables(connector); const r=await connector.pool.request()
+      .input('tid', req.auth.tid)
+      .input('Name', p.name)
+      .input('Type', p.type||null)
+      .input('Purpose', p.purpose||null)
+      .input('Floor', p.floor||0)
+      .input('Width', p.width||null)
+      .input('Length', p.length||null)
+      .input('Height', p.height||null)
+      .input('Unit', p.unit||null)
+      .input('Capacity', p.capacity||null)
+      .input('Ventilation', p.ventilation||null)
+      .input('Doors', p.doors||0)
+      .input('Windows', p.windows||0)
+      .query('INSERT INTO CompanySpace(TenantId,Name,Type,Purpose,Floor,Width,Length,Height,Unit,Capacity,Ventilation,Doors,Windows) VALUES(@tid,@Name,@Type,@Purpose,@Floor,@Width,@Length,@Height,@Unit,@Capacity,@Ventilation,@Doors,@Windows); SELECT SCOPE_IDENTITY() AS Id'); await connector.disconnect(); return res.json({ success:true, id:r.recordset[0].Id }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+app.post('/api/company/spaces/:id/exit-plan', requireAuth, express.json({limit:'12mb'}), async (req, res)=>{
+  try{ const id=parseInt(req.params.id); const dataUrl=req.body?.dataUrl||''; const m=dataUrl.match(/^data:(image\/(png|jpeg|jpg));base64,(.+)$/i); if(!m) return res.status(400).json({ success:false, error:'Invalid image' }); const ext=m[2].toLowerCase()==='jpeg'?'jpg':m[2].toLowerCase(); const buf=Buffer.from(m[3],'base64'); const fs=require('fs'); const dir=path.join(__dirname,'../public/uploads'); try{ fs.mkdirSync(dir,{recursive:true}); }catch{} const filename=`tenant-${req.auth.tid}-space-${id}.${ext}`; const fpath=path.join(dir,filename); fs.writeFileSync(fpath, buf); const publicUrl='/uploads/'+filename; const connector=new AzureSQLConnector(); await connector.connect(); await ensureCompanyProfileTables(connector); await connector.pool.request().input('tid', req.auth.tid).input('Id', id).input('url', publicUrl).query('UPDATE CompanySpace SET ExitPlanUrl=@url, UpdatedAt=GETDATE() WHERE Id=@Id AND TenantId=@tid'); await connector.disconnect(); return res.json({ success:true, url: publicUrl }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+app.delete('/api/company/spaces/:id', requireAuth, async (req, res)=>{
+  try{ const connector=new AzureSQLConnector(); await connector.connect(); await ensureCompanyProfileTables(connector); await connector.pool.request().input('tid', req.auth.tid).input('Id', parseInt(req.params.id)).query('DELETE FROM CompanySpace WHERE Id=@Id AND TenantId=@tid'); await connector.disconnect(); return res.json({ success:true }); }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
 });
 
 // ==================== SAFETY OFFICER API ROUTES ====================
