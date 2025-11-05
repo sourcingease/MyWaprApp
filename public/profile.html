@@ -74,7 +74,6 @@
     <div class="dashboard-card safety-pane">
       <div class="card-header">Company Setup Tabs</div>
       <div class="action-buttons">
-        <button class="action-btn" id="tab_profile"><div class="action-icon">👤</div><div class="action-label">Profile</div></button>
         <button class="action-btn" id="tab_company"><div class="action-icon">🏢</div><div class="action-label">Company Profile</div></button>
         <button class="action-btn" id="tab_setup"><div class="action-icon">⚙️</div><div class="action-label">Setup</div></button>
         <button class="action-btn" id="tab_extended"><div class="action-icon">➕</div><div class="action-label">Extended</div></button>
@@ -86,6 +85,9 @@
       <div id="profilePane" style="display:none"></div>
 
       <div id="companyPane">
+        <div class="actions" style="justify-content:flex-end;margin-top:0;margin-bottom:10px">
+          <button class="btn" id="openProfileTabs" type="button">Open Profile Tabs (Head Office/Warehouse)</button>
+        </div>
         <div class="row">
           <div class="full"><label>Head Office Address 1 *</label><input id="cpAddress1"></div>
           <div class="full"><label>Address 2</label><input id="cpAddress2"></div>
@@ -140,9 +142,12 @@
 
       <!-- Warehouses Pane -->
       <div id="warehousesPane" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
           <div class="card-header" style="padding:0;border:none;margin:0">Warehouses</div>
-          <button class="btn primary" id="whNewBtn">New Warehouse</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="whBackToCompany" type="button">Head Office</button>
+            <button class="btn primary" id="whNewBtn">New Warehouse</button>
+          </div>
         </div>
         <div id="whList" class="full"></div>
       </div>
@@ -234,12 +239,10 @@
     let __leftDefaultHTML=null; let __leftHeaderDefault='Company Setup Tabs';
     function leftCaptureDefault(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(grid){ __leftDefaultHTML = grid.innerHTML; } if(hdr){ __leftHeaderDefault = hdr.textContent; } }catch(e){} }
     function leftShowMain(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent = 'Company Setup Tabs'; grid.innerHTML = `
-        <button class=\"action-btn\" id=\"tab_profile\"><div class=\"action-icon\">👤</div><div class=\"action-label\">Profile</div></button>
         <button class=\"action-btn\" id=\"tab_company\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Company Profile</div></button>
         <button class=\"action-btn\" id=\"tab_setup\"><div class=\"action-icon\">⚙️</div><div class=\"action-label\">Setup</div></button>
         <button class=\"action-btn\" id=\"tab_extended\"><div class=\"action-icon\">➕</div><div class=\"action-label\">Extended</div></button>`;
       const btnCompany=document.getElementById('tab_company'); if(btnCompany) btnCompany.onclick=()=>{ showTab('company'); };
-      const btnProfile=document.getElementById('tab_profile'); if(btnProfile) btnProfile.onclick=()=>{ leftShowProfile(); showTab('company'); };
       const btnSetup=document.getElementById('tab_setup'); if(btnSetup) btnSetup.onclick=()=>{ showTab('setup'); };
     }catch(e){}
     }
@@ -273,9 +276,9 @@
         if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
       }
     }
-    document.getElementById('tab_profile').onclick = ()=>{ leftShowProfile(); showTab('company'); };
     document.getElementById('tab_company').onclick = ()=>{ leftShowMain(); showTab('company'); };
     document.getElementById('tab_setup').onclick = ()=>{ leftShowMain(); showTab('setup'); };
+    (function(){ const link=document.getElementById('openProfileTabs'); if(link) link.onclick=()=>{ leftShowProfile(); showTab('company'); }; const back=document.getElementById('whBackToCompany'); if(back) back.onclick=()=>{ leftShowMain(); showTab('company'); }; })();
 
     // Load profile
     async function loadProfile(){
