@@ -85,9 +85,6 @@
       <div id="profilePane" style="display:none"></div>
 
       <div id="companyPane">
-        <div class="actions" style="justify-content:flex-end;margin-top:0;margin-bottom:10px">
-          <button class="btn" id="openProfileTabs" type="button">Open Profile Tabs (Head Office/Warehouse)</button>
-        </div>
         <div class="row">
           <div class="full"><label>Head Office Address 1 *</label><input id="cpAddress1"></div>
           <div class="full"><label>Address 2</label><input id="cpAddress2"></div>
@@ -142,12 +139,9 @@
 
       <!-- Warehouses Pane -->
       <div id="warehousesPane" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div class="card-header" style="padding:0;border:none;margin:0">Warehouses</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn" id="whBackToCompany" type="button">Head Office</button>
-            <button class="btn primary" id="whNewBtn">New Warehouse</button>
-          </div>
+          <button class="btn primary" id="whNewBtn">New Warehouse</button>
         </div>
         <div id="whList" class="full"></div>
       </div>
@@ -288,7 +282,7 @@
         if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none';
       }
     }
-    (function(){ const link=document.getElementById('openProfileTabs'); if(link) link.onclick=()=>{ leftShowProfile(); showTab('company'); }; const back=document.getElementById('whBackToCompany'); if(back) back.onclick=()=>{ leftShowProfile(); showTab('company'); }; })();
+    // No additional buttons needed - navigation handled by left panel
 
     // Load profile
     async function loadProfile(){
