@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Contact • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Add Contact</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">Full Name</label><input id="cName" class="form-input" placeholder="Jane Doe"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input id="cEmail" class="form-input" placeholder="jane@example.com"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="cPhone" class="form-input" placeholder="+1 555 0100"/></div>
+        <div class="form-group"><label class="form-label">Company</label><input id="cCompany" class="form-input" placeholder="ACME Inc."/></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="ct" onclick="resetForm()">Reset</button>
+        <button class="ct primary" onclick="save()">Save Contact</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    function showStatus(ok, text){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=text; m.style.display='block'; }
+    function resetForm(){ ['cName','cEmail','cPhone','cCompany'].forEach(id=>document.getElementById(id).value=''); showStatus(true,''); document.getElementById('msg').style.display='none'; }
+    async function save(){
+      const name=(document.getElementById('cName').value||'').trim();
+      if(!name){ showStatus(false,'Name is required'); return; }
+      try{
+        // Minimal backend integration; stores to demo contacts table used by /api/contacts
+        const r = await fetch('/api/contacts',{ method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ name }) });
+        const j = await r.json(); if(!j.success) throw new Error(j.error||'Failed');
+        showStatus(true,'Saved.');
+      }catch(e){ showStatus(false, e.message||'Failed'); }
+    }
+  </script>
+</body>
+</html>

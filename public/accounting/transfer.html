@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Transfer • Accounting</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Bank Transfer</div></div><div class="header-right"></div></div>
+  <div class="shell">
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">From Bank</label><select id="from" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">To Bank</label><select id="to" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">Amount</label><input id="amt" class="form-input" type="number" step="0.01"/></div>
+        <div class="form-group"><label class="form-label">Reference</label><input id="ref" class="form-input" placeholder="Internal transfer"/></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="ct primary" onclick="transfer()">Transfer</button></div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    async function fill(){ try{ const r=await fetchJson('/api/accounting/banks'); const list=(r.data||[]); const opts=list.map(x=>`<option value='${x.BankId}'>${x.Name} • ${x.AccountNumber||''}</option>`).join(''); document.getElementById('from').innerHTML=opts; document.getElementById('to').innerHTML=opts; }catch(e){ console.error(e);} }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+    async function transfer(){ const f=parseInt(document.getElementById('from').value||''); const t=parseInt(document.getElementById('to').value||''); const a=parseFloat(document.getElementById('amt').value||0)||0; const r=document.getElementById('ref').value||'Internal transfer'; if(!f||!t||!a||f===t){ show(false,'Select different banks and a valid amount'); return; }
+      try{ await fetchJson('/api/accounting/transfer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromId:f, toId:t, amount:a, reference:r }) }); show(true,'Transfer recorded'); document.getElementById('amt').value=''; }catch(e){ console.error(e); show(false,'Failed to transfer'); }
+    }
+    fill(); if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+  </script>
+</body>
+</html>

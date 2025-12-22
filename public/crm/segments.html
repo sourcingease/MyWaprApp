@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Segments • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Segments / Groups</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Select Segment</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="segSelect" class="form-select" style="max-width:260px"></select>
+          <a class="ct" href="/crm/segments-new.html?embedded=1">Add New</a>
+        </div>
+      </div>
+      <div style="margin-top:6px">
+        <table>
+          <thead><tr><th>Company</th><th>City</th><th>Country</th><th>Status</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="4">No data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function fetchJson(url, options){ const res=await fetch(url,{ credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c)); }
+    async function loadSegments(){
+      try{
+        const r=await fetchJson('/api/crm/segments');
+        const list=r.data||[];
+        const sel=document.getElementById('segSelect');
+        if(!list.length){ sel.innerHTML='<option value="">(No segments)</option>'; document.getElementById('rows').innerHTML='<tr><td colspan="4">No data</td></tr>'; return; }
+        sel.innerHTML = ['<option value="">(Select segment)</option>']
+          .concat(list.map(s=>`<option value='${s.Id}'>${escapeHtml(s.Name||'')}</option>`)).join('');
+      }catch(e){ console.error(e); alert('Failed to load segments'); }
+    }
+    async function loadMembers(){
+      const id=parseInt(document.getElementById('segSelect').value||'');
+      const rows=document.getElementById('rows');
+      if(!id){ rows.innerHTML='<tr><td colspan="4">Select a segment to view its companies.</td></tr>'; return; }
+      try{
+        const r=await fetchJson('/api/crm/segments/'+id+'/companies');
+        const list=r.data||[];
+        rows.innerHTML = list.length? list.map(c=>`<tr><td>${escapeHtml(c.CompanyName)}</td><td>${escapeHtml(c.City||'')}</td><td>${escapeHtml(c.Country||'')}</td><td>${escapeHtml(c.Status||'')}</td></tr>`).join(''):'<tr><td colspan="4">No companies in this segment yet.</td></tr>';
+      }catch(e){ console.error(e); alert('Failed to load companies'); }
+    }
+    document.addEventListener('DOMContentLoaded',()=>{
+      loadSegments();
+      document.getElementById('segSelect').addEventListener('change', loadMembers);
+    });
+  </script>
+</body>
+</html>

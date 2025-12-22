@@ -21,7 +21,9 @@
   </style>
 </head>
 <body>
+  <script src="/js/agents-ui.js"></script>
   <div class="shell">
+    <div id="ai-agents-panel" class="card" style="margin-bottom:16px;"></div>
     <h2>AI Data Analyst • Prompt Manager</h2>
 
     <div class="card">
@@ -54,6 +56,16 @@
   </div>
 
   <script src="/js/safety-api-client.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.AgentUI) {
+        window.AgentUI.initModuleAgents({
+          containerSelector: '#ai-agents-panel',
+          moduleId: 'ai'
+        });
+      }
+    });
+  </script>
   <script>
     let currentId = null;
 

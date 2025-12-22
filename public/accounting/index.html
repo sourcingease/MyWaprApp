@@ -22,7 +22,9 @@
 </head>
 <body>
   <script src="/js/master-layout.js"></script>
+  <script src="/js/agents-ui.js"></script>
   <div class="shell">
+    <div id="accounting-agents-panel" class="card" style="margin-bottom:16px;"></div>
     <div class="title">Accounting</div>
     <div class="muted">Petty Cash • Accounts Payable • Accounts Receivable. React TS blueprint with local state and mock API.</div>
 
@@ -55,6 +57,17 @@
       <div class="muted">AccountingPage container with tabs → PettyCash (transactions, balance, filters, newTx) • AccountsPayable • AccountsReceivable. Mock API in services/db.ts (localStorage) and exportService for CSV.</div>
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.AgentUI) {
+        window.AgentUI.initModuleAgents({
+          containerSelector: '#accounting-agents-panel',
+          moduleId: 'accounting'
+        });
+      }
+    });
+  </script>
 
   <script>
     // Lightweight KPI calc from localStorage stores

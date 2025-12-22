@@ -9,25 +9,38 @@
     "test": "node tests/health-check.js",
     "health-check": "node tests/health-check.js",
     "contact-test": "node tests/contact-test.js",
-    "web": "node src/web-server.js",
+    "app-test-agent": "node tests/app-test-agent.js",
+    "web": "npm install && node src/web-server.js",
     "db:setup": "node src/setup-db.js",
     "seed:sample": "node src/seed-sample.js",
     "lint": "echo \"No linting configured yet\"",
     "build": "echo \"No build step required for Node.js\""
   },
-  "keywords": ["saas", "agent", "azure", "sql", "automation"],
+  "keywords": [
+    "saas",
+    "agent",
+    "azure",
+    "sql",
+    "automation"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mssql": "^10.0.2",
+    "@azure/identity": "^4.2.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "path": "^0.12.7",
-    "cookie-parser": "^1.4.6",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.13",
-    "stripe": "^14.25.0"
+    "mammoth": "^1.6.0",
+    "mssql": "^9.1.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.10",
+    "path": "^0.12.7",
+    "pdf-parse": "^1.1.1",
+    "stripe": "^14.25.0",
+    "tesseract.js": "^5.0.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

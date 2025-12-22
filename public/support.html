@@ -3,36 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Support • Complytex</title>
-  <style>body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb} .shell{max-width:900px;margin:0 auto;padding:22px} .row{display:flex;gap:8px;flex-wrap:wrap} input,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb} .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer} table{width:100%;border-collapse:collapse;margin-top:16px} th,td{border-bottom:1px solid #1f2a3b;padding:8px;text-align:left}</style>
+  <title>Support • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f5f7fa;color:#0f172a}
+    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:16px 24px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
+    .header-left{display:flex;align-items:center;gap:16px}
+    .logo-small{max-height:40px;width:auto}
+    .dashboard-title{font-size:20px;font-weight:700}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    input,textarea{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid #e2e8f0;padding:10px;text-align:left}
+    th{background:#f8fafc;text-align:left;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
 </head>
 <body>
-  <div class="shell">
-    <h2>Support Tickets</h2>
-    <div class="row">
-      <input id="tenantId" placeholder="Tenant ID"/>
-      <input id="subject" placeholder="Subject" style="flex:1"/>
+  <div class="dashboard-header">
+    <div class="header-left">
+      <img src="/logo.png" class="logo-small"/>
+      <div class="dashboard-title">Support</div>
     </div>
-    <div class="row" style="margin-top:6px">
-      <textarea id="message" rows="3" style="flex:1" placeholder="Describe your issue"></textarea>
-    </div>
-    <button class="btn" onclick="createTicket()">Create ticket</button>
-
-    <table>
-      <thead><tr><th>ID</th><th>Subject</th><th>Status</th><th>Created</th></tr></thead>
-      <tbody id="rows"><tr><td colspan="4">No data</td></tr></tbody>
-    </table>
+    <div class="header-right"><!-- icons injected --></div>
   </div>
+  <div class="shell">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">New Ticket</div>
+      <div class="row">
+        <input id="tenantId" placeholder="Tenant ID"/>
+        <input id="subject" placeholder="Subject" style="flex:1"/>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <textarea id="message" rows="3" style="flex:1" placeholder="Describe your issue"></textarea>
+      </div>
+      <div style="margin-top:8px"><button class="btn" onclick="createTicket()">Create ticket</button></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">My Tickets</div>
+      <table>
+        <thead><tr><th>ID</th><th>Subject</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="4">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
   <script>
     async function load(){
-      const r = await fetch('/api/support/tickets');
+      const r = await fetch('/api/support/tickets', { credentials: 'include' });
       const d = await r.json();
-      if(!d.success) return;
+      if(!d.success) { document.getElementById('rows').innerHTML = '<tr><td colspan="4">Failed to load</td></tr>'; return; }
       document.getElementById('rows').innerHTML = d.data.map(t=>`<tr><td>${t.TicketId}</td><td>${t.Subject}</td><td>${t.Status}</td><td>${new Date(t.CreatedAt).toLocaleString()}</td></tr>`).join('');
     }
     async function createTicket(){
       const payload={ tenantId: document.getElementById('tenantId').value.trim()||null, subject: document.getElementById('subject').value.trim(), message: document.getElementById('message').value.trim() };
-      const r = await fetch('/api/support/tickets',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      const r = await fetch('/api/support/tickets',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), credentials: 'include'});
       const d = await r.json();
       if(d.success){ load(); document.getElementById('message').value=''; }
       else alert(d.error||'Failed');

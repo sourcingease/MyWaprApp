@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM Dashboard</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .layout{display:grid;grid-template-columns:260px 1fr;gap:16px;max-width:1200px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .nav{padding:12px}
+    .nav .title{font-weight:800;color:#0f172a;margin-bottom:10px}
+    .nav a{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:8px;color:#0f172a;text-decoration:none;border:1px solid #e2e8f0;margin-bottom:6px}
+    .nav a:hover{background:#f8fafc;border-color:#0ea5e9}
+    .content{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .section{padding:14px}
+    .section .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .section .hdr .t{font-weight:800}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .muted{color:#64748b;font-size:12px}
+    @media (max-width:1000px){ .content{grid-template-columns:1fr} .layout{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">CRM Dashboard</div></div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="layout">
+    <div class="card nav">
+      <div class="title">CRM</div>
+      <a href="/crm/add-contact-advanced.html?embedded=1">👤 Add Contact</a>
+      <a href="/crm/search-contacts.html?embedded=1">🔎 Search Contact</a>
+      <a href="/crm/add-phone-notes.html?embedded=1">📝 Add Phone Notes</a>
+      <a href="/crm/search-phone-notes.html?embedded=1">🔎 Search Phone Notes</a>
+      <a href="/crm/segments.html?embedded=1">🏷️ Segments</a>
+      <a href="/crm/chat.html?embedded=1">💬 Chat</a>
+      <a href="/crm/mailbox.html?embedded=1">✉️ Email</a>
+    </div>
+
+    <div class="content">
+      <div class="card section" id="appointments">
+        <div class="hdr">
+          <div class="t">Appointments</div>
+          <a class="ct" href="/crm/appointment.html?embedded=1">New</a>
+        </div>
+        <table>
+          <thead><tr><th>Company</th><th>Notes</th><th>Date</th></tr></thead>
+          <tbody id="apptRows"><tr><td colspan="3" class="muted">No data</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card section" id="follows">
+        <div class="hdr">
+          <div class="t">Open Follow-ups</div>
+          <a class="ct" href="/crm/add-phone-notes.html?embedded=1">All Follow-ups</a>
+        </div>
+        <table>
+          <thead><tr><th>Company</th><th>Notes</th><th>Follow-up</th></tr></thead>
+          <tbody id="fuRows"><tr><td colspan="3" class="muted">No data</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card section" id="campaigns">
+        <div class="hdr">
+          <div class="t">Email Campaigns</div>
+          <a class="ct" href="/crm/campaign-new.html?embedded=1">New</a>
+        </div>
+        <table>
+          <thead><tr><th>Name</th><th>Subject</th><th>Date</th></tr></thead>
+          <tbody id="campRows"><tr><td colspan="3" class="muted">No data</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card section">
+        <div class="hdr"><div class="t">Contacts / Leads / Accounts</div></div>
+        <canvas id="bar" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Hide header if embedded
+    if(new URL(location.href).searchParams.get('embedded')==='1'){
+      const h=document.getElementById('hdr'); if(h) h.style.display='none';
+    }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]||c));
+
+    async function load(){
+      try{
+        const [appts, notes, camps, sum]=await Promise.all([
+          j('/api/crm/appointments'),
+          j('/api/crm/notes'),
+          j('/api/crm/campaigns'),
+          j('/api/crm/summary')
+        ]);
+        // Appointments
+        const a=appts.data||[]; document.getElementById('apptRows').innerHTML = a.length? a.map(x=>`<tr><td>${esc(x.Company||'')}</td><td>${esc(x.Notes||'')}</td><td>${new Date(x.WhenAt).toLocaleString()}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">No data</td></tr>';
+        // Follow-ups: only those with FollowUpAt in future or recently set
+        const now=Date.now(); const fu=(notes.data||[]).filter(n=> n.FollowUpAt).sort((a,b)=> new Date(a.FollowUpAt)-new Date(b.FollowUpAt)).slice(0,20);
+        document.getElementById('fuRows').innerHTML = fu.length? fu.map(x=>`<tr><td>${esc(x.Subject||'')}</td><td>${esc(x.Body||'')}</td><td>${new Date(x.FollowUpAt).toLocaleString()}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">No follow-ups</td></tr>';
+        // Campaigns
+        const c=camps.data||[]; document.getElementById('campRows').innerHTML = c.length? c.map(x=>`<tr><td><a href="/crm/campaigns.html?embedded=1">${esc(x.Name)}</a></td><td>${esc(x.Subject||'')}</td><td>${new Date(x.CreatedAt).toLocaleString()}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">No campaigns</td></tr>';
+        // Chart
+        const ctx=document.getElementById('bar'); const d=sum.data||{contacts:0,leads:0,accounts:0};
+        new Chart(ctx,{ type:'bar', data:{ labels:['Contacts','Leads','Accounts'], datasets:[{ label:'Count', data:[d.contacts||0,d.leads||0,d.accounts||0], backgroundColor:['#38bdf8','#a78bfa','#34d399'] }] }, options:{ plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 }}}}});
+      }catch(e){ console.error(e); alert('Failed to load CRM dashboard'); }
+    }
+    load();
+  </script>
+</body>
+</html>

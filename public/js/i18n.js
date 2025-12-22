@@ -10,7 +10,10 @@
         if(saved) this.current = saved;
         await this.load(this.current);
         this.apply(document);
-        this.injectSwitcher();
+        // Do not show floating language switcher when embedded inside another shell
+        if(!this.isEmbedded()){
+          this.injectSwitcher();
+        }
       }catch(e){ console.warn('i18n init failed', e); }
     },
     async load(lang){
@@ -50,6 +53,15 @@
       this.apply(document);
       const ev = new CustomEvent('i18n:changed', { detail:{ lang }});
       document.dispatchEvent(ev);
+    },
+    isEmbedded(){
+      try{
+        // If this window is inside an iframe or explicitly marked embedded, hide switcher
+        if(window.top !== window.self) return true;
+        const params = new URLSearchParams(location.search || '');
+        if(params.get('embedded') === '1') return true;
+      }catch(e){}
+      return false;
     },
     injectSwitcher(){
       const box = document.createElement('div');

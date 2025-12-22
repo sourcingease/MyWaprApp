@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application Form • HR</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Applicant Information</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:8px">Application Form</div>
+      <div class="grid">
+        <div class="form-group"><label class="form-label">Full Name *</label><input id="FullName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Email Address *</label><input id="Email" type="email" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone Number</label><input id="Phone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Address</label><input id="Address" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Resume/CV</label><input id="Resume" type="file" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">LinkedIn Profile</label><input id="Linkedin" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Portfolio</label><input id="Portfolio" type="file" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Work Authorization Status</label><select id="WorkAuth" class="form-select"><option value="">Select</option><option>Authorized to Work in the Country</option><option>Work Visa Required</option></select></div>
+        <div class="form-group"><label class="form-label">Preferred Start Date</label><input id="StartDate" type="date" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Upload Cover Letter</label><input id="CoverUpload" type="file" class="form-input"/></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Cover Letter</label><textarea id="CoverText" class="form-textarea" rows="4"></textarea></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="ct" onclick="goBack()">Back</button>
+        <button class="ct primary" onclick="submitApp()">Submit</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const jobId=parseInt(new URL(location.href).searchParams.get('jobId')||'0');
+    function goBack(){ history.back(); }
+    async function submitApp(){
+      const name=(FullName.value||'').trim(); const email=(Email.value||'').trim();
+      if(!name||!email){ alert('Full Name and Email are required'); return; }
+      const payload={
+        jobPostingId: jobId||null,
+        fullName: name,
+        email,
+        phone: Phone.value||null,
+        address: Address.value||null,
+        linkedin: Linkedin.value||null,
+        workAuthStatus: WorkAuth.value||null,
+        preferredStartDate: StartDate.value||null,
+        coverLetter: CoverText.value||null
+      };
+      try{
+        await j('/api/hr/applicants',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Application submitted successfully');
+        location.href='/hr/job-postings-list.html?embedded=1';
+      }catch(e){ console.error(e); alert('Failed to submit'); }
+    }
+  </script>
+</body>
+</html>

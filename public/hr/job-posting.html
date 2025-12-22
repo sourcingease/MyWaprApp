@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Posting • HR</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Job Posting</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:8px">Job Details</div>
+      <div class="grid">
+        <div class="form-group"><label class="form-label">Job Title *</label><input id="Title" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Department</label><select id="Department" class="form-select"><option value="">Select</option><option>Sales</option><option>Marketing</option><option>Operations</option></select></div>
+        <div class="form-group"><label class="form-label">Location</label><input id="Location" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Employment Type</label><select id="EmploymentType" class="form-select"><option value="">Select</option><option>Full-time</option><option>Part-Time</option><option>Contract</option></select></div>
+        <div class="form-group"><label class="form-label">Salary Range</label><input id="SalaryRange" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Application Deadline</label><input id="ApplicationDeadline" type="date" class="form-input"/></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Job Description</label><textarea id="JobDescription" class="form-textarea" rows="3"></textarea></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Required Qualification</label><textarea id="RequiredQualification" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Desired Qualification</label><textarea id="DesiredQualification" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Statements</label><div><label><input type="checkbox" id="Diversity"/> Diversity &amp; Inclusion Statement</label><br/><label><input type="checkbox" id="EOE"/> Equal Opportunity Employer</label></div></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <a class="ct" href="/hr/index.html">Back</a>
+        <button class="ct primary" onclick="savePosting()">Save</button>
+      </div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const url=new URL(location.href); const editId=parseInt(url.searchParams.get('id')||'0');
+
+    function byId(id){ return document.getElementById(id); }
+
+    async function savePosting(){
+      const titleInput = byId('Title');
+      const deptInput = byId('Department');
+      const locInput = byId('Location');
+      const typeInput = byId('EmploymentType');
+      const salaryInput = byId('SalaryRange');
+      const deadlineInput = byId('ApplicationDeadline');
+      const descInput = byId('JobDescription');
+      const reqInput = byId('RequiredQualification');
+      const desInput = byId('DesiredQualification');
+
+      const payload={
+        title: titleInput ? titleInput.value.trim() : '',
+        department: deptInput ? (deptInput.value||null) : null,
+        // Use explicit DOM lookup to avoid clashing with the built-in window.Location object.
+        location: locInput ? (locInput.value||null) : null,
+        employmentType: typeInput ? (typeInput.value||null) : null,
+        salaryRange: salaryInput ? (salaryInput.value||null) : null,
+        applicationDeadline: deadlineInput ? (deadlineInput.value||null) : null,
+        jobDescription: descInput ? (descInput.value||null) : null,
+        requiredQualification: reqInput ? (reqInput.value||null) : null,
+        desiredQualification: desInput ? (desInput.value||null) : null,
+        diversityFlag: document.getElementById('Diversity').checked,
+        eoeFlag: document.getElementById('EOE').checked
+      };
+      if(!payload.title){ alert('Job Title is required'); return; }
+      try{
+        const method = editId? 'PUT':'POST';
+        const path = editId? '/api/hr/postings/'+editId : '/api/hr/postings';
+        await j(path,{ method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Job posting saved successfully');
+        location.href='/hr/job-postings-list.html?embedded=1';
+      }catch(e){ console.error(e); alert('Failed to save'); }
+    }
+
+    async function loadForEdit(){
+      if(!editId) return;
+      try{
+        const r = await j('/api/hr/postings');
+        const row = (r.data||[]).find(x=>x.Id===editId);
+        if(!row) return;
+        const titleInput = byId('Title');
+        const deptInput = byId('Department');
+        const locInput = byId('Location');
+        const typeInput = byId('EmploymentType');
+        const salaryInput = byId('SalaryRange');
+        const deadlineInput = byId('ApplicationDeadline');
+        const descInput = byId('JobDescription');
+        const reqInput = byId('RequiredQualification');
+        const desInput = byId('DesiredQualification');
+
+        if(titleInput) titleInput.value = row.Title||'';
+        if(deptInput) deptInput.value = row.Department||'';
+        if(locInput) locInput.value = row.Location||'';
+        if(typeInput) typeInput.value = row.Type||'';
+        if(salaryInput) salaryInput.value = row.SalaryRange||'';
+        if(row.ApplicationDeadline && deadlineInput) deadlineInput.value = row.ApplicationDeadline.substr(0,10);
+        if(descInput) descInput.value = row.Description||'';
+        if(reqInput) reqInput.value = row.RequiredQualification||'';
+        if(desInput) desInput.value = row.DesiredQualification||'';
+        document.getElementById('Diversity').checked = !!row.DiversityFlag;
+        document.getElementById('EOE').checked = !!row.EOEFlag;
+      }catch(e){ console.error(e); }
+    }
+    loadForEdit();
+  </script>
+</body>
+</html>

@@ -3,148 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Petty Cash • ComplytEX Accounting</title>
+  <title>Petty Cash • Accounting</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/app.css" />
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1200px;margin:0 auto;padding:22px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,select{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
-    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
-    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-top:12px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:10px;border-bottom:1px solid #1f2a3b;text-align:left}
-    .muted{color:#94a3b8}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
-    .credit{background:#22c55e33;color:#86efac}
-    .debit{background:#ef444433;color:#fecaca}
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Petty Cash</div></div><div class="header-right"></div></div>
   <div class="shell">
-    <h2>Petty Cash</h2>
-    <div class="row">
-      <div class="card" style="flex:1 1 360px">
-        <div style="font-weight:700">New Transaction</div>
-        <div class="row" style="margin-top:8px">
-          <input id="txDate" type="date"/>
-          <select id="txType"><option>Credit</option><option>Debit</option></select>
-          <input id="txAmount" type="number" step="0.01" placeholder="Amount"/>
-          </div>
-        <div class="row" style="margin-top:8px">
-          <input id="txDesc" placeholder="Description" style="flex:1"/>
-          <input id="txPaidTo" placeholder="Paid To"/>
-          <input id="txCat" placeholder="Category"/>
-        </div>
-        <button class="btn" style="margin-top:8px" onclick="saveTx()">Save</button>
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">Purpose</label><input id="cPurpose" class="form-input" placeholder="Snacks"/></div>
+        <div class="form-group"><label class="form-label">Quantity</label><input id="cQty" class="form-input" type="number" min="1" step="1" value="1"/></div>
+        <div class="form-group"><label class="form-label">Amount</label><input id="cAmt" class="form-input" type="number" step="0.01"/></div>
+        <div class="form-group"><label class="form-label">Bank (withdraw)</label><select id="cBank" class="form-select"></select></div>
       </div>
-      <div class="card" style="flex:1 1 280px">
-        <div style="font-weight:700">Balance</div>
-        <div id="balance" style="font-size:28px;font-weight:800;margin-top:6px">0.00</div>
-        <div class="muted">Calculated as Credits - Debits</div>
-      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="ct primary" onclick="add()">Withdraw</button></div>
     </div>
 
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:700">Statement</div>
-        <div>
-          <button class="btn" onclick="exportCsv()">Export CSV</button>
-          <button class="btn" style="background:#475569" onclick="resetFilters()">Reset</button>
-        </div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <input id="fDesc" placeholder="Search description" style="flex:1" oninput="render()"/>
-        <input id="fFrom" type="date" onchange="render()"/>
-        <input id="fTo" type="date" onchange="render()"/>
-        <select id="fPaidTo" onchange="render()"><option value="">Paid To</option></select>
-        <select id="fCat" onchange="render()"><option value="">Category</option></select>
-      </div>
+    <div class="card" style="margin-top:12px">
+      <div style="font-weight:700;margin-bottom:8px">Recent Petty Cash</div>
       <table>
-        <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Amount</th><th>Paid To</th><th>Category</th></tr></thead>
-        <tbody id="rows"><tr><td class="muted" colspan="6">No data</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Purpose</th><th>Qty</th><th>Bank</th><th>Amount</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="5">No data</td></tr></tbody>
       </table>
     </div>
   </div>
-
+  <script src="/js/master-layout.js"></script>
   <script>
-    const key='acct_petty_cash';
-    function getAll(){return JSON.parse(localStorage.getItem(key)||'[]');}
-    function setAll(arr){localStorage.setItem(key,JSON.stringify(arr));}
-
-    function saveTx(){
-      const tx={
-        id:'pc_'+Math.random().toString(36).slice(2,8),
-        date: document.getElementById('txDate').value || new Date().toISOString().slice(0,10),
-        description: document.getElementById('txDesc').value.trim(),
-        type: document.getElementById('txType').value,
-        amount: parseFloat(document.getElementById('txAmount').value||'0'),
-        paidTo: document.getElementById('txPaidTo').value.trim()||null,
-        category: document.getElementById('txCat').value.trim()||null
-      };
-      if(!tx.description || !tx.amount){ alert('Description and amount required'); return; }
-      const data=getAll(); data.unshift(tx); setAll(data);
-      document.getElementById('txDesc').value=''; document.getElementById('txAmount').value='';
-      render();
+    async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    async function ensureBanks(){ try{ const r=await fetchJson('/api/accounting/banks'); const list=(r.data||[]); const sel=document.getElementById('cBank'); sel.innerHTML = list.length? list.map(x=>`<option value='${x.BankId}'>${x.Name} • ${x.AccountNumber||''}</option>`).join(''):'<option disabled>No bank found</option>'; }catch(e){ console.error(e); }}
+    async function add(){ const purpose=(cPurpose.value||'').trim(); const amt=parseFloat(cAmt.value||0)||0; const qty=Math.max(1, parseInt(cQty.value||'1')||1); const bankId=parseInt(cBank.value||''); if(!amt||!bankId){ alert('Amount and bank are required'); return; }
+      try{ await fetchJson('/api/accounting/ledger', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'DR', amount:amt, bankId, reference:'Petty Cash', party:purpose, quantity:qty }) }); cPurpose.value=''; cAmt.value=''; cQty.value='1'; await load(); }catch(e){ console.error(e); alert('Failed to record'); }
     }
-
-    function balanceOf(list){return list.reduce((s,t)=> s + (t.type==='Credit'?+t.amount:-+t.amount), 0);}
-
-    function render(){
-      const data=getAll();
-      // filters
-      const q=(document.getElementById('fDesc').value||'').toLowerCase();
-      const from=document.getElementById('fFrom').value; const to=document.getElementById('fTo').value;
-      const fPaid=document.getElementById('fPaidTo').value; const fCat=document.getElementById('fCat').value;
-      const filtered=data.filter(t=>{
-        if(q && !(t.description||'').toLowerCase().includes(q)) return false;
-        if(from && t.date < from) return false;
-        if(to && t.date > to) return false;
-        if(fPaid && (t.paidTo||'')!==fPaid) return false;
-        if(fCat && (t.category||'')!==fCat) return false;
-        return true;
-      });
-      // options
-      const paidOpts=[...new Set(data.map(t=>t.paidTo).filter(Boolean))];
-      const catOpts=[...new Set(data.map(t=>t.category).filter(Boolean))];
-      document.getElementById('fPaidTo').innerHTML='<option value="">Paid To</option>'+paidOpts.map(x=>`<option>${x}</option>`).join('');
-      document.getElementById('fCat').innerHTML='<option value="">Category</option>'+catOpts.map(x=>`<option>${x}</option>`).join('');
-
-      document.getElementById('balance').textContent = balanceOf(data).toFixed(2);
-      const tbody=document.getElementById('rows');
-      tbody.innerHTML = filtered.map(t=>`<tr>
-        <td>${t.date}</td>
-        <td>${t.description}</td>
-        <td>${t.type==='Credit'?'<span class=\'pill credit\'>Credit</span>':'<span class=\'pill debit\'>Debit</span>'}</td>
-        <td>${(+t.amount).toFixed(2)}</td>
-        <td>${t.paidTo||''}</td>
-        <td>${t.category||''}</td>
-      </tr>`).join('') || `<tr><td class="muted" colspan="6">No data</td></tr>`;
-    }
-
-    function resetFilters(){
-      ['fDesc','fFrom','fTo'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('fPaidTo').value='';
-      document.getElementById('fCat').value='';
-      render();
-    }
-
-    function exportCsv(){
-      const data=[...document.querySelectorAll('#rows tr')].map(tr=>[...tr.children].map(td=>td.textContent));
-      if(!data.length){ alert('Nothing to export'); return; }
-      const headers=['Date','Description','Type','Amount','Paid To','Category'];
-      const rows=[headers,...getAll().map(t=>[t.date,t.description,t.type,t.amount,t.paidTo||'',t.category||''])];
-      const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
-      const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download='petty-cash.csv'; a.click(); URL.revokeObjectURL(url);
-    }
-
-    // init
-    if(!localStorage.getItem(key)) setAll([]);
-    // default date
-    document.getElementById('txDate').value = new Date().toISOString().slice(0,10);
-    render();
+    async function load(){ await ensureBanks(); const [banksResp, listResp]=await Promise.all([ fetchJson('/api/accounting/banks'), fetchJson('/api/accounting/ledger?limit=200') ]);
+      const bmap=new Map((banksResp.data||[]).map(x=>[x.BankId, x])); const rows=document.getElementById('rows'); const list=(listResp.data||[]).filter(x=>x.Reference==='Petty Cash').slice(0,20);
+      rows.innerHTML = list.length? list.map(x=>`<tr><td>${new Date(x.EntryDate).toLocaleString()}</td><td>${escapeHtml(x.Party||'')}</td><td>${x.Quantity!=null? String(x.Quantity):''}</td><td>${escapeHtml((bmap.get(x.BankId)||{}).Name||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="5">No data</td></tr>'; }
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+    load();
   </script>
 </body>
 </html>

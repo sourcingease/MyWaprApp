@@ -1,0 +1,573 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safety Audits â€¢ Verification Sheet</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body { margin:0; font-family: Inter, Segoe UI, system-ui, Arial; background:#f5f7fa; color:#0f172a; }
+    /* Master layout header (shared look with safety dashboards) */
+    .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin:8px 12px 4px 12px; padding:12px 20px; background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border-bottom:3px solid #0ea5e9; }
+    .header-left { display:flex; align-items:center; gap:12px; }
+    .header-right { display:flex; align-items:center; gap:12px; position:relative; }
+    .dashboard-title { font-size:18px; font-weight:700; letter-spacing:-0.02em; }
+
+    .shell { max-width:1100px; margin:0 auto; padding:22px 16px 32px; }
+    .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .top-left { display:flex; flex-direction:column; gap:4px; }
+    .title { font-size:20px; font-weight:800; letter-spacing:-0.02em; }
+    .subtitle { font-size:13px; color:#64748b; }
+    .pill-online { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; background:#dcfce7; color:#166534; font-size:12px; font-weight:600; }
+    .dot { width:8px; height:8px; border-radius:999px; background:#22c55e; }
+    .toolbar { display:flex; align-items:center; gap:16px; }
+    .btn-secondary { padding:8px 14px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+    .btn-secondary:hover { background:#f8fafc; }
+    .checkbox-row { display:flex; align-items:center; gap:8px; font-size:13px; color:#475569; }
+
+    .card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+    .card-title { font-size:15px; font-weight:600; margin-bottom:12px; }
+
+    /* Corrective actions layout */
+    .corrective-body { margin-top:4px; }
+    .corrective-row { border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px 12px; margin-bottom:10px; background:#f9fafb; }
+    .corrective-header { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-bottom:4px; }
+    .corrective-field-label { font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; }
+    .corrective-field-value { font-size:13px; color:#0f172a; }
+    .corrective-meta { font-size:12px; color:#94a3b8; margin-top:4px; }
+    .corrective-form-row { display:grid; grid-template-columns:1.2fr 1.2fr; gap:10px; margin-top:8px; }
+    .corrective-form-row.full { grid-template-columns:1fr; }
+    .corrective-radio-group { display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; color:#475569; }
+    .corrective-radio-group label { font-weight:400; }
+    .corrective-input, .corrective-textarea { width:100%; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0; font-size:13px; }
+    .corrective-textarea { min-height:44px; resize:vertical; }
+    .small-muted { font-size:11px; color:#94a3b8; margin-top:2px; }
+    .btn-mini { padding:6px 10px; border-radius:6px; border:0; background:#0ea5e9; color:#fff; font-size:12px; font-weight:600; cursor:pointer; }
+    .btn-mini:hover { background:#0284c7; }
+    .btn-link { background:none; border:0; padding:0; color:#0284c7; font-size:12px; cursor:pointer; }
+    .btn-link:hover { text-decoration:underline; }
+
+    table { width:100%; border-collapse:collapse; background:#fff; }
+    thead { background:#f8fafc; border-bottom:1px solid #e2e8f0; }
+    th, td { padding:10px 12px; font-size:14px; border-bottom:1px solid #e5e7eb; }
+    th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color:#475569; }
+
+    .status-pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; text-transform:uppercase; }
+    .status-pending { background:#fef3c7; color:#92400e; }
+    .status-ok { background:#dcfce7; color:#166534; }
+    .status-issue { background:#fee2e2; color:#b91c1c; }
+
+    .footer-bar { margin-top:18px; display:flex; justify-content:flex-end; }
+    .btn-primary { padding:10px 18px; border-radius:8px; border:0; background:#0ea5e9; color:#fff; font-weight:600; cursor:pointer; }
+    .btn-primary:hover { background:#0284c7; }
+
+    .footer-bar { margin-top:18px; display:flex; justify-content:flex-end; }
+    .btn-primary { padding:10px 18px; border-radius:8px; border:0; background:#0ea5e9; color:#fff; font-weight:600; cursor:pointer; }
+    .btn-primary:hover { background:#0284c7; }
+  </style>
+</head>
+<body>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    // If this page is embedded inside another dashboard (embedded=1),
+    // hide the local master header to avoid duplicate headers.
+    (function(){
+      try{
+        const p = new URLSearchParams(location.search || '');
+        if(p.get('embedded') === '1'){
+          const hdr = document.getElementById('mlHdr');
+          if(hdr) hdr.remove();
+        }
+      }catch(e){}
+    })();
+  </script>
+  <div class="dashboard-header" id="mlHdr">
+    <div class="header-left">
+      <img src="/logo.png" alt="ComplytEX" class="logo-small" />
+      <div>
+        <div class="dashboard-title">SAFETY AUDIT VERIFICATION</div>
+        <div class="subtitle">Corrective actions &amp; resolution</div>
+      </div>
+    </div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="shell">
+    <div class="top-bar">
+      <div class="top-left">
+        <div class="title" id="auditTitle">Safety Audit</div>
+        <div class="subtitle" id="auditMeta">Verification Sheet</div>
+      </div>
+      <div class="toolbar">
+        <label class="checkbox-row">
+          <input type="checkbox" id="onlyIssuesChk" />
+          <span>Show Only Issues</span>
+        </label>
+        <button class="btn-secondary" id="backBtn">&larr; Back to Audit List</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Verification Sheet</div>
+      <div class="data-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+              <th>Compliance</th>
+              <th>Issue Detail</th>
+              <th>Attachment(s)</th>
+              <th>Suggested Action</th>
+              <th>Informed To</th>
+              <th>Corrective Action</th>
+              <th>Action By</th>
+              <th>Action Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="sheetBody">
+            <tr><td colspan="12" style="text-align:center; padding:16px; color:#94a3b8;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="correctiveCard" style="display:none;">
+      <div class="card-title">Corrective Actions &amp; Resolution</div>
+      <div id="correctiveBody" class="corrective-body">
+        <div style="font-size:13px; color:#94a3b8;">Loading corrective actions...</div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <button class="btn-primary" id="submitBtn">Save &amp; Submit</button>
+    </div>
+  </div>
+
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search || '');
+    const auditIdParam = params.get('auditId');
+    let fullItems = [];
+    let correctiveByItem = {};
+    let currentPlan = null;
+    let userRole = null;
+
+    // Check if user has Safety Auditor / Audit Officer role (can change status)
+    function canChangeStatus() {
+      // Try to get user role from session/local storage or auth cookie.
+      // IMPORTANT: Only explicit auditor roles are allowed. Everyone else is read-only.
+      const storedRole = sessionStorage.getItem('userRole') || localStorage.getItem('userRole');
+      if (storedRole) {
+        const roleLower = storedRole.toLowerCase();
+        // Allow only Safety Auditor / Audit Officer to change status
+        if (roleLower.includes('safety auditor') || roleLower.includes('audit officer')) {
+          return true;
+        }
+        return false;
+      }
+      // If we cannot positively identify the user as an auditor, do NOT allow status changes.
+      return false;
+    }
+
+    function esc(str) {
+      return String(str || '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;'
+      }[c] || c));
+    }
+
+    function formatAuditCode(plan) {
+      if (plan && plan.AuditDate) {
+        const d = new Date(plan.AuditDate);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yyyy = d.getFullYear();
+        return `${dd}${mm}${yyyy}`;
+      }
+      return plan && plan.Id ? String(plan.Id) : 'AUDIT';
+    }
+
+    function classifyAnswer(item) {
+      const v = (item.Value || '').toString().trim();
+      if (v === 'Yes') return 'yes';
+      if (v === 'No') return 'no';
+      if (v === 'N/A') return 'na';
+      const hasIssue = (item.NoIssue === false) || (item.IssueDetails && item.IssueDetails.trim() !== '');
+      if (hasIssue) return 'no';
+      if (item.NoIssue === true) return 'yes';
+      return 'na';
+    }
+
+    function compliancePill(item, planStatus) {
+      const hasIssue = (item.NoIssue === false) || (item.IssueDetails && item.IssueDetails.trim() !== '');
+      if (hasIssue) return { cls:'status-issue', text:'Issue' };
+
+      // If the auditor has answered the question with "Yes" or explicitly
+      // marked NoIssue = true, treat it as compliant immediately (even if the
+      // overall audit plan is still open).
+      const ans = classifyAnswer(item);
+      if (ans === 'yes' || item.NoIssue === true) {
+        return { cls:'status-ok', text:'Compliance' };
+      }
+
+      // Anything not yet answered will remain Pending.
+      return { cls:'status-pending', text:'Pending' };
+    }
+
+    function buildAttachmentLinks(raw) {
+      if (!raw) return '';
+      const trimmed = String(raw).trim();
+      try {
+        if (trimmed.startsWith('[')) {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed.map((f, idx) => {
+              const url = f && f.dataUrl ? f.dataUrl : null;
+              if (!url) return '';
+              const label = esc(f.name || `File ${idx + 1}`);
+              return `<a href="${url}" target="_blank">${label}</a>`;
+            }).filter(Boolean).join('<br/>' );
+          }
+        }
+      } catch (e) {
+        console.warn('Unable to parse Attachments JSON on verification sheet', e);
+      }
+      const parts = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      return parts.map((p) => {
+        const isUrl = /^https?:\/\//i.test(p) || p.startsWith('data:');
+        const label = esc(p.length > 60 ? p.slice(0, 57) + 'â€¦' : p);
+        return isUrl ? `<a href="${esc(p)}" target="_blank">${label}</a>` : `<span>${label}</span>`;
+      }).join('<br/>' );
+    }
+
+    function renderTable(plan) {
+      const tbody = document.getElementById('sheetBody');
+      const onlyIssues = document.getElementById('onlyIssuesChk').checked;
+      let items = fullItems.slice();
+      if (onlyIssues) {
+        items = items.filter(it => (it.NoIssue === false) || (it.IssueDetails && it.IssueDetails.trim() !== ''));
+      }
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:16px; color:#94a3b8;">No checklist items found for this audit.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      items.forEach(it => {
+        const tr = document.createElement('tr');
+        const ans = classifyAnswer(it);
+        const valueStr = (it.Value && it.Value.toString().trim())
+          ? it.Value.toString().trim()
+          : (ans === 'yes' ? 'Yes' : ans === 'no' ? 'No' : 'N/A');
+        const pill = compliancePill(it, plan.Status);
+        const attHtml = buildAttachmentLinks(it.Attachments || '');
+
+        const list = correctiveByItem[it.Id] || [];
+        const latest = list[0] || null;
+        const resMode = latest && latest.ResolutionMode ? latest.ResolutionMode : '';
+        const caText = latest && latest.CorrectiveActionTaken ? latest.CorrectiveActionTaken : '';
+        const caBy = latest && latest.CorrectiveActionBy ? latest.CorrectiveActionBy : '';
+        const caDateIso = latest && latest.CorrectiveActionOn ? new Date(latest.CorrectiveActionOn).toISOString().slice(0,10) : '';
+        const caDate = caDateIso ? new Date(caDateIso).toLocaleDateString() : '';
+        const caAmt = (latest && latest.ResolutionAmount != null) ? Number(latest.ResolutionAmount).toFixed(2) : '';
+        const caStatus = latest && latest.Status ? latest.Status : '';
+        const latestAtt = latest ? buildAttachmentLinks(latest.Attachments || '') : '';
+        const itemId = it.Id;
+        const hasIssue = (it.NoIssue === false) || (it.IssueDetails && it.IssueDetails.trim() !== '');
+
+        tr.innerHTML = `
+          <td>${esc(it.Head || '')}</td>
+          <td>${esc(valueStr)}</td>
+          <td><span class="status-pill ${pill.cls}">${pill.text}</span></td>
+          <td>${esc(it.IssueDetails || '')}</td>
+          <td>
+            ${attHtml}
+            ${hasIssue ? `
+              <div class="small-muted" style="margin-top:4px;">Corrective docs:</div>
+              <div>${latestAtt}</div>
+              <input id="resFile_${itemId}" type="file" onchange="onResolutionFileChange(${itemId}, this)" />
+              <input id="resFileData_${itemId}" type="hidden" value="" />
+            ` : ''}
+          </td>
+          <td>
+            ${esc(it.SuggestedAction || '')}
+          </td>
+          <td>
+            ${esc(it.InformedTo || '')}
+          </td>
+          <td>
+            ${hasIssue
+              ? `<textarea id=\"resAction_${itemId}\" class=\"corrective-textarea\" style=\"margin-top:4px;\">${esc(caText || '')}</textarea>`
+              : `<div>${esc(caText || '')}</div>`}
+          </td>
+          <td>
+            ${hasIssue
+              ? `<input id=\"resBy_${itemId}\" class=\"corrective-input\" style=\"margin-top:4px;\" value=\"${esc(caBy || '')}\" />`
+              : `<div>${esc(caBy || '')}</div>`}
+          </td>
+          <td>
+            ${hasIssue
+              ? `<input id=\"resOn_${itemId}\" type=\"date\" class=\"corrective-input\" style=\"margin-top:4px;\" value=\"${caDateIso}\" />`
+              : `<div>${esc(caDate || '')}</div>`}
+          </td>
+          <td>
+            ${hasIssue
+              ? `<input id=\"resAmt_${itemId}\" type=\"number\" step=\"0.01\" class=\"corrective-input\" style=\"margin-top:4px;\" value=\"${caAmt || ''}\" />`
+              : `<div>${esc(caAmt || '')}</div>`}
+          </td>
+          <td>
+            ${hasIssue ? `
+              <select id="resStatus_${itemId}" class="corrective-input" style="margin-top:4px;" ${!canChangeStatus() ? 'disabled' : ''}>
+                <option value="">-- Select --</option>
+                <option value="Open" ${caStatus==='Open'?'selected':''}>Open</option>
+                <option value="Closed" ${caStatus==='Closed'?'selected':''}>Closed</option>
+              </select>
+              ${!canChangeStatus() ? '<div class="small-muted">Only audit officers can change status</div>' : ''}
+              <button type="button" class="btn-mini" style="margin-top:4px;" onclick="saveCorrectiveFromVerification(${plan.Id}, ${itemId})">Save</button>
+            ` : `<div>${esc(caStatus || '')}</div>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCorrectiveSection(plan) {
+      const container = document.getElementById('correctiveBody');
+      if (!container) return;
+      if (!fullItems || fullItems.length === 0) {
+        container.innerHTML = '<div style="font-size:13px; color:#94a3b8;">No checklist items found for this audit.</div>';
+        return;
+      }
+      const issues = fullItems.filter(it => (it.NoIssue === false) || (it.IssueDetails && it.IssueDetails.trim() !== ''));
+      if (issues.length === 0) {
+        container.innerHTML = '<div style="font-size:13px; color:#16a34a;">No issues recorded for this audit.</div>';
+        return;
+      }
+      const chunks = [];
+      issues.forEach(it => {
+        const list = correctiveByItem[it.Id] || [];
+        const latest = list[0] || null;
+        const latestDate = latest && latest.CorrectiveActionOn ? new Date(latest.CorrectiveActionOn).toLocaleDateString() : '';
+        const latestAmt = (latest && latest.ResolutionAmount != null) ? Number(latest.ResolutionAmount).toFixed(2) : '';
+        const latestMode = latest && latest.ResolutionMode ? latest.ResolutionMode : '';
+        const latestStatus = latest && latest.Status ? latest.Status : '';
+        const latestAtt = latest ? buildAttachmentLinks(latest.Attachments || '') : '';
+        const latestSummary = latest ? `Last action: ${esc(latestMode || 'N/A')}${latestAmt ? ` Â· Amount: ${esc(latestAmt)}` : ''}${latest.CorrectiveActionBy ? ` Â· By: ${esc(latest.CorrectiveActionBy)}` : ''}${latestDate ? ` Â· On: ${esc(latestDate)}` : ''}${latestStatus ? ` Â· Status: ${esc(latestStatus)}` : ''}` : '';
+        const latestText = latest && latest.CorrectiveActionTaken ? esc(latest.CorrectiveActionTaken) : '';
+        const itemId = it.Id;
+        const rfqLinkVisible = latestMode === 'RFQ' ? 'inline' : 'none';
+        chunks.push(`
+          <div class="corrective-row">
+            <div class="corrective-header">
+              <div>
+                <div class="corrective-field-label">Head</div>
+                <div class="corrective-field-value">${esc(it.Head || '')}</div>
+              </div>
+              <div>
+                <div class="corrective-field-label">Value</div>
+                <div class="corrective-field-value">${esc(it.Value || '')}</div>
+              </div>
+              <div>
+                <div class="corrective-field-label">Issue Detail</div>
+                <div class="corrective-field-value">${esc(it.IssueDetails || '-')}</div>
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:4px;">
+              <div style="min-width:180px; flex:1 1 220px;">
+                <div class="corrective-field-label">Suggested Action</div>
+                <div class="corrective-field-value">${esc(it.SuggestedAction || '-')}</div>
+              </div>
+              <div style="min-width:160px; flex:0 0 200px;">
+                <div class="corrective-field-label">Informed To</div>
+                <div class="corrective-field-value">${esc(it.InformedTo || '-')}</div>
+              </div>
+            </div>
+            ${latest ? `
+              <div class="corrective-meta">
+                ${latestSummary}<br/>
+                ${latestText ? latestText + '<br/>' : ''}
+                ${latestAtt ? 'Docs: ' + latestAtt : ''}
+              </div>
+            ` : ''}
+            <div class="corrective-form-row">
+              <div>
+                <div class="corrective-field-label">Resolution</div>
+                <div class="corrective-radio-group">
+                  <label><input type="radio" name="resMode_${itemId}" value="RFQ" ${latestMode==='RFQ'?'checked':''} onchange="onResolutionModeChange(${itemId}, 'RFQ')"> RFQ</label>
+                  <label><input type="radio" name="resMode_${itemId}" value="Cash" ${latestMode==='Cash'?'checked':''} onchange="onResolutionModeChange(${itemId}, 'Cash')"> Cash</label>
+                  <label><input type="radio" name="resMode_${itemId}" value="Other" ${latestMode==='Other'?'checked':''} onchange="onResolutionModeChange(${itemId}, 'Other')"> Other</label>
+                  <button id="rfqLink_${itemId}" type="button" class="btn-link" style="display:${rfqLinkVisible}" onclick="openRFQForItem(${plan.Id}, ${itemId})">Open RFQ form</button>
+                </div>
+              </div>
+              <div>
+                <div class="corrective-field-label">Amount</div>
+                <input id="resAmt_${itemId}" type="number" step="0.01" class="corrective-input" value="${latestAmt || ''}" />
+                <div class="small-muted">Total cost to resolve this issue (optional).</div>
+              </div>
+            </div>
+            <div class="corrective-form-row">
+              <div>
+                <div class="corrective-field-label">Invoice / Document</div>
+                <input id="resFile_${itemId}" type="file" onchange="onResolutionFileChange(${itemId}, this)" />
+                <input id="resFileData_${itemId}" type="hidden" value="" />
+                <div class="small-muted">Attach supporting document (image/PDF). Existing docs are shown above.</div>
+              </div>
+              <div>
+                <div class="corrective-field-label">Action Taken By</div>
+                <input id="resBy_${itemId}" class="corrective-input" value="${latest && latest.CorrectiveActionBy ? esc(latest.CorrectiveActionBy) : ''}" />
+              </div>
+            </div>
+            <div class="corrective-form-row">
+              <div>
+                <div class="corrective-field-label">Action Date</div>
+                <input id="resOn_${itemId}" type="date" class="corrective-input" value="${latest && latest.CorrectiveActionOn ? new Date(latest.CorrectiveActionOn).toISOString().slice(0,10) : ''}" />
+              </div>
+              <div>
+                <div class="corrective-field-label">Corrective Action Description</div>
+                <textarea id="resAction_${itemId}" class="corrective-textarea">${latest && latest.CorrectiveActionTaken ? esc(latest.CorrectiveActionTaken) : ''}</textarea>
+              </div>
+            </div>
+            <div class="corrective-form-row full">
+              <div>
+                <div class="corrective-field-label">Status</div>
+                <select id="resStatus_${itemId}" class="corrective-input" ${!canChangeStatus() ? 'disabled' : ''}>
+                  <option value="">-- Select --</option>
+                  <option value="Open" ${latestStatus==='Open'?'selected':''}>Open</option>
+                  <option value="Closed" ${latestStatus==='Closed'?'selected':''}>Closed</option>
+                </select>
+                ${!canChangeStatus() ? '<div class="small-muted">Only audit officers can change status</div>' : ''}
+              </div>
+            </div>
+            <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:8px;">
+              <button type="button" class="btn-mini" onclick="saveCorrectiveFromVerification(${plan.Id}, ${itemId})">Save Action</button>
+            </div>
+          </div>
+        `);
+      });
+      container.innerHTML = chunks.join('');
+    }
+
+    async function loadAudit() {
+      const titleEl = document.getElementById('auditTitle');
+      const metaEl = document.getElementById('auditMeta');
+      const tbody = document.getElementById('sheetBody');
+      if (!auditIdParam) {
+        titleEl.textContent = 'Safety Audit';
+        metaEl.textContent = 'No auditId specified in URL.';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:16px; color:#ef4444;">Missing auditId query parameter.</td></tr>';
+        const correctiveEl = document.getElementById('correctiveBody');
+        if (correctiveEl) correctiveEl.innerHTML = '<div style="font-size:13px; color:#ef4444;">Missing auditId query parameter.</div>';
+        return;
+      }
+      try {
+        const idNum = parseInt(auditIdParam, 10);
+        if (isNaN(idNum)) throw new Error('Invalid auditId');
+        const res = await SafetyAPI.getAuditDetails(idNum);
+        const data = res.data || {};
+        const plan = data.plan || {};
+        fullItems = (data.items || []).slice();
+        currentPlan = plan;
+        correctiveByItem = {};
+        const corrective = Array.isArray(data.corrective) ? data.corrective : [];
+        corrective.forEach(ca => {
+          if (!ca || ca.AuditItemId == null) return;
+          const key = ca.AuditItemId;
+          if (!correctiveByItem[key]) correctiveByItem[key] = [];
+          correctiveByItem[key].push(ca);
+        });
+        const code = formatAuditCode(plan);
+        titleEl.textContent = `${code} AUDIT`;
+        metaEl.textContent = plan.AuditName ? `${plan.AuditName} â€¢ ${plan.AuditType || ''}` : 'Verification Sheet';
+        renderTable(plan);
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:16px; color:#ef4444;">Failed to load audit details.</td></tr>';
+        const correctiveEl = document.getElementById('correctiveBody');
+        if (correctiveEl) correctiveEl.innerHTML = '<div style="font-size:13px; color:#ef4444;">Failed to load corrective actions.</div>';
+      }
+    }
+
+    function onResolutionModeChange(itemId, mode) {
+      const btn = document.getElementById(`rfqLink_${itemId}`);
+      if (!btn) return;
+      btn.style.display = mode === 'RFQ' ? 'inline' : 'none';
+    }
+
+    function onResolutionFileChange(itemId, input) {
+      if (!input || !input.files || !input.files.length) return;
+      const hidden = document.getElementById(`resFileData_${itemId}`);
+      if (!hidden) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const payload = [{ name: file.name, type: file.type || '', dataUrl: ev.target.result }];
+        hidden.value = JSON.stringify(payload);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openRFQForItem(auditId, itemId) {
+      const url = `/safety-audits.html?auditId=${encodeURIComponent(auditId || '')}&focusItemId=${encodeURIComponent(itemId || '')}`;
+      window.location.href = url;
+    }
+
+    async function saveCorrectiveFromVerification(auditId, itemId) {
+      try {
+        const radioName = `resMode_${itemId}`;
+        const selected = document.querySelector(`input[name="${radioName}"]:checked`);
+        let mode = selected ? selected.value : null;
+        if (!mode) {
+          const modeInput = document.getElementById(`resMode_${itemId}`);
+          if (modeInput) mode = (modeInput.value || '').trim() || null;
+        }
+        const amtStr = document.getElementById(`resAmt_${itemId}`).value;
+        const amount = amtStr !== '' ? parseFloat(amtStr) : null;
+        const attachmentsJson = document.getElementById(`resFileData_${itemId}`).value || '';
+        const statusEl = document.getElementById(`resStatus_${itemId}`);
+        const statusVal = statusEl ? statusEl.value || null : null;
+        const payload = {
+          correctiveActionTaken: (document.getElementById(`resAction_${itemId}`).value || '').trim(),
+          attachments: attachmentsJson || null,
+          correctiveActionBy: (document.getElementById(`resBy_${itemId}`).value || '').trim(),
+          correctiveActionOn: document.getElementById(`resOn_${itemId}`).value || null,
+          resolutionMode: mode || null,
+          resolutionAmount: amount,
+          status: statusVal
+        };
+        await SafetyAPI.submitCorrectiveAction(auditId, itemId, payload);
+        SafetyAPI.showSuccessMessage('Corrective action saved');
+        await loadAudit();
+      } catch (e) {
+        SafetyAPI.showErrorMessage(e.message || e);
+      }
+    }
+
+    document.getElementById('onlyIssuesChk').addEventListener('change', () => {
+      if (currentPlan) {
+        renderTable(currentPlan);
+      } else {
+        loadAudit();
+      }
+    });
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '/masters/safety-office.html';
+      }
+    });
+
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      alert('Use the controls in the Verification Sheet table to update Corrective Action, Amount, Attachments and Status for each issue row. Click the Save button in that row to store changes.');
+    });
+
+    loadAudit();
+  </script>
+</body>
+</html>

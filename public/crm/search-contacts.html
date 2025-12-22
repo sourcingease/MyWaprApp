@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Contacts • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}
+    th{background:#f8fafc;text-transform:uppercase;font-size:11px;color:#475569}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .toolbar-left{display:flex;gap:8px;flex:1 1 260px}
+    .toolbar-right{display:flex;gap:8px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Search Contacts</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input id="q" class="form-input" placeholder="Search by company, city, state..." style="flex:1" />
+          <select id="role" class="form-select" style="width:180px">
+            <option value="">All Types</option>
+            <option value="buyer">Buyer</option>
+            <option value="manufacturer">Manufacturer</option>
+            <option value="supplier">Supplier</option>
+            <option value="other">Other</option>
+          </select>
+          <select id="status" class="form-select" style="width:150px">
+            <option value="">All Status</option>
+            <option value="Lead">Lead</option>
+            <option value="Account">Account</option>
+            <option value="NA">NA</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <button class="ct" onclick="load()">Search</button>
+          <button class="ct" onclick="exportCsv()">Export to Excel</button>
+          <a class="ct" href="/crm/dashboard.html?embedded=1">Back</a>
+        </div>
+      </div>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Type</th>
+              <th>Contact</th>
+              <th>Product</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>City</th>
+              <th>State</th>
+              <th>Zip</th>
+              <th>Country</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="12">No data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){
+      const h=document.getElementById('hdr'); if(h) h.style.display='none';
+    }
+    async function api(u,o){
+      const r = await fetch(u,{ credentials:'include', ...(o||{}) });
+      const j = await r.json().catch(()=>({}));
+      if(!j || j.success===false){ throw new Error(j && j.error || 'Request failed'); }
+      return j.data || [];
+    }
+    function esc(s){
+      return String(s||'').replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    }
+    let lastData = [];
+    async function load(){
+      try{
+        const q = (document.getElementById('q').value||'').trim();
+        const role = document.getElementById('role').value;
+        const status = document.getElementById('status').value;
+        const p = new URLSearchParams();
+        if(q) p.set('q', q);
+        if(role) p.set('role', role);
+        if(status) p.set('status', status);
+        const data = await api('/api/crm/companies'+(p.toString()?('?'+p.toString()):''));
+        lastData = data;
+        const rows = document.getElementById('rows');
+        if(!data.length){ rows.innerHTML = '<tr><td colspan="12">No data</td></tr>'; return; }
+        rows.innerHTML = data.map(c=>{
+          const id = c.Id;
+          return `<tr>
+            <td>${esc(c.CompanyName)}</td>
+            <td>${esc(c.CompanyType||'')}</td>
+            <td>${esc(c.ContactName||'')}</td>
+            <td>${esc(c.Product||'')}</td>
+            <td>${esc(c.Email||'')}</td>
+            <td>${esc(c.Phone||'')}</td>
+            <td>${esc(c.City||'')}</td>
+            <td>${esc(c.State||'')}</td>
+            <td>${esc(c.Zip||'')}</td>
+            <td>${esc(c.Country||'')}</td>
+            <td>${esc(c.Status||'')}</td>
+            <td>
+              <button class="ct" onclick="editCompany(${id})">Edit</button>
+              <button class="ct" onclick="upgradeCompany(${id})">Upgrade</button>
+              <button class="ct" onclick="deleteCompany(${id})">Delete</button>
+              <button class="ct" onclick="openCallNotes(${id})">Call Notes</button>
+            </td>
+          </tr>`;
+        }).join('');
+      }catch(e){ console.error(e); alert('Failed to load contacts'); }
+    }
+    async function upgradeCompany(id){
+      if(!confirm('Upgrade this company status?')) return;
+      try{
+        await fetch(`/api/crm/companies/${id}/upgrade`,{ method:'POST', credentials:'include' });
+        await load();
+      }catch(e){ console.error(e); alert('Failed to upgrade'); }
+    }
+    async function deleteCompany(id){
+      if(!confirm('Delete this company and its contacts?')) return;
+      try{
+        await fetch(`/api/crm/companies/${id}`,{ method:'DELETE', credentials:'include' });
+        await load();
+      }catch(e){ console.error(e); alert('Failed to delete'); }
+    }
+    function editCompany(id){
+      // Open advanced form for editing selected company
+      location.href = `/crm/add-contact-advanced.html?embedded=1&id=${id}`;
+    }
+    function openCallNotes(id){
+      // Customer dashboard for notes (to be implemented separately)
+      location.href = `/crm/customer-dashboard.html?embedded=1&companyId=${id}`;
+    }
+    function exportCsv(){
+      if(!lastData.length){ alert('No data to export'); return; }
+      const header = ['Company','Type','Contact','Product','Email','Phone','City','State','Zip','Country','Status'];
+      const lines = [header.join(',')];
+      lastData.forEach(c=>{
+        const row = [c.CompanyName,c.CompanyType,c.ContactName,c.Product,c.Email,c.Phone,c.City,c.State,c.Zip,c.Country,c.Status]
+          .map(v=>`"${String(v||'').replace(/"/g,'""')}"`);
+        lines.push(row.join(','));
+      });
+      const blob = new Blob([lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'crm-contacts.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    document.getElementById('q').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); load(); } });
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accounting Dashboard</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .section-title{font-weight:800;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .topnav{display:flex;gap:8px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div class="header-left">
+      <img src="/logo.png" class="logo-small">
+      <div class="dashboard-title">Accounting Dashboard</div>
+    </div>
+    <div class="header-right topnav">
+      <a class="ct" href="/chat/index.html?embedded=1">Chat</a>
+      <a class="ct" href="/calendar.html?embedded=1">Tasks</a>
+      <a class="ct" href="/accounting/petty-cash.html?embedded=1">Petty Cash</a>
+    </div>
+  </div>
+  <div class="shell">
+    <div class="grid">
+      <div class="card">
+        <div class="section-title">Accounts Payable (Pending)</div>
+        <div style="margin-bottom:6px"><button class="ct" onclick="openApModal()">New AP Invoice</button></div>
+        <table>
+          <thead><tr><th>Order</th><th>Supplier</th><th>Amount</th><th>Due</th><th></th></tr></thead>
+          <tbody id="apPending"><tr><td colspan="5">No data</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="section-title">AP Approved</div>
+        <table>
+          <thead><tr><th>Order</th><th>Supplier</th><th>Amount</th><th>Due</th><th></th></tr></thead>
+          <tbody id="apApproved"><tr><td colspan="5">No data</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="section-title">Accounts Paid</div>
+        <table>
+          <thead><tr><th>Order</th><th>Supplier</th><th>Amount</th><th>Paid At</th></tr></thead>
+          <tbody id="apPaid"><tr><td colspan="4">No data</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="section-title">Accounts Receivable (Pending)</div>
+        <div style="margin-bottom:6px"><button class="ct" onclick="openArModal()">New AR Invoice</button></div>
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Due</th><th></th></tr></thead>
+          <tbody id="arPending"><tr><td colspan="5">No data</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="section-title">Accounts Received</div>
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Received At</th></tr></thead>
+          <tbody id="arReceived"><tr><td colspan="4">No data</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="section-title">Accounts Balance</div>
+        <div id="balances">Loading...</div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <a class="ct" href="/accounting/accounts-balance.html?embedded=1">Bank Deposit</a>
+          <a class="ct" href="/accounting/bank-deposit-summary.html?embedded=1">Summary</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- AP create modal -->
+  <div id="apModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+    <div style="background:#fff;padding:16px;border-radius:10px;width:700px;max-width:95vw">
+      <div style="font-weight:800;margin-bottom:8px">New AP Invoice</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Order/Job ID</label><input id="apOrder" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Product Name</label><input id="apProduct" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Supplier Name</label><input id="apSupplier" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Due Date</label><input id="apDue" type="date" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Amount</label><input id="apAmount" type="number" step="0.01" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Notes</label><input id="apNotes" class="form-input"></div>
+        <div class="form-group" style="grid-column:1 / -1"><label class="form-label">Attachment</label><input id="apFile" type="file" class="form-input"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="ct" onclick="closeApModal()">Cancel</button>
+        <button class="ct primary" onclick="saveAp()">Save</button>
+      </div>
+    </div>
+  </div>
+  <!-- AR create modal -->
+  <div id="arModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+    <div style="background:#fff;padding:16px;border-radius:10px;width:700px;max-width:95vw">
+      <div style="font-weight:800;margin-bottom:8px">New AR Invoice</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Order/Job ID</label><input id="arOrder" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Product Name</label><input id="arProduct" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Customer Name</label><input id="arCustomer" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Due Date</label><input id="arDue" type="date" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Amount</label><input id="arAmount" type="number" step="0.01" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Notes</label><input id="arNotes" class="form-input"></div>
+        <div class="form-group" style="grid-column:1 / -1"><label class="form-label">Attachment</label><input id="arFile" type="file" class="form-input"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="ct" onclick="closeArModal()">Cancel</button>
+        <button class="ct primary" onclick="saveAr()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    async function fetchJson(url, options){ const res=await fetch(url,{credentials:'include',...(options||{})}); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    function embedded(){ return new URL(location.href).searchParams.get('embedded')==='1'; }
+    if(embedded()){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+    function rowAP(x,btn){ return `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.SupplierName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.DueDate? new Date(x.DueDate).toLocaleDateString(): ''}</td><td>${btn||''}</td></tr>`; }
+    function rowAR(x,btn){ return `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.CustomerName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.DueDate? new Date(x.DueDate).toLocaleDateString(): ''}</td><td>${btn||''}</td></tr>`; }
+    function openApModal(){ const m=document.getElementById('apModal'); m.style.display='flex'; }
+    function closeApModal(){ const m=document.getElementById('apModal'); m.style.display='none'; }
+    function openArModal(){ const m=document.getElementById('arModal'); m.style.display='flex'; }
+    function closeArModal(){ const m=document.getElementById('arModal'); m.style.display='none'; }
+    function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+    async function uploadDataUrlIfAny(inputEl, name){ const f=inputEl.files[0]; if(!f) return null; const d=await fileToDataURL(f); const r=await fetchJson('/api/uploads',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ dataUrl:d, filename:name }) }); return r.url; }
+    async function saveAp(){ try{ const docUrl=await uploadDataUrlIfAny(document.getElementById('apFile'),'ap'); const payload={ orderId: apOrder.value||'', productName: apProduct.value||'', supplierName: apSupplier.value||'', dueDate: apDue.value||null, amount: parseFloat(apAmount.value||0)||0, notes: apNotes.value||'', docUrl }; await fetchJson('/api/accounting/ap',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); closeApModal(); await load(); }catch(e){ alert('Failed to save'); } }
+    async function saveAr(){ try{ const docUrl=await uploadDataUrlIfAny(document.getElementById('arFile'),'ar'); const payload={ orderId: arOrder.value||'', productName: arProduct.value||'', customerName: arCustomer.value||'', dueDate: arDue.value||null, amount: parseFloat(arAmount.value||0)||0, notes: arNotes.value||'', docUrl }; await fetchJson('/api/accounting/ar',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); closeArModal(); await load(); }catch(e){ alert('Failed to save'); } }
+
+    async function load(){
+      const [apP, apA, apPd, arP, arR, banks] = await Promise.all([
+        fetchJson('/api/accounting/ap?status=Pending'),
+        fetchJson('/api/accounting/ap?status=Approved'),
+        fetchJson('/api/accounting/ap?status=Paid'),
+        fetchJson('/api/accounting/ar?status=Pending'),
+        fetchJson('/api/accounting/ar?status=Received'),
+        fetchJson('/api/accounting/bank-summary')
+      ]);
+      document.getElementById('apPending').innerHTML = (apP.data||[]).slice(0,10).map(x=> rowAP(x, `<button class='ct' data-id='${x.Id}' onclick='approveAP(${x.Id})'>Send for approval</button>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
+      document.getElementById('apApproved').innerHTML = (apA.data||[]).slice(0,10).map(x=> rowAP(x, `<a class='ct' href='/accounting/ap-pay.html?id=${x.Id}${embedded()?"&embedded=1":""}'>Pay</a>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
+      document.getElementById('apPaid').innerHTML = (apPd.data||[]).slice(0,10).map(x=> `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.SupplierName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.PaidAt? new Date(x.PaidAt).toLocaleString(): ''}</td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
+      document.getElementById('arPending').innerHTML = (arP.data||[]).slice(0,10).map(x=> rowAR(x, `<button class='ct' onclick='receiveAR(${x.Id})'>Receive</button>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
+      document.getElementById('arReceived').innerHTML = (arR.data||[]).slice(0,10).map(x=> `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.CustomerName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.ReceivedAt? new Date(x.ReceivedAt).toLocaleString(): ''}</td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
+      const bal = (banks.data||[]);
+      document.getElementById('balances').innerHTML = bal.length? `<table><thead><tr><th>Bank</th><th>Account</th><th>Branch</th><th>Balance</th><th></th></tr></thead><tbody>`+bal.map(b=>`<tr><td>${esc(b.Name)}</td><td>${esc(b.AccountNumber||'')}</td><td>${esc(b.BranchName||'')}</td><td>$${Number(b.Balance||0).toFixed(2)}</td><td><a class='ct' href='/accounting/bank-statement.html?bankId=${b.BankId}${embedded()?"&embedded=1":""}'>Statement</a></td></tr>`).join('')+`</tbody></table>`:'No banks';
+    }
+    async function approveAP(id){ try{ await fetchJson(`/api/accounting/ap/${id}/approve`, { method:'POST' }); load(); }catch(e){ alert('Failed'); } }
+    async function receiveAR(id){ try{ const bank = await fetchJson('/api/accounting/banks'); const list=bank.data||[]; if(!list.length) return alert('No bank found'); const bankId=list[0].BankId; await fetchJson(`/api/accounting/ar/${id}/receive`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ bankId }) }); load(); }catch(e){ alert('Failed'); }
+    }
+    load();
+  </script>
+</body>
+</html>

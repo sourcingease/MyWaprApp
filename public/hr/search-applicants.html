@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Applicants • HR</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.65);display:none;align-items:center;justify-content:center;z-index:1000}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:520px;width:100%;max-height:80vh;overflow:auto}
+    .modal .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700}
+    .modal .bd{padding:12px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Search Applicants</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="grid" style="margin-bottom:8px">
+        <div class="form-group"><label class="form-label">Job Title</label><input id="fJob" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Name</label><input id="fName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input id="fEmail" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="fPhone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Address</label><input id="fAddress" class="form-input"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="ct" onclick="load()">Search</button>
+        <button class="ct" onclick="clearFilters()">Clear</button>
+        <a class="ct" href="/hr/index.html">Back</a>
+      </div>
+      <table>
+        <thead><tr><th>Job Title</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="7">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="overlay" id="ivModal">
+    <div class="modal">
+      <div class="hd">Interview Details<button class="ct" onclick="closeIv()">Close</button></div>
+      <div class="bd">
+        <div class="form-group"><label class="form-label">Interview Date</label><input id="IvDate" type="date" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Interview Time</label><select id="IvTime" class="form-select"><option value="">Select</option><option>Morning</option><option>Afternoon</option><option>Evening</option></select></div>
+        <div class="form-group"><label class="form-label">Interview Type</label><select id="IvType" class="form-select"><option value="">Select</option><option>Phone</option><option>Video</option><option>In-Person</option></select></div>
+        <div class="form-group"><label class="form-label">Interviewer Name</label><input id="IvName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Interviewer Title</label><input id="IvTitle" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Reasons for Shortlisting</label><textarea id="IvReason" class="form-textarea" rows="3"></textarea></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="ct primary" onclick="saveIv()">Save</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    let ivId=null;
+    function buildQuery(){
+      const p=new URLSearchParams();
+      const m=id=>document.getElementById(id).value||'';
+      if(m('fJob')) p.set('jobTitle',m('fJob'));
+      if(m('fName')) p.set('name',m('fName'));
+      if(m('fEmail')) p.set('email',m('fEmail'));
+      if(m('fPhone')) p.set('phone',m('fPhone'));
+      if(m('fAddress')) p.set('address',m('fAddress'));
+      // Hide already processed candidates by default
+      if(!p.has('status')) p.set('status','Applied');
+      return p.toString();
+    }
+    async function load(){
+      try{
+        const qs=buildQuery();
+        const r=await j('/api/hr/applicants'+(qs?'?'+qs:''));
+        const arr=r.data||[];
+        const tbody=document.getElementById('rows');
+        if(!arr.length){
+          tbody.innerHTML='<tr><td colspan="7">No applicants found for the selected filters.</td></tr>';
+          return;
+        }
+        tbody.innerHTML=arr.map(x=>`<tr>
+          <td>${esc(x.JobTitle||'')}</td>
+          <td><a href="#" onclick="viewApp(${x.Id});return false;">${esc(x.Name||'')}</td>
+          <td>${esc(x.Email||'')}</td>
+          <td>${esc(x.Phone||'')}</td>
+          <td>${esc(x.Address||'')}</td>
+          <td>${esc(x.Status||'Applied')}</td>
+          <td><button class="ct" onclick="openIv(${x.Id})">Shortlist this</button></td>
+        </tr>`).join('');
+      }catch(e){ console.error(e); alert('Failed to load applicants'); }
+    }
+    function clearFilters(){ ['fJob','fName','fEmail','fPhone','fAddress'].forEach(id=>document.getElementById(id).value=''); load(); }
+    function viewApp(id){ alert('Detailed applicant profiles will be available in a future update.'); }
+    function openIv(id){ ivId=id; document.getElementById('IvDate').value=''; document.getElementById('IvTime').value=''; document.getElementById('IvType').value=''; document.getElementById('IvName').value=''; document.getElementById('IvTitle').value=''; document.getElementById('IvReason').value=''; document.getElementById('ivModal').classList.add('open'); }
+    function closeIv(){ document.getElementById('ivModal').classList.remove('open'); }
+    async function saveIv(){ if(!ivId) return; const payload={ interviewDate: IvDate.value||null, interviewTime: IvTime.value||null, interviewType: IvType.value||null, interviewerName: IvName.value||null, interviewerTitle: IvTitle.value||null, reason: IvReason.value||null }; try{ await j('/api/hr/applicants/'+ivId+'/shortlist',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); alert('Interview details Saved Successfully'); closeIv(); load(); }catch(e){ console.error(e); alert('Failed to save'); } }
+    load();
+  </script>
+</body>
+</html>

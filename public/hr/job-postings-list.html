@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Postings • HR</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Job Postings</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:800">List of Job Postings</div>
+        <div style="display:flex;gap:8px"><a class="ct" href="/hr/index.html">Back</a><a class="ct primary" href="/hr/job-posting.html?embedded=1">New Job</a></div>
+      </div>
+      <table>
+        <thead><tr><th>Job Title</th><th>Department</th><th>Location</th><th>Employment Type</th><th>Salary Range</th><th>Deadline</th><th>Actions</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="7">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    async function load(){
+      try{
+        const r=await j('/api/hr/postings');
+        const arr=r.data||[];
+        const tbody=document.getElementById('rows');
+        if(!arr.length){ tbody.innerHTML='<tr><td colspan="7">No postings</td></tr>'; return; }
+        tbody.innerHTML=arr.map(x=>{
+          const d=x.ApplicationDeadline? esc(String(x.ApplicationDeadline).substr(0,10)) : '';
+          return `<tr>
+            <td>${esc(x.Title||'')}</td>
+            <td>${esc(x.Department||'')}</td>
+            <td>${esc(x.Location||'')}</td>
+            <td>${esc(x.Type||'')}</td>
+            <td>${esc(x.SalaryRange||'')}</td>
+            <td>${d}</td>
+            <td>
+              <button class="ct" onclick="editPosting(${x.Id})">Edit</button>
+              <button class="ct" onclick="delPosting(${x.Id})">Delete</button>
+              <button class="ct primary" onclick="apply(${x.Id})">Apply</button>
+            </td>
+          </tr>`;
+        }).join('');
+      }catch(e){ console.error(e); alert('Failed to load job postings'); }
+    }
+    function editPosting(id){ location.href='/hr/job-posting.html?embedded=1&id='+id; }
+    async function delPosting(id){ if(!confirm('Delete this posting?')) return; try{ await j('/api/hr/postings/'+id,{ method:'DELETE' }); load(); }catch(e){ console.error(e); alert('Delete failed'); } }
+    function apply(id){ location.href='/hr/apply.html?jobId='+id; }
+    load();
+  </script>
+</body>
+</html>

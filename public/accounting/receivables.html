@@ -3,45 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accounts Receivable • ComplytEX Accounting</title>
+  <title>Receivables • Accounting</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/app.css" />
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1200px;margin:0 auto;padding:22px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,select{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
-    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
-    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-top:12px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:10px;border-bottom:1px solid #1f2a3b;text-align:left}
-    .muted{color:#94a3b8}
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Receivables</div></div><div class="header-right"></div></div>
   <div class="shell">
-    <h2>Accounts Receivable</h2>
     <div class="card">
-      <div style="font-weight:700">Customer Invoices</div>
+      <div class="form-group">
+        <label class="form-label">Order (optional)</label>
+        <select id="rOrder" class="form-select" onchange="onOrderChange()">
+          <option value="">Select order / invoice</option>
+        </select>
+        <div style="font-size:12px;color:#64748b;margin-top:4px">Selecting an order will auto-fill customer, reference and amount.</div>
+      </div>
+      <div class="row">
+        <div class="form-group"><label class="form-label">Party</label><input id="rParty" class="form-input" placeholder="Customer"/></div>
+        <div class="form-group"><label class="form-label">Reference</label><input id="rRef" class="form-input" placeholder="INV-001"/></div>
+        <div class="form-group"><label class="form-label">Amount</label><input id="rAmt" class="form-input" type="number" step="0.01"/></div>
+        <div class="form-group"><label class="form-label">Bank</label><select id="rBank" class="form-select"></select></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="ct primary" onclick="add()">Record</button></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div style="font-weight:700;margin-bottom:8px">Recent Receipts</div>
       <table>
-        <thead><tr><th>Customer</th><th>Invoice</th><th>Issue</th><th>Due</th><th>Amount</th><th>Received</th><th>Status</th></tr></thead>
-        <tbody id="rows"><tr><td class="muted" colspan="7">No receivables</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Party</th><th>Ref</th><th>Bank</th><th>Amount</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="5">No data</td></tr></tbody>
       </table>
     </div>
   </div>
+  <script src="/js/master-layout.js"></script>
   <script>
-    const key='acct_receivables';
-    const data=JSON.parse(localStorage.getItem(key)||'[]');
-    const tbody=document.getElementById('rows');
-    tbody.innerHTML = (data.map(r=>`<tr>
-      <td>${r.customerName}</td>
-      <td>${r.invoiceNumber}</td>
-      <td>${r.issueDate||''}</td>
-      <td>${r.dueDate||''}</td>
-      <td>${(+r.amount||0).toFixed(2)}</td>
-      <td>${(+r.amountReceived||0).toFixed(2)}</td>
-      <td>${r.status||''}</td>
-    </tr>`).join('')) || `<tr><td class="muted" colspan="7">No receivables</td></tr>`;
+    async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    let _orders = [];
+    async function ensureBanks(){ try{ const r=await fetchJson('/api/accounting/banks'); const list=(r.data||[]); const sel=document.getElementById('rBank'); sel.innerHTML = list.length? list.map(x=>`<option value='${x.BankId}'>${x.Name} • ${x.AccountNumber||''}</option>`).join(''):'<option disabled>No bank found</option>'; }catch(e){ console.error(e); }}
+    async function loadOrders(){
+      try{
+        const resp = await fetchJson('/api/accounting/ar?status=Pending');
+        _orders = resp.data || [];
+        const sel = document.getElementById('rOrder');
+        if(!sel) return;
+        if(!_orders.length){
+          sel.innerHTML = '<option value="">No open orders</option>';
+          return;
+        }
+        sel.innerHTML = '<option value="">Select order / invoice</option>' + _orders.map((o,idx)=>`<option value='${idx}'>${escapeHtml(o.OrderId||'')}${o.ProductName? ' • '+escapeHtml(o.ProductName):''}${o.CustomerName? ' • '+escapeHtml(o.CustomerName):''} • $${Number(o.Amount||0).toFixed(2)}</option>`).join('');
+      }catch(e){ console.error(e); }
+    }
+    function onOrderChange(){
+      const sel = document.getElementById('rOrder');
+      if(!sel) return;
+      const idx = parseInt(sel.value, 10);
+      if(!Number.isFinite(idx)) return;
+      const o = _orders[idx];
+      if(!o) return;
+      const partyInput = document.getElementById('rParty');
+      const refInput = document.getElementById('rRef');
+      const amtInput = document.getElementById('rAmt');
+      if(partyInput) partyInput.value = o.CustomerName || '';
+      if(refInput) refInput.value = o.OrderId || '';
+      if(amtInput && o.Amount!=null) amtInput.value = Number(o.Amount||0);
+    }
+    async function add(){ const party=(rParty.value||'').trim(); const ref=(rRef.value||'').trim(); const amt=parseFloat(rAmt.value||0)||0; const bankId=parseInt(rBank.value||''); if(!amt||!bankId){ alert('Amount and bank are required'); return; }
+      try{ await fetchJson('/api/accounting/ledger', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'CR', amount:amt, bankId, reference:ref, party }) }); rParty.value=rRef.value=rAmt.value=''; const orderSel=document.getElementById('rOrder'); if(orderSel) orderSel.value=''; await load(); }catch(e){ console.error(e); alert('Failed to record'); }
+    }
+    async function load(){ await ensureBanks(); const [banksResp, listResp]=await Promise.all([ fetchJson('/api/accounting/banks'), fetchJson('/api/accounting/ledger?type=CR&limit=200') ]);
+      const bmap=new Map((banksResp.data||[]).map(x=>[x.BankId, x])); const rows=document.getElementById('rows'); const list=(listResp.data||[]).slice(0,20);
+      rows.innerHTML = list.length? list.map(x=>`<tr><td>${new Date(x.EntryDate).toLocaleString()}</td><td>${escapeHtml(x.Party||'')}</td><td>${escapeHtml(x.Reference||'')}</td><td>${escapeHtml((bmap.get(x.BankId)||{}).Name||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="5">No data</td></tr>'; }
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+    loadOrders();
+    load();
   </script>
 </body>
 </html>

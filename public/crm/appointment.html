@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Appointment • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:800px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:720px){ .row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">New Appointment</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">Company</label><input id="comp" class="form-input" placeholder="Company name"/></div>
+        <div class="form-group"><label class="form-label">When</label><input id="when" class="form-input" type="datetime-local"/></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notes</label><textarea id="notes" class="form-textarea" rows="5" placeholder="Agenda"></textarea></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="ct" onclick="save()">Save</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+    async function save(){ const company=(comp.value||'').trim(); const whenVal=(when.value||'').trim(); const notesVal=(notes.value||'').trim(); if(!whenVal){ show(false,'Date/time required'); return; }
+      try{ await j('/api/crm/appointments', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ company, notes:notesVal, whenAt: whenVal }) }); show(true,'Saved'); comp.value=notes.value=when.value=''; }catch(e){ console.error(e); show(false,'Failed to save'); }
+    }
+  </script>
+</body>
+</html>

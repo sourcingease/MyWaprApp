@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Email Campaign • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:800px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:720px){ .row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">New Email Campaign</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">Campaign Name</label><input id="name" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Subject</label><input id="subj" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Schedule (optional)</label><input id="sched" class="form-input" type="datetime-local"/></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Description (optional)</label><textarea id="desc" class="form-textarea" rows="4"></textarea></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="ct" onclick="save()">Save</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+    async function save(){ const nameVal=(name.value||'').trim(); const subject=(subj.value||'').trim(); const scheduledAt=(sched.value||'').trim()||null; if(!nameVal){ show(false,'Campaign name required'); return; }
+      try{ await j('/api/crm/campaigns',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name:nameVal, subject, scheduledAt })}); show(true,'Saved'); name.value=subj.value=sched.value=desc.value=''; }catch(e){ console.error(e); show(false,'Failed to save'); }
+    }
+  </script>
+</body>
+</html>

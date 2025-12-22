@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safety Audit • Auditor Sheet</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial;background:#f5f7fa;color:#0f172a}
+    .shell{max-width:1200px;margin:0 auto;padding:18px 16px 32px}
+    .header{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-bottom:16px}
+    .title{font-size:20px;font-weight:800;letter-spacing:-0.02em}
+    .meta{font-size:13px;color:#64748b;margin-top:4px}
+    .header-right{display:flex;gap:10px;align-items:center}
+    .btn{padding:8px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+    .btn.sec{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0}
+    .btn:hover{background:#0284c7}
+    .btn.sec:hover{background:#e5e7eb}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;vertical-align:top}
+    th{text-align:left;background:#f8fafc;text-transform:uppercase;font-size:11px;color:#475569;letter-spacing:.05em}
+    textarea{width:100%;min-height:44px;resize:vertical;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;font:inherit}
+    input[type="text"],input[type="file"]{width:100%;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;font:inherit}
+    .muted{font-size:12px;color:#64748b;margin-top:6px}
+    .row-meta{display:flex;gap:20px;font-size:13px;margin-top:6px}
+    .row-meta span{font-weight:600;color:#0f172a}
+    .audit-row.no-issue{background:#f9fafb}
+.audit-row.has-issue{background:#fff7ed}
+.audit-row.no-issue .issue-cell>*{opacity:.3;pointer-events:none}
+    .att-links{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
+    .audit-footer{margin-top:16px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b;display:flex;justify-content:space-between;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    // If this page is rendered inside the main app shell/another dashboard,
+    // the parent will pass embedded=1 and provide the master header itself.
+    // In that case hide this local header to avoid double headers.
+    (function(){
+      try{
+        const p = new URLSearchParams(location.search||'');
+        if(p.get('embedded') === '1'){
+          const h = document.getElementById('hdr');
+          if(h) h.style.display = 'none';
+        }
+      }catch(e){}
+    })();
+  </script>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">SAFETY AUDIT &mdash; AUDITOR SHEET</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="header">
+      <div>
+        <div class="title" id="auditTitle">Safety Audit</div>
+        <div class="meta" id="auditMeta">Auditor checklist</div>
+        <div class="row-meta" id="auditMetaRow"></div>
+      </div>
+      <div class="header-right">
+        <button class="btn sec" onclick="goBack()">Back</button>
+        <button class="btn" onclick="saveSheet()">Save</button>
+        <button class="btn sec" id="closeAuditBtn" onclick="closeAudit()">Mark Closed</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:20%">HEAD</th>
+            <th style="width:10%">VALUE</th>
+            <th style="width:6%;text-align:center">NO ISSUE</th>
+            <th style="width:16%">ISSUE DETAIL</th>
+            <th style="width:12%">ATTACHMENT</th>
+            <th style="width:12%">SUGGESTED ACTION</th>
+            <th style="width:8%">INFORMED TO</th>
+            <th style="width:12%">CORRECTIVE ACTION</th>
+            <th style="width:8%">ACTION BY</th>
+            <th style="width:10%">ACTION DATE</th>
+            <th style="width:8%">AMOUNT</th>
+            <th style="width:8%">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="sheetBody">
+          <tr><td colspan="12" style="text-align:center;padding:14px;color:#94a3b8">Loading...</td></tr>
+        </tbody>
+      </table>
+      <div class="muted">Heads and Values come from the Safety Officer checklist. As auditor, mark issues and record actions.</div>
+    </div>
+    <div class="audit-footer">
+      <div>Generated for <strong id="footerCompany">&nbsp;</strong></div>
+      <div>Auditor Sheet Date: <span id="footerDate"></span></div>
+    </div>
+  </div>
+
+  <script src="/js/safety-api-client.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search || '');
+    const auditIdParam = params.get('auditId');
+    let currentAudit = null;
+    let currentItems = [];
+    let currentCorrectiveByItem = {};
+
+    function esc(str){
+      return (str||'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
+    }
+
+    function goBack(){
+      if(history.length>1){ history.back(); }
+      else{ window.location.href = '/masters/safety-auditor.html?embedded=1'; }
+    }
+
+    function onNoIssueToggle(cb){
+      const tr = cb.closest('tr');
+      if(!tr) return;
+      const noIssue = cb.checked;
+      tr.classList.toggle('has-issue', !noIssue);
+      tr.classList.toggle('no-issue', noIssue);
+    }
+
+    function onAttachmentChange(input){
+      const tr = input.closest('tr');
+      if(!tr || !input.files || !input.files.length) return;
+      const hidden = tr.querySelector('input[data-k="Attachments"]');
+      const info = tr.querySelector('.att-info');
+      if(!hidden) return;
+
+      const newFiles = Array.from(input.files);
+
+      // Read all newly selected files as data URLs
+      const readers = newFiles.map(file => new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = ev => resolve({ name: file.name, type: file.type, dataUrl: ev.target.result });
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      }));
+
+      Promise.all(readers).then(list => {
+        // Merge with any existing attachments for this row instead of replacing.
+        let existing = [];
+        const raw = (hidden.value || '').trim();
+        if (raw) {
+          try {
+            if (raw.startsWith('[')) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) existing = parsed;
+            } else {
+              // previously stored single dataUrl; convert to array
+              existing = [{ name: 'file', type: '', dataUrl: raw }];
+            }
+          } catch (e) {
+            console.warn('Could not parse existing attachments; resetting to new list', e);
+            existing = [];
+          }
+        }
+        const combined = existing.concat(list);
+        hidden.value = JSON.stringify(combined);
+        if(info){
+          if(combined.length > 1) info.textContent = combined.length + ' files';
+          else if(combined.length === 1) info.textContent = combined[0].name || '1 file';
+        }
+        // Clear the file input so the same file can be picked again if needed
+        input.value = '';
+      }).catch(err => {
+        console.error('Attachment read error', err);
+      });
+    }
+
+    function openAttachment(btn, index){
+      const tr = btn.closest('tr');
+      if(!tr) return;
+      const hidden = tr.querySelector('input[data-k="Attachments"]');
+      if(!hidden || !hidden.value) return;
+      const raw = hidden.value.trim();
+      let files = [];
+      try{
+        if(raw.startsWith('[')){
+          const parsed = JSON.parse(raw);
+          if(Array.isArray(parsed)) files = parsed;
+        }else{
+          files = [{ name:'file', type:'', dataUrl: raw }];
+        }
+      }catch(e){
+        console.error('Failed to parse attachments JSON', e);
+        files = [];
+      }
+      const file = files[index];
+      if(file && file.dataUrl){
+        window.open(file.dataUrl, '_blank');
+      }
+    }
+
+    async function loadAudit(){
+      const body = document.getElementById('sheetBody');
+      if(!auditIdParam){
+        body.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:14px;color:#ef4444">Missing auditId in URL.</td></tr>';
+        return;
+      }
+      try{
+        const idNum = parseInt(auditIdParam,10);
+        if(isNaN(idNum)) throw new Error('Invalid auditId');
+        const res = await SafetyAPI.getAuditDetails(idNum);
+        const data = res.data || {};
+        currentAudit = data.plan || {};
+        currentItems = data.items || [];
+        const correctiveList = data.corrective || [];
+
+        // Map latest corrective action per AuditItemId (API already orders DESC by CreatedDate)
+        currentCorrectiveByItem = {};
+        if (Array.isArray(correctiveList)) {
+          correctiveList.forEach(ca => {
+            if (ca && ca.AuditItemId && !currentCorrectiveByItem[ca.AuditItemId]) {
+              currentCorrectiveByItem[ca.AuditItemId] = ca;
+            }
+          });
+        }
+
+        // Deduplicate by HEAD+VALUE so old seeded rows (no issue) are replaced by
+        // the latest record for the same question/answer.
+        if (currentItems.length > 0) {
+          const byKey = new Map();
+          currentItems.forEach(it => {
+            const key = `${it.Head || ''}||${it.Value || ''}`;
+            byKey.set(key, it); // later rows (with issues) overwrite earlier ones
+          });
+          currentItems = Array.from(byKey.values());
+        }
+
+        // Header meta
+        document.getElementById('auditTitle').textContent = currentAudit.AuditName || 'Safety Audit';
+        document.getElementById('auditMeta').textContent = currentAudit.AuditType ? `Audit For: ${currentAudit.AuditType}` : 'Auditor checklist';
+        const metaRow = document.getElementById('auditMetaRow');
+        const auditNum = currentAudit.Id ? `Audit # ${currentAudit.Id}` : '';
+        const date = currentAudit.AuditDate ? new Date(currentAudit.AuditDate).toLocaleDateString() : '-';
+        metaRow.innerHTML = `<div><span>${auditNum}</span></div><div><span>Date:</span> ${date}</div>`;
+        // Footer
+        document.getElementById('footerCompany').textContent = currentAudit.AuditCompany || '-';
+        document.getElementById('footerDate').textContent = date;
+
+        if(currentItems.length === 0){
+          body.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:14px;color:#94a3b8">No checklist items found. Please ensure Safety Officer has saved the checklist for this audit.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = '';
+        currentItems.forEach(it=>{
+          const tr = document.createElement('tr');
+          const hasIssue = (it.NoIssue === false) || (it.IssueDetails && it.IssueDetails.trim()!=='');
+          const noIssue = !hasIssue; // DB stores NoIssue=true when no problem
+          tr.className = 'audit-row ' + (noIssue ? 'no-issue' : 'has-issue');
+          const head = esc(it.Head || '');
+          const val = esc(it.Value || '');
+          const issue = esc(it.IssueDetails || '');
+          const sugg = esc(it.SuggestedAction || '');
+          const informed = esc(it.InformedTo || '');
+
+          // Latest corrective action for this item (if any)
+          const ca = it.Id ? currentCorrectiveByItem[it.Id] : null;
+          const caText = ca && ca.CorrectiveActionTaken ? esc(ca.CorrectiveActionTaken) : '';
+          const caBy = ca && ca.CorrectiveActionBy ? esc(ca.CorrectiveActionBy) : '';
+          const caDate = ca && ca.CorrectiveActionOn ? new Date(ca.CorrectiveActionOn).toLocaleDateString() : '';
+          const caAmount = (ca && ca.ResolutionAmount != null) ? String(ca.ResolutionAmount) : '';
+          const caStatus = ca && ca.Status ? esc(ca.Status) : '';
+
+          // Attachments can be either a single data URL string or a JSON array of
+          // { name, type, dataUrl }. Normalize so we can show per-file links.
+          let rawAtt = it.Attachments || '';
+          let files = [];
+          if (rawAtt) {
+            try {
+              const trimmed = String(rawAtt).trim();
+              if (trimmed.startsWith('[')) {
+                const parsed = JSON.parse(trimmed);
+                if (Array.isArray(parsed)) {
+                  files = parsed;
+                }
+              } else {
+                files = [{ name:'file', type:'', dataUrl: trimmed }];
+              }
+            } catch (e) {
+              console.warn('Unable to parse Attachments JSON; treating as single data URL', e);
+              files = [{ name:'file', type:'', dataUrl: String(rawAtt) }];
+            }
+          }
+          const attHidden = esc(rawAtt || '');
+          let attLabel = '';
+          if (files.length > 1) attLabel = files.length + ' files';
+          else if (files.length === 1) attLabel = files[0].name || '1 file';
+          const linksHtml = files.map((f, idx) => {
+            const url = f && f.dataUrl ? esc(f.dataUrl) : '';
+            if (!url) return '';
+            const label = f.name ? esc(f.name) : `File ${idx+1}`;
+            return `<a href="${url}" target="_blank" class="ct small">${label}</a>`;
+          }).join(' ');
+
+          tr.innerHTML = `
+            <td><div data-k="Head">${head}</div></td>
+            <td><div data-k="Value">${val}</div></td>
+            <td style="text-align:center"><input type="checkbox" data-k="NoIssue" ${noIssue?'checked':''} onchange="onNoIssueToggle(this)"></td>
+            <td class="issue-cell"><textarea data-k="IssueDetails">${issue}</textarea></td>
+            <td class="issue-cell">
+              <input type="file" multiple onchange="onAttachmentChange(this)">
+              <input type="hidden" data-k="Attachments" value="${attHidden}">
+              <div class="muted att-info">${attLabel}</div>
+              <div class="att-links">${linksHtml}</div>
+            </td>
+            <td class="issue-cell"><textarea data-k="SuggestedAction">${sugg}</textarea></td>
+            <td class="issue-cell"><input type="text" data-k="InformedTo" value="${informed}"></td>
+            <!-- Corrective action columns show latest submitted corrective action for this item (if any). -->
+            <td class="issue-cell"><div>${caText}</div></td>
+            <td class="issue-cell"><div>${caBy}</div></td>
+            <td class="issue-cell"><div>${caDate}</div></td>
+            <td class="issue-cell"><div>${caAmount}</div></td>
+            <td class="issue-cell"><div>${caStatus ? esc(caStatus) : ''}</div></td>
+          `;
+          body.appendChild(tr);
+        });
+      }catch(e){
+        console.error(e);
+        body.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:14px;color:#ef4444">Failed to load audit.</td></tr>';
+      }
+    }
+
+    async function saveSheet(){
+      if(!currentAudit) return;
+      const body = document.getElementById('sheetBody');
+      const rows = Array.from(body.querySelectorAll('tr'));
+      const items = [];
+      rows.forEach(tr=>{
+        const headEl = tr.querySelector('[data-k="Head"]');
+        if(!headEl) return; // skip placeholder row
+        const valEl = tr.querySelector('[data-k="Value"]');
+        const noIssueCb = tr.querySelector('input[data-k="NoIssue"]');
+        const issueEl = tr.querySelector('textarea[data-k="IssueDetails"]');
+        const attEl = tr.querySelector('input[data-k="Attachments"]');
+        const suggEl = tr.querySelector('textarea[data-k="SuggestedAction"]');
+        const infEl = tr.querySelector('input[data-k="InformedTo"]');
+        const m = {
+          Head: headEl.textContent.trim(),
+          Value: valEl ? valEl.textContent.trim() : '',
+          NoIssue: noIssueCb ? noIssueCb.checked : true,
+          IssueDetails: issueEl ? issueEl.value.trim() : '',
+          Attachments: attEl ? attEl.value : '',
+          SuggestedAction: suggEl ? suggEl.value.trim() : '',
+          InformedTo: infEl ? infEl.value.trim() : ''
+        };
+        items.push(m);
+      });
+      if(items.length === 0){
+        alert('No rows to save');
+        return;
+      }
+      try{
+        const res = await fetch(`/api/safety/audits/${currentAudit.Id}/items`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items })
+        });
+        const text = await res.text();
+        let data = {};
+        try{
+          data = text ? JSON.parse(text) : {};
+        }catch(parseErr){
+          console.error('Save audit items JSON parse error:', parseErr, text);
+          if(!res.ok){
+            throw new Error(text || 'Failed to save audit sheet');
+          }
+          throw new Error('Invalid JSON response from server');
+        }
+        if(!res.ok || data.success === false){
+          throw new Error((data && data.error) || text || 'Failed to save audit sheet');
+        }
+        alert('Audit sheet saved');
+      }catch(e){
+        console.error('Error saving audit sheet via fetch:', e);
+        alert('Error saving audit sheet: ' + (e && e.message ? e.message : e));
+      }
+    }
+
+    async function closeAudit(){
+      if(!currentAudit || !currentAudit.Id){
+        alert('Audit details not loaded yet');
+        return;
+      }
+      if(!confirm('Mark this audit as Closed?')) return;
+      try{
+        const res = await SafetyAPI.updateAuditStatus(currentAudit.Id, { status: 'Closed' });
+        alert('Audit status updated to Closed');
+      }catch(e){
+        console.error('Failed to update audit status', e);
+        alert('Failed to update audit status: ' + (e && e.message ? e.message : e));
+      }
+    }
+
+    loadAudit();
+  </script>
+</body>
+</html>

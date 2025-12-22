@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Statement • Accounting</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .meta{font-size:13px;color:#475569;line-height:1.5}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Bank Statement</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div id="meta" class="meta"></div>
+        <button class="ct" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Slip #</th><th>Document</th><th>Credit</th><th>Debit</th><th>Balance</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6">No data</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function qs(k){ const u=new URL(location.href); return u.searchParams.get(k); }
+    function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    function hideIfEmbedded(){ if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; } }
+    let _lastStatement = { bank:null, rows:[] };
+    async function load(){ const id=parseInt(qs('bankId')||'');
+      try{ const [bResp, lResp]=await Promise.all([ fetchJson(`/api/accounting/banks/${id}`), fetchJson(`/api/accounting/ledger?bankId=${id}&limit=2000`) ]);
+        const b=bResp.data; const rows=document.getElementById('rows'); let run=parseFloat(b?.OpeningBalance||0)||0;
+        document.getElementById('meta').innerHTML = b? `${esc(b.Name)}<br>Account: ${esc(b.AccountNumber||'')} • Title: ${esc(b.AccountTitle||'')}<br>Branch: ${esc(b.BranchName||'')}<br>Notes: ${esc(b.Notes||'')}<br>Opening: $${Number(b.OpeningBalance||0).toFixed(2)}` : 'Bank not found';
+        const list=(lResp.data||[]).sort((a,c)=> new Date(a.EntryDate)-new Date(c.EntryDate));
+        _lastStatement.bank = b; _lastStatement.rows = list;
+        rows.innerHTML = list.length? list.map(x=>{ const cr = x.EntryType==='CR'? Number(x.Amount||0): 0; const dr = x.EntryType==='DR'? Number(x.Amount||0): 0; run += (cr - dr); const doc = x.DocUrl? `<a href='${esc(x.DocUrl)}' target='_blank'>View</a>`:''; return `<tr><td>${new Date(x.EntryDate).toLocaleString()}</td><td>${esc(x.SlipNumber||'')}</td><td>${doc}</td><td>${cr? ('$'+cr.toFixed(2)) : ''}</td><td>${dr? ('$'+dr.toFixed(2)) : ''}</td><td>$${run.toFixed(2)}</td></tr>`; }).join(''):'<tr><td colspan="6">No data</td></tr>';
+      }catch(e){ console.error(e); alert('Failed to load statement'); }
+    }
+    function exportCSV(){ if(!_lastStatement.bank) return; let run=parseFloat(_lastStatement.bank.OpeningBalance||0)||0; const lines = [['Date','SlipNumber','Reference','Type','Amount','Balance']]; _lastStatement.rows.sort((a,b)=> new Date(a.EntryDate)-new Date(b.EntryDate)).forEach(x=>{ const cr = x.EntryType==='CR'? Number(x.Amount||0): 0; const dr = x.EntryType==='DR'? Number(x.Amount||0): 0; run += (cr - dr); lines.push([new Date(x.EntryDate).toISOString(), x.SlipNumber||'', x.Reference||'', x.EntryType, String(x.Amount||0), run.toFixed(2)]); }); const csv = lines.map(r=> r.map(v=> '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob = new Blob([csv], { type:'text/csv' }); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download = 'bank-statement.csv'; a.click(); }
+    hideIfEmbedded();
+    load();
+  </script>
+</body>
+</html>

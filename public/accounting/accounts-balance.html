@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Deposit</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center}
+    .modal .content{background:#fff;padding:16px;border-radius:10px;width:540px;max-width:90vw}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Bank Deposit</div></div><div class="header-right"></div></div>
+  <div class="shell">
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">Bank</label><select id="bank" class="form-select"></select><button class="ct" onclick="openNewBank()">New</button><div id="bal" class="text-muted"></div></div>
+        <div class="form-group"><label class="form-label">Amount</label><input id="amount" class="form-input" type="number" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Slip Number</label><input id="slip" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Notes</label><input id="notes" class="form-input"></div>
+        <div class="form-group" style="grid-column:1 / -1"><label class="form-label">Attachment</label><input id="file" type="file" class="form-input"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <a class="ct" href="/accounting/bank-deposit-summary.html?embedded=1">View Summary</a>
+        <button class="ct" onclick="goBack()">Back</button>
+        <button class="ct primary" onclick="save()">Save</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+
+  <div id="newBankModal" class="modal"><div class="content">
+    <div style="font-weight:700;margin-bottom:8px">New Bank</div>
+    <div class="row">
+      <div class="form-group"><label class="form-label">Bank Name</label><input id="nbName" class="form-input"></div>
+      <div class="form-group"><label class="form-label">Account Number</label><input id="nbNumber" class="form-input"></div>
+      <div class="form-group"><label class="form-label">Branch Name</label><input id="nbBranch" class="form-input"></div>
+      <div class="form-group"><label class="form-label">Account Title</label><input id="nbTitle" class="form-input"></div>
+      <div class="form-group"><label class="form-label">Opening Balance</label><input id="nbOpen" type="number" class="form-input" step="0.01"></div>
+      <div class="form-group" style="grid-column:1 / -1"><label class="form-label">Notes</label><input id="nbNotes" class="form-input"></div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="ct" onclick="closeNewBank()">Cancel</button>
+      <button class="ct primary" onclick="saveNewBank()">Save Bank</button>
+    </div>
+  </div></div>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    function embedded(){ return new URL(location.href).searchParams.get('embedded')==='1'; }
+    if(embedded()){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+    async function fetchJson(url, options){ const res=await fetch(url,{credentials:'include',...(options||{})}); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+    async function fillBanks(){ const r=await fetchJson('/api/accounting/bank-summary'); const list=r.data||[]; const sel=document.getElementById('bank'); sel.innerHTML=list.map(x=>`<option value='${x.BankId}'>${x.Name} • ${x.AccountNumber||''}</option>`).join(''); sel.onchange=()=>{ const cur=list.find(x=>x.BankId===parseInt(sel.value||'')); document.getElementById('bal').textContent = cur? (`Balance: $${Number(cur.Balance||0).toFixed(2)}`):''; }; sel.onchange(); }
+    function openNewBank(){ document.getElementById('newBankModal').style.display='flex'; }
+    function closeNewBank(){ document.getElementById('newBankModal').style.display='none'; }
+    async function saveNewBank(){ try{ const payload={ name:nbName.value||'', number:nbNumber.value||'', branchName:nbBranch.value||'', title:nbTitle.value||'', openingBalance: parseFloat(nbOpen.value||0)||0, notes: nbNotes.value||'' }; await fetchJson('/api/accounting/banks',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); closeNewBank(); await fillBanks(); }catch(e){ alert('Failed to save bank'); } }
+    function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+    async function uploadIfAny(){ const f=document.getElementById('file').files[0]; if(!f) return null; const data=await fileToDataURL(f); const r=await fetchJson('/api/uploads',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ dataUrl:data, filename:'deposit-doc' }) }); return r.url; }
+    async function save(){ try{ const bankId=parseInt(bank.value||''); const amt=parseFloat(amount.value||0)||0; const docUrl=await uploadIfAny(); const payload={ bankId, amount:amt, slipNumber: (slip.value||''), notes: (notes.value||''), docUrl };
+        await fetchJson('/api/accounting/deposits',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); show(true,'Saved'); amount.value=slip.value=notes.value=''; document.getElementById('file').value=''; await fillBanks(); }catch(e){ console.error(e); show(false,'Failed to save'); }
+    }
+    function goBack(){ const url='/accounting/dashboard.html'+(embedded()?'?embedded=1':''); location.href=url; }
+    fillBanks();
+  </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Dashboard • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px;margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:900px){ .grid{grid-template-columns:1fr} }
+    textarea{min-height:80px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Customer Dashboard</div></div>
+    <div class="header-right">
+      <button class="ct" type="button" style="margin-right:4px">WhatsApp</button>
+      <button class="ct" type="button">Zoom</button>
+    </div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:8px">Customer Summary</div>
+      <div id="custSummary" class="muted">Loading...</div>
+      <input type="hidden" id="CompanyNameHidden" />
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:8px">Call Notes</div>
+      <div class="grid">
+        <div class="form-group"><label class="form-label">Contact Person</label><input id="ContactPerson" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="Phone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Call Date</label><input id="CallDate" type="date" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Call Time</label><input id="CallTime" type="time" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Customer Journey Stage</label><select id="Journey" class="form-select"><option value="">Select</option><option>Phone Call</option><option>Website</option><option>Pricing</option><option>Agreement and E-Signature</option><option>Onboarding</option></select></div>
+        <div class="form-group"><label class="form-label">Sales Pitch</label><select id="SalesPitch" class="form-select"><option value="">Select</option><option>Intro</option><option>Product Demo</option><option>Pricing Discussion</option><option>Objection Handling</option><option>Closing</option></select></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notes</label><textarea id="Body" class="form-textarea"></textarea></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remarks</label><textarea id="Remarks" class="form-textarea"></textarea></div>
+        <div class="form-group"><label class="form-label">Follow-up</label><div><input id="HasFollowUp" type="checkbox"/> Follow-up required</div></div>
+        <div class="form-group"><label class="form-label">Follow-up At</label><input id="FollowUpAt" type="datetime-local" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Website</label><input id="Website" class="form-input" readonly/></div>
+        <div class="form-group"><label class="form-label">Email</label><input id="Email" class="form-input" readonly/></div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-weight:600;margin-bottom:4px">Quick Notes</div>
+        <div id="quickNotes" class="muted" style="font-size:12px;margin-bottom:4px">No quick notes yet.</div>
+        <button class="ct" type="button" onclick="addQuickNote()">New Quick Note</button>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ct" type="button" onclick="upgradeCompany()">Upgrade Contact</button>
+        <button class="ct" type="button" onclick="editCompany()">Edit Contact</button>
+        <button class="ct" type="button" onclick="deleteCompany()">Delete Contact</button>
+        <button class="ct" type="button" onclick="viewCatalog()">View Catalog</button>
+        <button class="ct" type="button" onclick="viewInventory()">View Inventory</button>
+        <button class="ct" type="button" onclick="viewWebinar()">View Webinar</button>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <a class="ct" href="/crm/search-contacts.html?embedded=1">Back</a>
+        <button class="ct" type="button" onclick="openAppointment()">Appointment</button>
+        <button class="ct" type="button" onclick="openEmail()">Send Email</button>
+        <button class="ct primary" type="button" onclick="saveNote()">Save Note</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:8px">Recent Call Notes</div>
+      <div id="notesList" class="muted">Loading...</div>
+    </div>
+  </div>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    const companyId = parseInt(new URL(location.href).searchParams.get('companyId')||'0');
+
+    async function loadCompany(){
+      if(!companyId){ document.getElementById('custSummary').textContent='No company selected.'; return; }
+      try{
+        const r = await j('/api/crm/companies/'+companyId);
+        const c = r.data.company;
+        document.getElementById('custSummary').innerHTML = `<div style="font-weight:600">${esc(c.CompanyName||'')}</div><div>${esc(c.City||'')}, ${esc(c.Country||'')}</div><div class="muted">${esc(c.Product||'')}</div>`;
+        const hidden = document.getElementById('CompanyNameHidden');
+        if(hidden) hidden.value = c.CompanyName || '';
+        document.getElementById('Website').value = c.Website||'';
+        document.getElementById('Email').value = (r.data.persons && r.data.persons[0] && r.data.persons[0].Email) || '';
+      }catch(e){ console.error(e); document.getElementById('custSummary').textContent='Failed to load company.'; }
+    }
+
+    async function loadNotes(){
+      try{
+        const r = await j('/api/crm/notes?customer='+encodeURIComponent(document.getElementById('CompanyNameHidden')?.value||''));
+        const arr = r.data||[];
+        const box = document.getElementById('notesList');
+        if(!arr.length){ box.textContent='No notes yet.'; return; }
+        box.innerHTML = arr.slice(0,20).map(n=>`<div style='padding:8px 0;border-bottom:1px solid #e2e8f0'><div style='font-size:12px;color:#64748b'>${new Date(n.CreatedAt).toLocaleString()} • ${esc(n.SalesPersonName||'')}</div><div style='font-weight:500'>${esc(n.Subject||'')}</div><div>${esc(n.Body||'')}</div></div>`).join('');
+      }catch(e){ console.error(e); document.getElementById('notesList').textContent='Failed to load notes.'; }
+    }
+
+    function openAppointment(){ if(!companyId) return; location.href='/crm/appointment.html?companyId='+companyId+'&embedded=1'; }
+    function openEmail(){ window.location.href='mailto:'; }
+
+    const QN_KEY='crm_quick_notes_v1';
+    function loadQuickNotes(){
+      let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
+      const box=document.getElementById('quickNotes');
+      if(!box) return;
+      if(!arr.length){ box.textContent='No quick notes yet.'; return; }
+      box.innerHTML=arr.map((t,i)=>`<label style='margin-right:8px;font-size:12px'><input type='radio' name='qn' value='${i}' onclick='applyQuickNote(${i})'/> ${esc(t)}</label>`).join('');
+    }
+    function addQuickNote(){
+      const txt=prompt('Add new quick note text:'); if(!txt) return;
+      let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
+      arr.push(txt); localStorage.setItem(QN_KEY, JSON.stringify(arr)); loadQuickNotes();
+    }
+    function applyQuickNote(i){
+      let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
+      const v=arr[i]||''; const body=document.getElementById('Body'); body.value = v + (body.value?('\n'+body.value):'');
+    }
+    async function saveNote(){
+      const body = (document.getElementById('Body').value||'').trim();
+      if(!body){ alert('Notes required'); return; }
+      const subject = 'Call with '+(document.getElementById('ContactPerson').value||'Customer');
+      const followUpAt = document.getElementById('HasFollowUp').checked ? document.getElementById('FollowUpAt').value || null : null;
+      const payload = {
+        subject,
+        body,
+        followUpAt,
+        customerName: document.getElementById('CompanyNameHidden')?.value || null,
+        salesPersonName: null
+      };
+      try{
+        await j('/api/crm/notes',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Saved');
+        document.getElementById('Body').value='';
+        document.getElementById('Remarks').value='';
+        document.getElementById('HasFollowUp').checked=false;
+        document.getElementById('FollowUpAt').value='';
+        loadNotes();
+      }catch(e){ console.error(e); alert('Failed to save'); }
+    }
+    function upgradeCompany(){ if(!companyId) return; fetch('/api/crm/companies/'+companyId+'/upgrade',{ method:'POST', credentials:'include' }).then(()=>loadCompany()).catch(()=>alert('Failed to upgrade')); }
+    function editCompany(){ if(!companyId) return; location.href='/crm/add-contact-advanced.html?embedded=1&id='+companyId; }
+    function deleteCompany(){ if(!companyId || !confirm('Delete this company?')) return; fetch('/api/crm/companies/'+companyId,{ method:'DELETE', credentials:'include' }).then(()=>{ location.href='/crm/search-contacts.html?embedded=1'; }).catch(()=>alert('Failed to delete')); }
+    function viewCatalog(){ alert('Catalog view coming soon'); }
+    function viewInventory(){ alert('Inventory view coming soon'); }
+    function viewWebinar(){ alert('Webinar view coming soon'); }
+
+    loadCompany();
+    loadNotes();
+    loadQuickNotes();
+  </script>
+</body>
+</html>

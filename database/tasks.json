@@ -1,0 +1,12 @@
+[
+  {
+    "id": "t_mia9sv4xcsuq",
+    "title": "New Task",
+    "date": "2025-11-24",
+    "assigneeId": 3,
+    "startHour": 12,
+    "endHour": 13,
+    "priority": "High",
+    "note": null
+  }
+]

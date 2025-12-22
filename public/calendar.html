@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Planner • Calendar</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .layout{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:260px 1fr;gap:12px}
+    @media(max-width:960px){.layout{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.06);padding:12px}
+    .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:12px}
+    .day-cell{border-radius:6px;padding:6px;text-align:center;cursor:pointer}
+    .day-cell.today{border:1px solid #0ea5e9;font-weight:700}
+    .day-cell.selected{background:#0ea5e9;color:#fff}
+    .day-cell.muted{color:#94a3b8}
+    .timeline{overflow:auto}
+    .timeline-header{display:grid;grid-template-columns:160px repeat(24,60px);font-size:11px;border-bottom:1px solid #e2e8f0}
+    .timeline-header div{padding:4px;text-align:center;white-space:nowrap}
+    .timeline-row{display:grid;grid-template-columns:160px repeat(24,60px);font-size:11px;border-bottom:1px solid #f1f5f9}
+    .timeline-row .label{padding:6px;font-weight:600;background:#f8fafc}
+    .slot{border-left:1px solid #f1f5f9;min-height:32px;cursor:pointer;position:relative}
+    .slot:hover{background:#e0f2fe}
+    .task-pill{position:absolute;left:2px;right:2px;top:2px;bottom:2px;border-radius:4px;background:#0ea5e9;color:#fff;font-size:10px;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .muted{color:#64748b;font-size:12px}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal.open{display:flex}
+    .modal-content{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:520px;width:100%;padding:14px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:640px){.row2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Task Planner</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="layout">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <button class="ct" type="button" onclick="shiftMonth(-1)">Prev</button>
+        <div id="monthLabel" style="font-weight:700"></div>
+        <button class="ct" type="button" onclick="shiftMonth(1)">Next</button>
+      </div>
+      <div class="month-grid" id="monthGrid"></div>
+      <div class="muted" style="margin-top:8px">Click a day then click a user/time slot on the right to assign a task.</div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-weight:700">Tasks</div>
+        <div id="selectedDay" class="muted"></div>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <div style="font-weight:700;margin-bottom:6px">New Task</div>
+      <div class="row2">
+        <div class="form-group"><label class="form-label">Start</label><input id="tmStart" type="datetime-local" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">End</label><input id="tmEnd" type="datetime-local" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Task</label><input id="tmTitle" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Priority</label><select id="tmPriority" class="form-select"><option>High</option><option>Medium</option><option>Low</option></select></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Description</label><textarea id="tmDesc" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Upload Image</label><input id="tmImage" type="file" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Assign To</label><select id="tmAssignee" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">Assign By</label><input id="tmAssignBy" class="form-input" readonly/></div>
+        <div class="form-group"><label class="form-label">Repeat</label><select id="tmRepeat" class="form-select" onchange="onRepeatChange()"><option>Does Not Repeat</option><option>Daily</option><option>Weekly</option><option>Monthly</option><option>Annually</option></select></div>
+        <div class="form-group" id="tmRepeatDetails" style="grid-column:1/-1;display:none">
+          <div id="tmRepeatDaily" style="display:none" class="muted">Repeat every <input id="tmEveryDays" type="number" min="1" value="1" style="width:60px"/> day(s).</div>
+          <div id="tmRepeatWeekly" style="display:none" class="muted">Repeat weekly on: Mon Tue Wed Thu Fri Sat Sun (stored as note hint).</div>
+          <div id="tmRepeatMonthly" style="display:none" class="muted">Repeat monthly (stored as note hint).</div>
+          <div id="tmRepeatYearly" style="display:none" class="muted">Repeat annually (stored as note hint).</div>
+          <div class="muted" style="margin-top:4px">End: <label><input type="radio" name="tmEndMode" value="none" checked/> Indefinitely</label> <label><input type="radio" name="tmEndMode" value="until"/> Until <input id="tmUntilDate" type="date"/></label> <label><input type="radio" name="tmEndMode" value="count"/> Repeat <input id="tmRepeatCount" type="number" min="1" value="1" style="width:60px"/> time(s)</label></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="ct" type="button" onclick="closeTaskModal()">Back</button>
+        <button class="ct primary" type="button" onclick="saveTask()">OK</button>
+      </div>
+      <div class="muted" style="margin-top:6px">Help: Tasks are stored per day and assignee. Repeat settings are recorded in notes for now.</div>
+    </div>
+  </div>
+
+  <script>
+    function embedded(){ return new URL(location.href).searchParams.get('embedded')==='1'; }
+    if(embedded()){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    let currentMonth=new Date(); let selectedDate=new Date(); let employees=[]; let currentUserName=''; let slotSeed=null; let tasksCache=[];
+
+    async function init(){
+      await loadMeAndEmployees();
+      renderMonth();
+      await loadTasksForMonth();
+      renderTimeline();
+    }
+
+    async function loadMeAndEmployees(){
+      try{
+        const me=await j('/api/auth/me'); const tid=me.data?.tenantId; currentUserName = me.data?.user?.FullName || '';
+        document.getElementById('tmAssignBy').value=currentUserName;
+        if(!tid){ employees=[]; return; }
+        const emp=await j('/api/tenant/'+tid+'/employees'); employees=emp.data||[];
+        const sel=document.getElementById('tmAssignee'); sel.innerHTML = employees.map(e=>`<option value='${e.CompanyUserId}'>${e.FullName||e.Email}</option>`).join('');
+      }catch(e){ console.error(e); employees=[]; }
+    }
+
+    function renderMonth(){
+      const y=currentMonth.getFullYear(); const m=currentMonth.getMonth();
+      document.getElementById('monthLabel').textContent=currentMonth.toLocaleString(undefined,{month:'long',year:'numeric'});
+      const grid=document.getElementById('monthGrid'); grid.innerHTML='';
+      const first=new Date(y,m,1); const startDay=(first.getDay()+6)%7; // make Monday=0
+      const daysInMonth=new Date(y,m+1,0).getDate();
+      const prevDays=new Date(y,m,0).getDate();
+      const cells=[];
+      for(let i=startDay-1;i>=0;i--){ cells.push({d:prevDays-i,off:-1}); }
+      for(let d=1;d<=daysInMonth;d++){ cells.push({d,off:0}); }
+      while(cells.length%7!==0){ cells.push({d:cells.length%7+1,off:1}); }
+      const today=new Date();
+      cells.forEach((c,idx)=>{
+        const el=document.createElement('div'); el.className='day-cell';
+        if(c.off!==0) el.classList.add('muted');
+        const cellDate=new Date(y,m+c.off,c.d);
+        if(cellDate.toDateString()===today.toDateString()) el.classList.add('today');
+        if(cellDate.toDateString()===selectedDate.toDateString()) el.classList.add('selected');
+        el.textContent=c.d; el.onclick=()=>{ selectedDate=cellDate; renderMonth(); renderTimeline(); };
+        grid.appendChild(el);
+      });
+      document.getElementById('selectedDay').textContent = selectedDate.toDateString();
+    }
+
+    function shiftMonth(delta){ currentMonth=new Date(currentMonth.getFullYear(), currentMonth.getMonth()+delta,1); renderMonth(); loadTasksForMonth().then(renderTimeline); }
+
+    async function loadTasksForMonth(){
+      try{
+        // tasks are stored with a date field; we can load all and filter client-side for now
+        const r=await j('/api/tasks'); tasksCache=r.data||[];
+      }catch(e){ console.error(e); tasksCache=[]; }
+    }
+
+    function renderTimeline(){
+      const cont=document.getElementById('timeline'); cont.innerHTML='';
+      const head=document.createElement('div'); head.className='timeline-header';
+      head.innerHTML='<div></div>'+Array.from({length:24},(_,h)=>`<div>${h}:00</div>`).join('');
+      cont.appendChild(head);
+      const dayStr=selectedDate.toISOString().slice(0,10);
+      const byAssignee=new Map();
+      tasksCache.filter(t=>t.date===dayStr).forEach(t=>{
+        const list=byAssignee.get(t.assigneeId)||[]; list.push(t); byAssignee.set(t.assigneeId,list);
+      });
+      const users = employees.length? employees: [{CompanyUserId:1, FullName:'User 1'}];
+      users.forEach(u=>{
+        const row=document.createElement('div'); row.className='timeline-row';
+        row.innerHTML=`<div class="label">${u.FullName||u.Email||('User '+u.CompanyUserId)}</div>`+Array.from({length:24},(_,h)=>`<div class="slot" data-hour="${h}" data-assignee="${u.CompanyUserId}"></div>`).join('');
+        cont.appendChild(row);
+      });
+      // place tasks
+      users.forEach(u=>{
+        const list=byAssignee.get(u.CompanyUserId)||[];
+        list.forEach(t=>{
+          const startH=t.startHour||0; const endH=t.endHour||startH+1;
+          for(let h=startH; h<endH && h<24; h++){
+            const slot = cont.querySelector(`.slot[data-assignee="${u.CompanyUserId}"][data-hour="${h}"]`);
+            if(slot){ const pill=document.createElement('div'); pill.className='task-pill'; pill.textContent=t.title||'Task'; slot.appendChild(pill); }
+          }
+        });
+      });
+      // click handler
+      cont.querySelectorAll('.slot').forEach(sl=>{
+        sl.onclick=()=>{
+          const h=parseInt(sl.getAttribute('data-hour')); const aid=parseInt(sl.getAttribute('data-assignee'));
+          openTaskModal(aid,h);
+        };
+      });
+    }
+
+    function onRepeatChange(){
+      const v=document.getElementById('tmRepeat').value; const box=document.getElementById('tmRepeatDetails');
+      box.style.display = v==='Does Not Repeat' ? 'none':'block';
+      ['tmRepeatDaily','tmRepeatWeekly','tmRepeatMonthly','tmRepeatYearly'].forEach(id=>document.getElementById(id).style.display='none');
+      if(v==='Daily') document.getElementById('tmRepeatDaily').style.display='block';
+      if(v==='Weekly') document.getElementById('tmRepeatWeekly').style.display='block';
+      if(v==='Monthly') document.getElementById('tmRepeatMonthly').style.display='block';
+      if(v==='Annually') document.getElementById('tmRepeatYearly').style.display='block';
+    }
+
+    function openTaskModal(assigneeId,hour){
+      slotSeed={assigneeId,hour};
+      const d=selectedDate.toISOString().slice(0,10);
+      document.getElementById('tmStart').value = d+'T'+String(hour).padStart(2,'0')+':00';
+      document.getElementById('tmEnd').value = d+'T'+String(Math.min(hour+1,23)).padStart(2,'0')+':00';
+      document.getElementById('tmTitle').value='';
+      document.getElementById('tmDesc').value='';
+      document.getElementById('tmPriority').value='High';
+      document.getElementById('tmRepeat').value='Does Not Repeat'; onRepeatChange();
+      const sel=document.getElementById('tmAssignee'); if(assigneeId){ sel.value=String(assigneeId); }
+      document.getElementById('taskModal').classList.add('open');
+    }
+    function closeTaskModal(){ document.getElementById('taskModal').classList.remove('open'); }
+
+    async function saveTask(){
+      if(!slotSeed){ alert('No slot selected'); return; }
+      const dateStr=selectedDate.toISOString().slice(0,10);
+      const start = new Date(document.getElementById('tmStart').value || (dateStr+'T00:00'));
+      const end   = new Date(document.getElementById('tmEnd').value || (dateStr+'T01:00'));
+      const title = (document.getElementById('tmTitle').value || '').trim();
+      if(!title){ alert('Task is required'); return; }
+      const desc  = document.getElementById('tmDesc').value || '';
+      const priority = document.getElementById('tmPriority').value || 'High';
+      const assigneeId = parseInt(document.getElementById('tmAssignee').value||slotSeed.assigneeId||1);
+      // encode repeat info into note
+      const repeat = document.getElementById('tmRepeat').value;
+      let note = desc;
+      if(repeat!=='Does Not Repeat'){
+        const mode=document.querySelector('input[name="tmEndMode"]:checked')?.value||'none';
+        const parts=[`Repeat:${repeat}`];
+        if(repeat==='Daily'){ parts.push('Every '+(document.getElementById('tmEveryDays').value||'1')+' day(s)'); }
+        if(mode==='until'){ parts.push('Until '+(document.getElementById('tmUntilDate').value||'')); }
+        if(mode==='count'){ parts.push('Count '+(document.getElementById('tmRepeatCount').value||'1')); }
+        note = (desc? desc+' | ':'')+parts.join('; ');
+      }
+      const payload={
+        title,
+        date: dateStr,
+        assigneeId,
+        startHour: start.getHours(),
+        endHour: Math.max(start.getHours()+1, end.getHours()),
+        priority,
+        note
+      };
+      try{
+        await j('/api/tasks',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        closeTaskModal();
+        await loadTasksForMonth();
+        renderTimeline();
+      }catch(e){ console.error(e); alert('Failed to save task'); }
+    }
+
+    init();
+  </script>
+</body>
+</html>

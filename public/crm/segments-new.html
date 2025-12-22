@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Segment • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .list-box{border:1px solid #e2e8f0;border-radius:10px;max-height:260px;overflow:auto;padding:8px;background:#f8fafc}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">New Segment</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="grid">
+        <div class="form-group"><label class="form-label">Segment Name</label><input id="segName" class="form-input" placeholder="e.g. Top US Buyers"/></div>
+        <div class="form-group"><label class="form-label">Type to Search Companies</label><input id="q" class="form-input" placeholder="Enter few letters of company / city"/></div>
+      </div>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Add Companies</label>
+        <div class="list-box" id="companiesBox">Type to search above and press Enter…</div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <a class="ct" href="/crm/segments.html?embedded=1">Back</a>
+        <button class="ct primary" type="button" onclick="createSegment()">Create Segment</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    let lastCompanies=[];
+    async function searchCompanies(){
+      const q=(document.getElementById('q').value||'').trim();
+      if(!q){ document.getElementById('companiesBox').textContent='Type to search above and press Enter…'; return; }
+      try{
+        const p=new URLSearchParams(); p.set('q',q);
+        const r=await j('/api/crm/companies?'+p.toString());
+        lastCompanies=r.data||[];
+        const box=document.getElementById('companiesBox');
+        if(!lastCompanies.length){ box.textContent='No companies found.'; return; }
+        box.innerHTML = lastCompanies.map(c=>`<label style='display:block;margin:4px 0;font-size:13px'><input type='checkbox' value='${c.Id}'/> ${esc(c.CompanyName)} <span class='muted'>${esc(c.City||'')}, ${esc(c.Country||'')}</span></label>`).join('');
+      }catch(e){ console.error(e); alert('Failed to search companies'); }
+    }
+    document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); searchCompanies(); }});
+    async function createSegment(){
+      const name=(document.getElementById('segName').value||'').trim();
+      if(!name){ show(false,'Segment name is required'); return; }
+      const checks=[...document.querySelectorAll('#companiesBox input[type=checkbox]')].filter(x=>x.checked).map(x=>parseInt(x.value));
+      if(!checks.length){ if(!confirm('Create segment without companies?')) return; }
+      try{
+        const seg=await j('/api/crm/segments',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
+        const id=seg.id;
+        if(checks.length){
+          await j('/api/crm/segments/'+id+'/companies',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ companyIds: checks }) });
+        }
+        show(true,'Segment created');
+        setTimeout(()=>{ location.href='/crm/segments.html?embedded=1'; },800);
+      }catch(e){ console.error(e); show(false,'Failed to create segment'); }
+    }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+  </script>
+</body>
+</html>

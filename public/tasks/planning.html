@@ -7,28 +7,28 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css">
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#ffffff;color:#0f172a}
     .shell{max-width:1200px;margin:0 auto;padding:22px}
     .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .muted{color:#94a3b8}
+    .muted{color:#64748b}
     .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}
-    .day{padding:6px;border-radius:6px;text-align:center;background:#0f172a;border:1px solid #1f2a3b;cursor:pointer}
-    .day.today{outline:2px solid #7c3aed}
-    .day.sel{background:#1f2937;border-color:#334155}
-    .timeline{display:grid;grid-template-columns:150px repeat(24,1fr);border:1px solid #1f2a3b;border-radius:10px;margin-top:14px;overflow:hidden;position:relative}
-    .t-head{background:#0f172a}
-    .t-cell{padding:8px;border-right:1px solid #1f2a3b;font-size:12px;color:#94a3b8;text-align:center}
+    .day{padding:6px;border-radius:6px;text-align:center;background:#ffffff;border:1px solid #e2e8f0;cursor:pointer}
+    .day.today{outline:2px solid #7c3aed;background:#f5f3ff}
+    .day.sel{background:#f1f5f9;border-color:#cbd5e1}
+    .timeline{display:grid;grid-template-columns:150px repeat(24,1fr);border:1px solid #e2e8f0;border-radius:10px;margin-top:14px;overflow:hidden;position:relative;background:#ffffff}
+    .t-head{background:#f8fafc}
+    .t-cell{padding:8px;border-right:1px solid #e2e8f0;font-size:12px;color:#64748b;text-align:center}
     .t-row{display:contents}
-    .u-cell{background:#0f172a;padding:10px;border-top:1px solid #1f2a3b}
-    .g-cell{position:relative;height:54px;border-top:1px solid #1f2a3b;border-right:1px dashed #1f2a3b}
-    .task{position:absolute;height:42px;background:#7c3aed;color:#fff;border-radius:8px;padding:6px 8px;font-size:12px;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+    .u-cell{background:#ffffff;padding:10px;border-top:1px solid #e2e8f0}
+    .g-cell{position:relative;height:54px;border-top:1px solid #e2e8f0;border-right:1px dashed #e2e8f0;background:#ffffff}
+    .task{position:absolute;height:42px;background:#7c3aed;color:#ffffff;border-radius:8px;padding:6px 8px;font-size:12px;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.15)}
     .task .h{position:absolute;top:0;bottom:0;width:6px;cursor:ew-resize}
     .task .h.l{left:0}
     .task .h.r{right:0}
-    .selection{position:absolute;height:42px;background:#22c55e33;border:2px dashed #22c55e;border-radius:8px;pointer-events:none}
-    .btn{padding:8px 12px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
-    input{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb}
-    dialog{border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb;border-radius:12px;padding:16px}
+    .selection{position:absolute;height:42px;background:#22c55e22;border:2px dashed #22c55e;border-radius:8px;pointer-events:none}
+    .btn{padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;background:#0ea5e9;color:#ffffff;cursor:pointer}
+    input,textarea,select{padding:10px;border-radius:8px;border:1px solid #e2e8f0;background:#ffffff;color:#0f172a}
+    dialog{border:1px solid #e2e8f0;background:#ffffff;color:#0f172a;border-radius:12px;padding:16px}
   </style>
 </head>
 <body>
@@ -50,15 +50,36 @@
   </div>
 
   <dialog id="taskModal">
-    <form method="dialog" onsubmit="return false;">
+    <form method="dialog" onsubmit="return false;" id="taskForm">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <label>Title <input id="m_title"/></label>
-        <label>Assignee <input id="m_assignee"/></label>
-        <label>Start (HH) <input id="m_start" type="number" min="0" max="23"/></label>
-        <label>End (HH) <input id="m_end" type="number" min="1" max="24"/></label>
+        <label>Start <input id="m_startdt" type="datetime-local"/></label>
+        <label>End <input id="m_enddt" type="datetime-local"/></label>
+        <label>Task <input id="m_title"/></label>
+        <label>Task Description <textarea id="m_desc" rows="2"></textarea></label>
+        <label>Upload Image (if any) <input id="m_file" type="file" accept="image/*"/></label>
+        <label>Task Priority
+          <select id="m_priority">
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High" selected>High</option>
+          </select>
+        </label>
+        <label>Assign To
+          <select id="m_assignTo"></select>
+        </label>
+        <label class="full">Note <textarea id="m_note" rows="3"></textarea></label>
+        <label>Assign By <input id="m_assignBy" type="email"/></label>
+        <label>Repeat
+          <select id="m_repeat">
+            <option value="none">Does not repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </label>
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn" onclick="saveModal()">Save</button>
+        <button class="btn" onclick="saveModal()">OK</button>
         <button class="btn" style="background:#64748b" onclick="closeModal()">Cancel</button>
       </div>
     </form>
@@ -72,6 +93,11 @@
     let editing=null;
     let selecting=false; let selStart=null; let selEnd=null; let selEl=null;
     let resizing=null; // {id, side:'l'|'r'}
+
+    // email mapping for Assign To dropdown (id <-> email)
+    const userEmailById={1:'aliya@arshco.com',2:'alex@arshco.com',3:'maria@arshco.com',4:'manny@arshco.com',5:'sue@arshco.com',6:'hugh@arshco.com'};
+    const userIdByEmail=Object.fromEntries(Object.entries(userEmailById).map(([k,v])=>[v, Number(k)]));
+    const currentUserEmail = (localStorage.getItem('userEmail')||'umair55@arshco.com');
 
     function fmtDate(d){return d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}
 
@@ -180,25 +206,51 @@
       selStart=selEnd=null;
     }
 
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function toLocalInputValue(d){
+      const y=d.getFullYear(); const m=pad2(d.getMonth()+1); const da=pad2(d.getDate());
+      const h=pad2(d.getHours()); const mi=pad2(d.getMinutes());
+      return `${y}-${m}-${da}T${h}:${mi}`;
+    }
     function openModal(t){ editing=t; const m=document.getElementById('taskModal');
       document.getElementById('m_title').value=t.title||'';
-      document.getElementById('m_assignee').value=users.find(x=>x.id===t.assigneeId)?.name||'';
-      document.getElementById('m_start').value=t.startHour||0;
-      document.getElementById('m_end').value=t.endHour||1;
+      // init start/end default using currentDate + hours
+      const s=new Date(currentDate); s.setHours(t.startHour||0,0,0,0);
+      const e=new Date(currentDate); e.setHours(Math.max((t.endHour||1),(t.startHour||0)+1),0,0,0);
+      document.getElementById('m_startdt').value = toLocalInputValue(s);
+      document.getElementById('m_enddt').value = toLocalInputValue(e);
+      // assign to options
+      const sel = document.getElementById('m_assignTo');
+      sel.innerHTML = Object.values(userEmailById).map(em=>`<option value="${em}">${em}</option>`).join('');
+      sel.value = userEmailById[t.assigneeId] || Object.values(userEmailById)[0];
+      document.getElementById('m_priority').value = 'High';
+      document.getElementById('m_assignBy').value = currentUserEmail;
+      document.getElementById('m_desc').value = '';
+      document.getElementById('m_note').value = '';
+      document.getElementById('m_repeat').value = 'none';
       m.showModal();
     }
     function closeModal(){ document.getElementById('taskModal').close(); }
     async function saveModal(){
-      const title=document.getElementById('m_title').value.trim()||'Task';
-      const start=+document.getElementById('m_start').value||0;
-      const end=Math.max(start+1,+document.getElementById('m_end').value||start+1);
+      const title=(document.getElementById('m_title').value||'').trim()||'Task';
+      const startStr=document.getElementById('m_startdt').value; const endStr=document.getElementById('m_enddt').value;
+      if(!startStr||!endStr){ alert('Start and End are required'); return; }
+      const startDT=new Date(startStr); const endDT=new Date(endStr);
+      if(!(endDT>startDT)){ alert('End must be after Start'); return; }
+      // derive API-compatible fields
+      const dateStr = startDT.toISOString().slice(0,10);
+      const startHour = startDT.getHours();
+      const endHour = Math.min(24, Math.max(startHour+1, Math.ceil(endDT.getHours() + endDT.getMinutes()/60)));
+      const assigneeEmail = document.getElementById('m_assignTo').value;
+      const assigneeId = userIdByEmail[assigneeEmail] || (editing.assigneeId||1);
+
       if(editing.id==='new'){
-        const payload={ date: currentDate.toISOString().slice(0,10), title, assigneeId: editing.assigneeId, startHour:start, endHour:end };
+        const payload={ date: dateStr, title, assigneeId, startHour, endHour };
         try{ const newId = await TasksAPI.createTask(payload); tasks.push({id:newId||('t'+Math.random().toString(36).slice(2,7)), ...payload}); }
         catch(err){ alert('Create failed: '+err.message); }
       } else {
-        const t=tasks.find(x=>x.id===editing.id); if(t){ t.title=title; t.startHour=start; t.endHour=end; }
-        try{ await TasksAPI.updateTask(editing.id,{date:currentDate.toISOString().slice(0,10), title, assigneeId:t.assigneeId, startHour:start, endHour:end}); }
+        const t=tasks.find(x=>x.id===editing.id); if(t){ t.title=title; t.startHour=startHour; t.endHour=endHour; t.assigneeId=assigneeId; }
+        try{ await TasksAPI.updateTask(editing.id,{date:dateStr, title, assigneeId, startHour, endHour}); }
         catch(err){ alert('Save failed: '+err.message); }
       }
       closeModal(); renderTimeline();

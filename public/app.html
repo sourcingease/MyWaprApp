@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/app.css">
   <style>
     body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial;background:#f5f7fa;color:#0f172a}
-    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:12px 20px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
+.dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:12px 20px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
     .header-left{display:flex;align-items:center;gap:12px}
     .logo-small{max-height:40px}
     .dashboard-title{font-size:18px;font-weight:700}
@@ -34,11 +34,14 @@
     <div class="dashboard-card">
       <div style="font-weight:700;margin-bottom:6px">Modules</div>
       <div class="nav">
-        <a href="#/profile">👤 Company Setup</a>
+        <a href="#/profile">👤 Business Setup</a>
         <a href="#/safety">🦺 Safety Office</a>
+        <a href="#/auditor">🧑‍⚖️ Safety Auditor</a>
         <a href="#/hr">👥 HR & Payroll</a>
         <a href="#/accounting">💰 Accounting</a>
         <a href="#/crm">🧩 CRM</a>
+        <a href="#/support">💬 Support</a>
+        <a href="#/ai">🤖 AI</a>
       </div>
     </div>
     <div class="dashboard-card" style="padding:0">
@@ -57,9 +60,17 @@
       const map={
         '#/profile':'/profile.html?embedded=1',
         '#/safety':'/masters/safety-office.html?embedded=1',
+        '#/auditor':'/masters/safety-auditor.html?embedded=1',
         '#/hr':'/hr/index.html',
-        '#/accounting':'/accounting/index.html',
-        '#/crm':'/crm/index.html'
+        '#/accounting':'/accounting/dashboard.html?embedded=1',
+        '#/crm':'/crm/index.html',
+        '#/support':'/support.html?embedded=1',
+        '#/ai':'/ai/analyst.html?embedded=1',
+        '#/chat':'/crm/chat.html',
+        '#/report':'/report.html?embedded=1',
+        '#/tracking':'/tracking.html?embedded=1',
+        '#/employees':'/employees.html?embedded=1',
+        '#/employees-add':'/employees.html?embedded=1#add'
       };
       const url = map[hash] || map['#/profile'];
       document.getElementById('appFrame').src = url;

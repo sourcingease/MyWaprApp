@@ -3,54 +3,273 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HR & Payroll • ComplytEX</title>
+  <title>HR & Payroll • Add New Employee</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css">
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1200px;margin:0 auto;padding:22px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
-    .title{font-size:22px;font-weight:800;margin-bottom:4px}
-    .muted{color:#94a3b8}
-    a{color:#a78bfa;text-decoration:none}
-    .btn{display:inline-block;margin-top:10px;background:#7c3aed;border:0;color:#fff;padding:10px 14px;border-radius:8px}
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f5f7fa;color:#0f172a}
+    .shell{max-width:1200px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.06);padding:16px;margin-bottom:12px}
+    .icons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+    .icons a{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;border:1px solid #e2e8f0;text-decoration:none;color:#0f172a;background:#fff;font-size:13px}
+    .icons a span{font-size:18px}
+    .tabs{display:flex;gap:8px;border-bottom:1px solid #e2e8f0;margin-top:8px}
+    .tabs button{border:0;background:transparent;padding:8px 12px;border-radius:999px;font-size:13px;cursor:pointer}
+    .tabs button.active{background:#0ea5e9;color:#fff}
+    .tab-panel{margin-top:10px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    @media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
   </style>
 </head>
 <body>
   <script src="/js/master-layout.js"></script>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">HR & Payroll • Add New Employee</div></div>
+    <div class="header-right"></div>
+  </div>
   <div class="shell">
-    <div class="title">HR & Payroll</div>
-    <div class="muted">Entry point for the React-based HR module (DashboardLayout → EmployeeManagement, HRDashboard, etc.).
-      This placeholder links to existing pages until the React app is wired.</div>
-
-    <div class="grid" style="margin-top:16px">
-      <div class="card">
-        <div style="font-weight:700">Employees</div>
-        <div class="muted">Add, view and edit employee records.</div>
-        <a class="btn" href="/employees.html">Open Employees</a>
+    <div class="card">
+      <div class="icons">
+        <a href="/hr/job-posting.html?embedded=1"><span>📝</span> Job Posting</a>
+        <a href="/hr/job-postings-list.html?embedded=1"><span>📋</span> List of Job Postings</a>
+        <a href="/hr/search-applicants.html?embedded=1"><span>🔎</span> Search Applicants</a>
+        <a href="/hr/shortlisted.html?embedded=1"><span>⭐</span> Shortlisted Applicants</a>
+        <a href="#" onclick="scrollToForm();return false;"><span>👤</span> Add New Employee</a>
       </div>
-      <div class="card">
-        <div style="font-weight:700">Job Postings</div>
-        <div class="muted">Create and manage job postings; track applicants.</div>
-        <a class="btn" href="/hr/job-postings.html">Open Job Postings</a>
+      <div class="tabs">
+        <button id="tab-main" class="active" onclick="showTab('main')">Add New Employee</button>
+        <button id="tab-totals" onclick="showTab('totals')">Totals</button>
+        <button id="tab-payroll" onclick="showTab('payroll')">Payroll Details</button>
       </div>
-      <div class="card">
-        <div style="font-weight:700">Applicants</div>
-        <div class="muted">Review applicants for open roles.</div>
-        <a class="btn" href="/hr/applicants.html">Open Applicants</a>
+      <div class="tab-panel" id="panel-main">
+        <form id="empForm" onsubmit="saveProfile();return false;">
+          <div class="grid">
+            <div class="form-group"><label class="form-label">Employee Name *</label><input id="EmpName" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Email Address *</label><input id="EmpEmail" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Active</label><div><input id="EmpActive" type="checkbox"/> Active Y/N</div></div>
+            <div class="form-group"><label class="form-label">Address 1</label><input id="EmpAddr1" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Address 2</label><input id="EmpAddr2" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Phone</label><input id="EmpPhone" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Country</label><input id="EmpCountry" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">State/Province</label><input id="EmpState" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Zip/Area Code</label><input id="EmpZip" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Fax</label><input id="EmpFax" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Employee Type</label><select id="EmpType" class="form-select"><option value="">Select</option><option>Salary</option><option>Commission</option><option>Hourly</option><option>Salary+Commission</option></select></div>
+            <div class="form-group"><label class="form-label">Department</label><select id="EmpDept" class="form-select"><option value="">Select</option><option>Marketing</option><option>Sales</option><option>HR</option><option>Merchandising</option><option>Accounts</option><option>Sewing</option><option>Printing</option><option>Design</option><option>Packaging</option><option>Others</option></select></div>
+            <div class="form-group"><label class="form-label">SS Number / NID</label><input id="EmpSSN" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Hire Date</label><input id="EmpHire" type="date" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Birthday</label><input id="EmpBirth" type="date" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Commissionable</label><div><input id="EmpComm" type="checkbox"/> Commissionable</div></div>
+            <div class="form-group"><label class="form-label">Commission Percent</label><input id="EmpCommPct" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Next of Kin Name</label><input id="EmpKinName" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Next of Kin Number</label><input id="EmpKinNum" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Source Type</label><select id="EmpSource" class="form-select"><option value="">Select</option><option>Customer</option><option>Direct</option><option>Magazine</option><option>Newspaper</option><option>Other</option></select></div>
+            <div class="form-group"><label class="form-label">Industry</label><input id="EmpIndustry" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Geographical Location</label><select id="EmpGeo" class="form-select"><option value="">Select</option><option>Urban</option><option>Rural</option></select></div>
+            <div class="form-group"><label class="form-label">Any Disability</label><select id="EmpDisability" class="form-select"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+            <div class="form-group"><label class="form-label">Work-Injury Victim</label><select id="EmpInjury" class="form-select"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+            <div class="form-group"><label class="form-label">Health Insurance</label><select id="EmpHealth" class="form-select"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+            <div class="form-group"><label class="form-label">ID Number</label><input id="EmpIdNum" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Heritage</label><select id="EmpHeritage" class="form-select"><option value="">Select</option><option>African American / Black</option><option>Asian</option><option>Caucasian / White</option><option>Hispanic / Latino</option><option>Indigenous / Native American</option><option>Middle Eastern</option><option>Pacific Islander</option><option>Multiracial / Mixed Heritage</option><option>Other</option></select></div>
+            <div class="form-group"><label class="form-label">Sexual Orientation</label><select id="EmpSexual" class="form-select"><option value="">Select</option><option>Heterosexual / Straight</option><option>Homosexual / Gay</option><option>Lesbian</option><option>Bisexual</option><option>Pansexual</option><option>Asexual</option><option>Queer</option><option>Questioning / Not Certain</option><option>Prefer Not to Say</option></select></div>
+            <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notes</label><textarea id="EmpNotes" class="form-textarea" rows="3"></textarea></div>
+            <div class="form-group" style="grid-column:1/-1"><label class="form-label">Job Description</label><textarea id="EmpJobDesc" class="form-textarea" rows="3"></textarea></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button class="ct" type="button" onclick="resetForm()">Clear</button>
+            <button class="ct primary" type="submit">Save</button>
+          </div>
+        </form>
       </div>
-      <div class="card">
-        <div style="font-weight:700">Payroll (Coming Soon)</div>
-        <div class="muted">Run payroll and manage salary scales.</div>
-        <a class="btn" href="#" onclick="alert('Coming soon')">Coming Soon</a>
+      <div class="tab-panel" id="panel-totals" style="display:none">
+        <form id="totalsForm" onsubmit="saveTotals();return false;">
+          <div class="grid">
+            <div class="form-group"><label class="form-label">Month to Date Gross</label><input id="T_MTD_Gross" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Month to Date State</label><input id="T_MTD_State" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Quarter to Date Gross</label><input id="T_QTD_Gross" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Quarter to Date State</label><input id="T_QTD_State" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Year to Date Gross</label><input id="T_YTD_Gross" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Year to Date State</label><input id="T_YTD_State" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Month to Date FICA/EOBI</label><input id="T_MTD_Fica" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Quarter to Date FICA/EOBI</label><input id="T_QTD_Fica" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Year to Date FICA/EOBI</label><input id="T_YTD_Fica" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Month to Date Local</label><input id="T_MTD_Local" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Quarter to Date Local</label><input id="T_QTD_Local" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Year to Date Local</label><input id="T_YTD_Local" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Month to Date Federal</label><input id="T_MTD_Federal" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Quarter to Date Federal</label><input id="T_QTD_Federal" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Year to Date Federal</label><input id="T_YTD_Federal" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Month to Date Other</label><input id="T_MTD_Other" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Quarter to Date Other</label><input id="T_QTD_Other" type="number" step="0.01" class="form-input"/></div>
+            <div class="form-group"><label class="form-label">Year to Date Other</label><input id="T_YTD_Other" type="number" step="0.01" class="form-input"/></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button class="ct" type="button" onclick="loadTotals()">Back</button>
+            <button class="ct primary" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+      <div class="tab-panel" id="panel-payroll" style="display:none">
+        <div class="muted">Payroll Details tab (Salary Scale, Pay Frequency, etc.) will be implemented on top of payroll tables.</div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:18px">
-      <div style="font-weight:700;margin-bottom:6px">Architecture Blueprint</div>
-      <div class="muted">DashboardLayout (router/shell) → EmployeeManagement (view controller) → EmployeeForm (smart form) • HRDashboard (job postings) • Strongly typed models (Employee, SalaryScale, JobPosting, Applicant).</div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:4px">Employees</div>
+      <table>
+        <thead><tr><th>Employee ID</th><th>Name</th><th>Department</th><th>Email</th><th>Phone</th><th>Country</th><th>Active</th><th>Actions</th></tr></thead>
+        <tbody id="empRows"><tr><td colspan="8">Loading...</td></tr></tbody>
+      </table>
     </div>
   </div>
+  <script>
+    // Hide the local HR header when this page is rendered inside another dashboard
+    // (e.g. Safety Officer working area). The parent frame passes embedded=1
+    // so we don't end up with two stacked headers.
+    (function(){
+      try{
+        if(new URL(location.href).searchParams.get('embedded') === '1'){
+          var h = document.getElementById('hdr');
+          if(h) h.style.display = 'none';
+        }
+      }catch(e){}
+    })();
+
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    let currentEmpId=null; let employees=[];
+
+    // Pre-fill Add Employee form when launched from Shortlisted/Offer with candidate data
+    (function(){
+      try{
+        const url = new URL(location.href);
+        const name = url.searchParams.get('candidateName') || '';
+        const email = url.searchParams.get('candidateEmail') || '';
+        if (name && window.EmpName) EmpName.value = name;
+        if (email && window.EmpEmail) EmpEmail.value = email;
+      }catch(e){}
+    })();
+    function showTab(id){ ['main','totals','payroll'].forEach(t=>{ document.getElementById('panel-'+t).style.display = (t===id)?'block':'none'; document.getElementById('tab-'+t).classList.toggle('active', t===id); }); }
+    function scrollToForm(){ document.getElementById('panel-main')?.scrollIntoView({behavior:'smooth'}); }
+
+    function resetForm(){ document.getElementById('empForm').reset(); if(currentEmpId){ const e=employees.find(x=>x.CompanyUserId===currentEmpId); if(e){ EmpName.value=e.FullName||''; EmpEmail.value=e.Email||''; } } }
+
+    async function loadEmployees(){
+      try{
+        const r=await j('/api/hr/employees'); employees=r.data||[]; const tbody=document.getElementById('empRows'); if(!employees.length){ tbody.innerHTML='<tr><td colspan="8">No employees</td></tr>'; return; }
+        tbody.innerHTML=employees.map(x=>`<tr><td>${x.CompanyUserId}</td><td>${x.FullName||''}</td><td>${x.Department||''}</td><td>${x.Email||''}</td><td>${x.Phone||''}</td><td>${x.Country||''}</td><td>${x.Active? 'Yes':'No'}</td><td><button class="ct" onclick="editEmp(${x.CompanyUserId})">Edit</button></td></tr>`).join('');
+      }catch(e){ console.error(e); alert('Failed to load employees'); }
+    }
+
+    async function editEmp(id){
+      try{
+        const r=await j('/api/hr/employees/'+id); const d=r.data||{}; currentEmpId=id;
+        EmpName.value=d.FullName||''; EmpEmail.value=d.Email||''; EmpActive.checked= d.Active===1 || d.Active===true;
+        EmpAddr1.value=d.Address1||''; EmpAddr2.value=d.Address2||''; EmpPhone.value=d.Phone||''; EmpCountry.value=d.Country||''; EmpState.value=d.State||''; EmpZip.value=d.Zip||''; EmpFax.value=d.Fax||'';
+        EmpDept.value=d.Department||''; EmpType.value=d.EmployeeType||''; EmpSSN.value=d.SSN||''; EmpHire.value=d.HireDate? String(d.HireDate).substr(0,10):''; EmpBirth.value=d.BirthDate? String(d.BirthDate).substr(0,10):'';
+        EmpComm.checked = d.Commissionable===1 || d.Commissionable===true; EmpCommPct.value=d.CommissionPercent!=null? d.CommissionPercent:'';
+        EmpKinName.value=d.NextOfKinName||''; EmpKinNum.value=d.NextOfKinNumber||''; EmpSource.value=d.SourceType||''; EmpIndustry.value=d.Industry||''; EmpGeo.value=d.GeoLocation||'';
+        EmpDisability.value=d.Disability||''; EmpInjury.value=d.WorkInjury||''; EmpHealth.value=d.HealthInsurance||''; EmpIdNum.value=d.IdNumber||''; EmpNotes.value=d.Notes||''; EmpHeritage.value=d.Heritage||''; EmpSexual.value=d.SexualOrientation||''; EmpJobDesc.value=d.JobDescription||'';
+        showTab('main'); scrollToForm();
+        await loadTotals();
+      }catch(e){ console.error(e); alert('Failed to load employee'); }
+    }
+
+    async function saveProfile(){
+      const basePayload={
+        address1: EmpAddr1.value||null,
+        address2: EmpAddr2.value||null,
+        active: EmpActive.checked,
+        phone: EmpPhone.value||null,
+        country: EmpCountry.value||null,
+        state: EmpState.value||null,
+        zip: EmpZip.value||null,
+        fax: EmpFax.value||null,
+        department: EmpDept.value||null,
+        employeeType: EmpType.value||null,
+        ssn: EmpSSN.value||null,
+        email: EmpEmail.value||null,
+        hireDate: EmpHire.value||null,
+        birthDate: EmpBirth.value||null,
+        commissionable: EmpComm.checked,
+        commissionPercent: EmpCommPct.value||null,
+        nextOfKinName: EmpKinName.value||null,
+        nextOfKinNumber: EmpKinNum.value||null,
+        sourceType: EmpSource.value||null,
+        industry: EmpIndustry.value||null,
+        geoLocation: EmpGeo.value||null,
+        disability: EmpDisability.value||null,
+        workInjury: EmpInjury.value||null,
+        healthInsurance: EmpHealth.value||null,
+        idNumber: EmpIdNum.value||null,
+        notes: EmpNotes.value||null,
+        heritage: EmpHeritage.value||null,
+        sexualOrientation: EmpSexual.value||null,
+        jobDescription: EmpJobDesc.value||null
+      };
+      try{
+        // If no employee selected yet, create a new employee record first
+        if(!currentEmpId){
+          const name = (EmpName.value||'').trim();
+          const email = (EmpEmail.value||'').trim();
+          if(!name || !email){
+            alert('Employee Name and Email are required to create a new employee.');
+            return;
+          }
+          const createPayload={
+            fullName: name,
+            email: email,
+            department: EmpDept.value||null,
+            employeeType: EmpType.value||null
+          };
+          const created = await j('/api/hr/employees',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(createPayload) });
+          const row = created && created.data ? created.data : created;
+          currentEmpId = row.employeeId || row.CompanyUserId || row.EmployeeId || row.Id || null;
+          if(!currentEmpId){
+            alert('Failed to create employee record.');
+            return;
+          }
+        }
+        await j('/api/hr/employees/'+currentEmpId,{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(basePayload) });
+        alert('Employee HR profile saved');
+        loadEmployees();
+      }catch(e){ console.error(e); alert('Failed to save'); }
+    }
+
+    async function loadTotals(){
+      if(!currentEmpId) return;
+      try{
+        const r = await j('/api/hr/employees/'+currentEmpId+'/totals'); const t = r.data||{};
+        const set=(id,v)=>{ const el=document.getElementById(id); if(!el) return; el.value = v!=null? v:''; };
+        set('T_MTD_Gross', t.MTD_Gross); set('T_MTD_State', t.MTD_State); set('T_QTD_Gross', t.QTD_Gross); set('T_QTD_State', t.QTD_State); set('T_YTD_Gross', t.YTD_Gross); set('T_YTD_State', t.YTD_State);
+        set('T_MTD_Fica', t.MTD_Fica); set('T_QTD_Fica', t.QTD_Fica); set('T_YTD_Fica', t.YTD_Fica);
+        set('T_MTD_Local', t.MTD_Local); set('T_QTD_Local', t.QTD_Local); set('T_YTD_Local', t.YTD_Local);
+        set('T_MTD_Federal', t.MTD_Federal); set('T_QTD_Federal', t.QTD_Federal); set('T_YTD_Federal', t.YTD_Federal);
+        set('T_MTD_Other', t.MTD_Other); set('T_QTD_Other', t.QTD_Other); set('T_YTD_Other', t.YTD_Other);
+      }catch(e){ console.error(e); }
+    }
+
+    async function saveTotals(){
+      if(!currentEmpId){ alert('Select an employee from the list to edit.'); return; }
+      const g=id=>{ const v=document.getElementById(id).value; return v!==''? parseFloat(v): null; };
+      const payload={
+        MTD_Gross:g('T_MTD_Gross'), MTD_State:g('T_MTD_State'), QTD_Gross:g('T_QTD_Gross'), QTD_State:g('T_QTD_State'),
+        YTD_Gross:g('T_YTD_Gross'), YTD_State:g('T_YTD_State'),
+        MTD_Fica:g('T_MTD_Fica'), QTD_Fica:g('T_QTD_Fica'), YTD_Fica:g('T_YTD_Fica'),
+        MTD_Local:g('T_MTD_Local'), QTD_Local:g('T_QTD_Local'), YTD_Local:g('T_YTD_Local'),
+        MTD_Federal:g('T_MTD_Federal'), QTD_Federal:g('T_QTD_Federal'), YTD_Federal:g('T_YTD_Federal'),
+        MTD_Other:g('T_MTD_Other'), QTD_Other:g('T_QTD_Other'), YTD_Other:g('T_YTD_Other')
+      };
+      try{
+        await j('/api/hr/employees/'+currentEmpId+'/totals',{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Totals saved');
+      }catch(e){ console.error(e); alert('Failed to save totals'); }
+    }
+
+    loadEmployees();
+  </script>
 </body>
 </html>

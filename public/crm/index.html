@@ -22,7 +22,9 @@
 </head>
 <body>
   <script src="/js/master-layout.js"></script>
+  <script src="/js/agents-ui.js"></script>
   <div class="shell">
+    <div id="crm-agents-panel" class="card" style="margin-bottom:16px;"></div>
     <div class="title">CRM</div>
     <div class="muted">Multi-tenant CRM hub. Contacts → Leads → Accounts. Mailbox, Chat and Phone Notes for full interaction history.</div>
 
@@ -71,5 +73,15 @@
       <div class="muted">DashboardLayout → CRMDashboard → ContactManagementPage, LeadManagementPage, AccountManagementPage, MailboxPage, ChatCommunicationPage. Data models: Contact, Lead, Account, PhoneNote, Segment, ChatSession/Message, Email. All API calls are scoped by companyId for multi-tenancy.</div>
     </div>
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.AgentUI) {
+        window.AgentUI.initModuleAgents({
+          containerSelector: '#crm-agents-panel',
+          moduleId: 'crm'
+        });
+      }
+    });
+  </script>
 </body>
 </html>

@@ -11,13 +11,14 @@
     /* Theme pulled from Safety Dashboard */
     .sidebar-toggle{position:fixed;left:10px;top:10px;width:40px;height:40px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;z-index:1001;box-shadow:0 2px 8px rgba(0,0,0,.1)}
     .sidebar-toggle:hover{background:#f8fafc;border-color:#0ea5e9;color:#0ea5e9}
-    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding:16px 24px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
+.dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:16px 24px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
     .header-left{display:flex;align-items:center;gap:16px}
     .logo-small{max-height:40px;width:auto}
     .dashboard-title{font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.025em}
     .header-right{display:flex;align-items:center;gap:12px}
     .status-indicator{display:flex;align-items:center;gap:8px;padding:6px 14px;background:#d1fae5;border-radius:20px;font-size:13px;font-weight:500;color:#065f46}
     .status-dot{width:8px;height:8px;background:#10b981;border-radius:50%}
+
 
     .dashboard-content{display:grid;grid-template-columns:1fr 4fr 1fr;gap:20px;margin-bottom:20px;align-items:start}
     .safety-pane{grid-column:1;grid-row:1;align-self:start;padding:8px}
@@ -26,6 +27,32 @@
 
     .dashboard-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
     .card-header{font-size:16px;font-weight:600;color:#0f172a;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #f1f5f9}
+
+    /* Top tabs bar (built from left buttons) */
+    .top-setup-tabs{ width:100%; margin:0 0 6px 0; display:flex; gap:6px; justify-content:center; align-items:flex-start; padding:2px 4px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; overflow-x:auto; }
+    .top-setup-tabs .sm-tab{ display:flex; flex-direction:column; align-items:center; gap:1px; background:transparent; border:none; padding:0; cursor:pointer }
+    .top-setup-tabs .sm-icon-box{ width:28px; height:28px; border:1px solid #e2e8f0; border-radius:5px; display:flex; align-items:center; justify-content:center; background:#fff }
+    .top-setup-tabs .sm-icon-box:hover{ border-color:#0ea5e9; background:#f8fafc }
+    .top-setup-tabs .sm-ico{ font-size:14px; line-height:14px }
+    .top-setup-tabs .sm-lbl{ font-size:9px; line-height:1; color:#64748b; white-space:nowrap; text-align:center; }
+
+    /* Accounting top tabs (in working area) */
+    .acct-top-tabs{ width:100%; margin:0 0 8px 0; display:flex; gap:6px; justify-content:flex-start; align-items:flex-start; padding:4px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; overflow-x:auto; }
+    .acct-top-tabs .sm-tab{ display:flex; flex-direction:column; align-items:center; gap:1px; background:transparent; border:none; padding:0; cursor:pointer; text-decoration:none; color:#0f172a }
+    .acct-top-tabs .sm-icon-box{ width:30px; height:30px; border:1px solid #e2e8f0; border-radius:6px; display:flex; align-items:center; justify-content:center; background:#fff }
+    .acct-top-tabs .sm-icon-box:hover{ border-color:#0ea5e9; background:#f8fafc }
+    .acct-top-tabs .sm-ico{ font-size:15px; line-height:15px }
+    .acct-top-tabs .sm-lbl{ font-size:10px; line-height:1; color:#64748b; white-space:nowrap; text-align:center; }
+
+    /* Business inner tabs (working area) */
+    .biz-tabs{ display:flex; gap:6px; border-bottom:1px solid #e2e8f0; margin:-6px 0 12px 0; flex-wrap:wrap }
+    .biz-tab{ padding:6px 10px; border:1px solid #e2e8f0; border-bottom:none; background:#f8fafc; color:#475569; border-radius:6px 6px 0 0; cursor:pointer; font-size:12px; font-weight:600 }
+    .biz-tab:hover{ background:#fff }
+    .biz-tab.active{ background:#fff; color:#0f172a; border-color:#94a3b8 }
+
+    /* Hide left tabs grid; keep left panel for agent */
+    .safety-pane .action-buttons{ display:none !important; }
+    .dashboard-card.safety-pane{ padding:16px !important; }
 
     .action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;background:#fff;border:2px solid #e2e8f0;border-radius:8px;cursor:pointer;text-decoration:none;color:#1e293b}
@@ -60,29 +87,35 @@
     <div class="header-left">
       <img src="/logo.png" alt="ComplytEX" class="logo-small">
       <div>
-        <h1 class="dashboard-title">USER PROFILE</h1>
+        <h1 class="dashboard-title">BUSINESS SETUP</h1>
       </div>
     </div>
     <div class="header-right">
       <div class="status-indicator"><span class="status-dot"></span> Online</div>
       <a href="/dashboard" style="font-size:13px;color:#64748b;font-weight:500;text-decoration:none;">My Dashboard</a>
+      <!-- Icons and user dropdown are injected globally by /js/master-layout.js to ensure consistency -->
     </div>
   </div>
 
   <div class="dashboard-content">
     <!-- Left Tabs -->
     <div class="dashboard-card safety-pane">
-      <div class="card-header">Company Setup Tabs</div>
+      <div class="card-header">Business Setup Tabs</div>
       <div class="action-buttons">
         <button class="action-btn" id="tab_company"><div class="action-icon">🏢</div><div class="action-label">Company Profile</div></button>
         <button class="action-btn" id="tab_setup"><div class="action-icon">⚙️</div><div class="action-label">Setup</div></button>
         <button class="action-btn" id="tab_extended"><div class="action-icon">➕</div><div class="action-label">Extended</div></button>
       </div>
+      <div class="muted" style="font-size:12px; margin-top:6px; display:flex; align-items:center; gap:6px;">
+        <span style="display:inline-flex;width:28px;height:28px;border:1px solid #e2e8f0;border-radius:8px;align-items:center;justify-content:center;background:#fff">🛡️</span>
+        <a href="#" onclick="showBusinessAgent(); return false;" style="font-weight:700; text-decoration:none; color:#0f172a">Business Agent</a>
+      </div>
     </div>
 
     <!-- Center Working Area -->
     <div class="dashboard-card working-pane">
-      <div id="workHeading" class="card-header" style="margin-top:-8px">Company Setup</div>
+      <div id="workHeading" class="card-header" style="margin-top:-8px">Business Setup</div>
+      <div id="bizTabs"></div>
       <div id="profilePane" style="display:none"></div>
 
       <div id="companyPane">
@@ -122,6 +155,9 @@
               <label>Upload a Logo (PNG)</label>
               <input id="cpLogo" type="file" accept="image/png,image/jpeg">
               <div class="muted"><a href="#" id="sampleInvoice" target="_blank">View Sample Invoice</a></div>
+              <div id="cpLogoPreviewBox" style="margin-top:6px;display:none">
+                <img id="cpLogoPreview" src="" alt="Company logo" style="max-height:60px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;padding:4px">
+              </div>
             </div>
           </div>
         </div>
@@ -147,22 +183,29 @@
         <div id="whList" class="full"></div>
       </div>
 
-      <!-- Setup Pane -->
-      <div id="setupPane" style="display:none">
-        <div class="row" style="grid-template-columns:repeat(3,1fr)">
-          <div><button id="btnSetupAddSpace" class="btn primary" style="width:100%">Add Space</button></div>
-          <div><button class="btn primary" style="width:100%">Assign Role to User</button></div>
-          <div><button class="btn primary" style="width:100%">Add Product Type</button></div>
-          <div><button class="btn primary" style="width:100%">Add Assets</button></div>
-          <div><button class="btn primary" style="width:100%">Add your Customer</button></div>
-          <div><button class="btn primary" style="width:100%">Add Certification</button></div>
-          <div><button class="btn primary" style="width:100%">Add User</button></div>
-          <div><button class="btn primary" style="width:100%">Add Supplier / Manufacturer</button></div>
-          <div><button class="btn primary" style="width:100%">Planning Setup</button></div>
-          <div></div><div><button class="btn primary" style="width:100%">Packaging Setup</button></div><div></div>
-          <div style="grid-column:1 / -1; display:flex; justify-content:center; margin-top:8px"><button class="btn primary">Set Sustainability Goal</button></div>
+      <!-- Factory/Land Pane -->
+      <div id="factoryPane" style="display:none">
+        <div class="row">
+          <div class="full"><label>Factory Address 1</label><input id="flAddress1"></div>
+          <div class="full"><label>Factory Address 2</label><input id="flAddress2"></div>
+          <div><label>City</label><input id="flCity"></div>
+          <div><label>State / Province</label><input id="flState"></div>
+          <div><label>Postal Code</label><input id="flPostal"></div>
+          <div><label>Land Area</label><input id="flArea" type="number" step="0.01"></div>
+          <div><label>Area Unit</label>
+            <select id="flAreaUnit" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option>Square Feet</option>
+              <option>Square Meter</option>
+              <option>Acre</option>
+              <option>Hectare</option>
+            </select>
+          </div>
+          <div class="full"><label>Ownership Type</label><input id="flOwnership"></div>
         </div>
+        <div class="actions"><button class="btn primary" type="button" id="flSave">Save</button></div>
       </div>
+
+      <!-- Setup Pane removed per request: default to Add Space when Setup is clicked -->
 
       <!-- Spaces Pane -->
       <div id="spacesPane" style="display:none">
@@ -195,6 +238,80 @@
         </div>
       </div>
 
+      <!-- Assets Pane -->
+      <div id="assetsPane" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="asSearch" placeholder="Search..." style="padding:8px;border:1px solid #e2e8f0;border-radius:8px">
+          <button class="btn" id="asExportCsv">Export Excel</button>
+          <button class="btn" id="asExportPdf">Export PDF</button>
+          <button class="btn primary" id="asNewBtn">New Asset</button>
+        </div>
+        <div class="data-table-container">
+          <table class="data-table" id="assetsTable" style="width:100%">
+            <thead>
+              <tr>
+                <th data-s="AssetName" style="cursor:pointer">Asset Name</th>
+                <th data-s="Quantity" style="cursor:pointer">Qty</th>
+                <th data-s="AssetType" style="cursor:pointer">Asset Type</th>
+                <th data-s="PurchaseDate" style="cursor:pointer">Purchase Date</th>
+                <th data-s="PurchasePrice" style="cursor:pointer">Purchase Price</th>
+                <th data-s="Supplier" style="cursor:pointer">Supplier</th>
+                <th data-s="Notes" style="cursor:pointer">Notes</th>
+                <th data-s="SavedOn" style="cursor:pointer">Saved On</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="assetsTBody"><tr><td colspan="9" style="text-align:center;padding:12px;color:#94a3b8">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Certifications Pane -->
+      <div id="certsPane" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="ctSearch" placeholder="Search..." style="padding:8px;border:1px solid #e2e8f0;border-radius:8px">
+          <button class="btn" id="ctExportCsv">Export Excel</button>
+          <button class="btn" id="ctExportPdf">Export PDF</button>
+          <button class="btn primary" id="ctNewBtn">Add New</button>
+        </div>
+        <div class="data-table-container">
+          <table class="data-table" id="certsTable" style="width:100%">
+            <thead>
+              <tr>
+                <th data-s="Name" style="cursor:pointer">Certificate Name</th>
+                <th>Certificate Image</th>
+                <th data-s="ValidFrom" style="cursor:pointer">Valid From</th>
+                <th data-s="ValidTill" style="cursor:pointer">Valid Till</th>
+                <th>Certificate Logo</th>
+                <th data-s="Detail" style="cursor:pointer">Certificate Detail</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="certsTBody"><tr><td colspan="7" style="text-align:center;padding:12px;color:#94a3b8">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Unions Pane -->
+      <div id="unionsPane" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="unSearch" placeholder="Search..." style="padding:8px;border:1px solid #e2e8f0;border-radius:8px">
+          <button class="btn primary" id="unNewBtn">New Union</button>
+        </div>
+        <div class="data-table-container">
+          <table class="data-table" id="unionsTable" style="width:100%">
+            <thead>
+              <tr>
+                <th data-s="Name" style="cursor:pointer">Name</th>
+                <th data-s="Description" style="cursor:pointer">Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="unionsTBody"><tr><td colspan="3" style="text-align:center;padding:12px;color:#94a3b8">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Space Modal -->
       <div id="spModal" class="overlay">
         <div class="modal">
@@ -221,6 +338,60 @@
               <div class="full"><label>Emergency Exit plan (image)</label><input id="spExitFile" type="file" accept="image/*"></div>
             </div>
             <div class="actions"><button class="btn" id="spCancel" type="button">Cancel</button><button class="btn primary" id="spSave" type="button">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certification Modal -->
+      <div id="ctModal" class="overlay">
+        <div class="modal">
+          <div class="modal-header"><div style="font-weight:700">Add New Certification</div><button class="btn" id="ctClose">Close</button></div>
+          <div class="modal-body">
+            <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+              <div><label>Type</label><input id="ctType" value="Ethical Labor"></div>
+              <div><label>Policy</label><input id="ctPolicy" value="Fairtrade Textile Standard"></div>
+              <div><label>Name</label><input id="ctName"></div>
+              <div><label>Certificate Valid From</label><input id="ctFrom" type="date"></div>
+              <div><label>Certificate Valid Till</label><input id="ctTill" type="date"></div>
+              <div class="full"><label>Detail (If Any)</label><input id="ctDetail"></div>
+              <div><label>Upload Certificate</label><input id="ctImage" type="file" accept="image/*"></div>
+              <div><label>Upload Certificate logo</label><input id="ctLogo" type="file" accept="image/*"></div>
+            </div>
+            <div class="actions"><button class="btn" id="ctCancel" type="button">Back</button><button class="btn primary" id="ctSave" type="button">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Union Modal -->
+      <div id="unModal" class="overlay">
+        <div class="modal">
+          <div class="modal-header"><div style="font-weight:700">Add / Edit Union</div><button class="btn" id="unClose">Close</button></div>
+          <div class="modal-body">
+            <input type="hidden" id="unId" value="">
+            <div class="row" style="grid-template-columns:1fr;gap:12px">
+              <div><label>Union Name *</label><input id="unName"></div>
+              <div class="full"><label>Description</label><input id="unDesc"></div>
+            </div>
+            <div class="actions"><button class="btn" id="unCancel" type="button">Cancel</button><button class="btn primary" id="unSave" type="button">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assets Modal -->
+      <div id="asModal" class="overlay">
+        <div class="modal">
+          <div class="modal-header"><div style="font-weight:700">New Asset</div><button class="btn" id="asClose">Close</button></div>
+          <div class="modal-body">
+            <div class="row" style="grid-template-columns:1fr 1fr;gap:12px">
+              <div><label>Asset Name *</label><input id="asName"></div>
+              <div><label>Asset Type</label><input id="asType"></div>
+              <div><label>Quantity</label><input id="asQty" type="number" value="1"></div>
+              <div><label>Purchase Date</label><input id="asDate" type="date"></div>
+              <div><label>Purchase Price</label><input id="asPrice" type="number" step="0.01" value="0"></div>
+              <div><label>Supplier</label><input id="asSupplier"></div>
+              <div class="full"><label>Notes</label><input id="asNotes"></div>
+            </div>
+            <div class="actions"><button class="btn" id="asCancel" type="button">Cancel</button><button class="btn primary" id="asSave" type="button">Save</button></div>
           </div>
         </div>
       </div>
@@ -285,16 +456,146 @@
     </div>
   </div>
 
+  <script src="/js/i18n.js"></script>
   <script src="/js/master-layout.js"></script>
   <script>
-    // Hide local header when embedded in app shell
-    (function(){ const params=new URLSearchParams(location.search); if(params.get('embedded')==='1'){ const hdr=document.querySelector('.dashboard-header'); if(hdr) hdr.style.display='none'; const proc=document.querySelector('.proc-pane'); if(proc) proc.style.display='none'; } })();
+    // Ensure master header/footer are applied
+    try{ if(window.renderMasterHeader) renderMasterHeader({}); }catch(e){}
+
+    // Build top bar for Business Setup: switches between Profile/Setup and Setup Actions with Back
+    (function buildTopSetupBar(){
+      try{
+        const grid = document.querySelector('.dashboard-content');
+        const working = grid?.querySelector('.dashboard-card.working-pane');
+        if(!grid || !working) return;
+        let bar = document.querySelector('#topSetupBar');
+        if(!bar){ bar = document.createElement('div'); bar.className='top-setup-tabs'; bar.id='topSetupBar'; const hdr = document.querySelector('.dashboard-header'); hdr?.insertAdjacentElement('afterend', bar); }
+        function addBtn(ico,lbl,fn){ const item=document.createElement('button'); item.className='sm-tab'; const box=document.createElement('div'); box.className='sm-icon-box'; const i=document.createElement('div'); i.className='sm-ico'; i.textContent=ico; box.appendChild(i); item.appendChild(box); const s=document.createElement('div'); s.className='sm-lbl'; s.textContent=lbl; item.appendChild(s); item.onclick=fn; bar.appendChild(item); }
+        function showTopBarProfile(){ bar.innerHTML=''; addBtn('🏢','Profile', ()=>{ try{ leftShowProfile(); renderProfileBizTabs(); showTab('company'); }catch(e){} }); addBtn('⚙️','Setup', ()=>{ try{ leftShowSetup(); showTab('setup'); showTopBarSetup(); }catch(e){} }); }
+        function showTopBarSetup(){ bar.innerHTML=''; addBtn('⬅️','Back', ()=>{ showTopBarProfile(); }); addBtn('🏢','Add Space', ()=>showTab('spaces')); addBtn('👥','Assign Role', ()=>alert('Coming soon')); addBtn('🏷️','Product Type', ()=>alert('Coming soon')); addBtn('📦','Add Assets', ()=>showTab('assets')); addBtn('🧑‍💼','Add User', ()=>alert('Coming soon')); addBtn('🧾','Add Customer', ()=>alert('Coming soon')); addBtn('🏅','Certification', ()=>showTab('certs')); addBtn('🏭','Supplier/Mfr', ()=>alert('Coming soon')); addBtn('🗓️','Planning', ()=>alert('Coming soon')); addBtn('📦','Packaging', ()=>alert('Coming soon')); addBtn('🌱','Sustainability', ()=>alert('Coming soon')); addBtn('🤝','Add Union', ()=>showTab('unions')); }
+        window.showTopBarProfile = showTopBarProfile; window.showTopBarSetup = showTopBarSetup;
+        showTopBarProfile();
+        window.forceTopBarProfile = ()=>{ try{ showTopBarProfile(); }catch(e){} };
+      }catch(e){}
+    })();
+
+    // Accounting tabs (in-place)
+    function showAccountingTabs(){
+      try{
+        const pane = document.querySelector('.working-pane'); if(!pane) return;
+        setWorkHeading('Accounting');
+        pane.style.display='block'; pane.style.alignItems='stretch'; pane.style.justifyContent='flex-start'; pane.style.padding='0';
+        pane.innerHTML = `
+          <div style="padding:12px 16px;">
+            <div class="acct-top-tabs">
+              <a class="sm-tab" href="/accounting/receivables.html"><div class="sm-icon-box"><div class="sm-ico">📥</div></div><div class="sm-lbl">Receivable</div></a>
+              <a class="sm-tab" href="/accounting/payables.html"><div class="sm-icon-box"><div class="sm-ico">📄</div></div><div class="sm-lbl">Payable</div></a>
+              <a class="sm-tab" href="/accounting/index.html#paid"><div class="sm-icon-box"><div class="sm-ico">✅</div></div><div class="sm-lbl">Paid</div></a>
+              <a class="sm-tab" href="/accounting/index.html#received"><div class="sm-icon-box"><div class="sm-ico">📈</div></div><div class="sm-lbl">Received</div></a>
+              <a class="sm-tab" href="/accounting/index.html#banks"><div class="sm-icon-box"><div class="sm-ico">🏦</div></div><div class="sm-lbl">Banks</div></a>
+              <a class="sm-tab" href="/accounting/petty-cash.html"><div class="sm-icon-box"><div class="sm-ico">💵</div></div><div class="sm-lbl">Petty Cash</div></a>
+            </div>
+            <div class="dashboard-card" style="padding:16px; color:#94a3b8; border:1px dashed #e2e8f0;">Select a tab above</div>
+          </div>`;
+      }catch(e){ console.warn('showAccountingTabs failed', e); }
+    }
+
+    // Tasks - embed planning page in working area
+    function showTasks(){
+      try{
+        const pane=document.querySelector('.working-pane'); if(!pane) return;
+        pane.style.display='block'; pane.style.alignItems='stretch'; pane.style.justifyContent='flex-start'; pane.style.padding='0';
+        pane.innerHTML = `<div style="padding:0; height:calc(86vh); display:flex; flex-direction:column"><iframe src="/tasks/planning.html?embedded=1" style="border:0; width:100%; height:100%"></iframe></div>`;
+      }catch(e){ console.warn('showTasks failed', e); }
+    }
+
+    // Business Agent embedded UI in working area
+    async function showBusinessAgent(){
+      const pane = document.querySelector('.working-pane');
+      if(!pane) return;
+      pane.style.display='block'; pane.style.alignItems='stretch'; pane.style.justifyContent='flex-start'; pane.style.padding='0';
+      pane.innerHTML = `
+        <div style="padding:14px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em">BUSINESS AGENT</div>
+          </div>
+          <div class="dashboard-card" style="padding:16px;border:1px solid #e2e8f0;border-radius:12px;">
+            <form id="agentForm" style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+              <textarea id="agentText" placeholder="Type instructions or context (optional)" style="flex:1 1 340px;min-height:92px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit"></textarea>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+                <input type="file" id="agentFile" />
+                <button class="btn primary" id="agentSubmit" type="submit">Submit</button>
+              </div>
+            </form>
+            <div id="agentRes" style="margin-top:12px"></div>
+          </div>
+        </div>`;
+
+      const res = document.getElementById('agentRes');
+      function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+      async function api(path, opts){ const r = await fetch(path, opts); const j = await r.json().catch(()=>({success:false,error:'Invalid response'})); if(!j.success) throw new Error(j.error||'Request failed'); return j.data||{}; }
+      document.getElementById('agentForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        res.innerHTML = '<div class="muted">Working...</div>';
+        const f = document.getElementById('agentFile').files[0];
+        const text = (document.getElementById('agentText').value||'').trim();
+        try{
+          let data;
+          if(f){
+            const fd = new FormData(); fd.append('file', f); if(text) fd.append('notes', text);
+            data = await api('/api/safety/agent/upload', { method:'POST', body: fd, credentials:'include' });
+          }else{
+            data = await api('/api/safety/agent/propose', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text }), credentials:'include' });
+          }
+          const items = (data.proposedItems||[]).map(p=>`<li><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:700;font-size:12px">${esc(p.targetTable)}</span> <span class="muted">${esc(p.action)}</span> <code>${esc(JSON.stringify(p.payload))}</code></li>`).join('');
+          const facts = (data.facts||[]).map(f=>`<li>${esc(f)}</li>`).join('');
+          res.innerHTML = `
+            <div class="dashboard-card" style="padding:16px">
+              <div style="font-weight:800">Proposal #${data.proposalId}</div>
+              <div style="margin:8px 0" class="muted">Approve to write to database. Nothing is saved until you approve.</div>
+              <div style="display:flex;gap:8px;margin:8px 0">
+                <button class="btn primary" id="apv">Approve & Apply</button>
+                <button class="btn" id="rej">Reject</button>
+              </div>
+              <div style="margin-top:8px"><div style="font-weight:700">Extracted Facts</div><ul>${facts||'<li>No facts</li>'}</ul></div>
+              <div style="margin-top:8px"><div style="font-weight:700">Proposed Changes</div><ul>${items||'<li>No changes</li>'}</ul></div>
+            </div>`;
+          document.getElementById('apv').onclick = async()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/approve`, { method:'POST', credentials:'include' }); alert('Approved and applied'); }catch(ex){ alert(ex.message);} };
+          document.getElementById('rej').onclick = async()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reason:'User rejected'}), credentials:'include' }); alert('Rejected'); }catch(ex){ alert(ex.message);} };
+        }catch(ex){ res.innerHTML = `<div style="color:#ef4444">${esc(ex.message)}</div>`; }
+      });
+    }
+
+    // Hide local header/side panels when embedded in app shell
+    (function(){
+      const params=new URLSearchParams(location.search);
+      if(params.get('embedded')==='1'){
+        const hdr=document.querySelector('.dashboard-header');
+        if(hdr) hdr.style.display='none';
+        const proc=document.querySelector('.proc-pane');
+        if(proc) proc.style.display='none';
+        // When Business Setup is embedded inside Safety dashboard, hide its own left tabs/agent card
+        const left=document.querySelector('.dashboard-card.safety-pane');
+        if(left) left.style.display='none';
+        // Also hide the local sidebar toggle (hamburger) inside the embedded frame
+        const toggleBtn=document.querySelector('.sidebar-toggle');
+        if(toggleBtn) toggleBtn.style.display='none';
+        // Collapse layout to a single column so the working pane uses full width
+        const grid=document.querySelector('.dashboard-content');
+        if(grid) grid.style.gridTemplateColumns='1fr';
+        const working=document.querySelector('.dashboard-card.working-pane');
+        if(working) working.style.gridColumn='1 / -1';
+      }
+      if(params.get('show')==='accounting'){
+        try{ showAccountingTabs(); }catch(e){}
+      }
+    })();
     function toggleProfileSidebar(){ const pane=document.querySelector('.safety-pane'); if(!pane) return; pane.style.display = (pane.style.display==='none') ? '' : 'block'; }
 
     // Left panel: capture default and support sub-tabs for Company Profile, Setup (icons live in left)
-    let __leftDefaultHTML=null; let __leftHeaderDefault='Company Setup Tabs';
+    let __leftDefaultHTML=null; let __leftHeaderDefault='Business Setup Tabs';
     function leftCaptureDefault(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(grid){ __leftDefaultHTML = grid.innerHTML; } if(hdr){ __leftHeaderDefault = hdr.textContent; } }catch(e){} }
-    function leftShowMain(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent = 'Company Setup Tabs'; grid.innerHTML = `
+    function leftShowMain(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent = 'Business Setup Tabs'; grid.innerHTML = `
         <button class=\"action-btn\" id=\"tab_company\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Company Profile</div></button>
         <button class=\"action-btn\" id=\"tab_setup\"><div class=\"action-icon\">⚙️</div><div class=\"action-label\">Setup</div></button>`;
       const btnCompany=document.getElementById('tab_company'); if(btnCompany) btnCompany.onclick=()=>{ leftShowProfile(); showTab('company'); };
@@ -305,14 +606,14 @@
         <button class=\"action-btn\" id=\"left_add_space\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Add Space</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">👥</div><div class=\"action-label\">Assign Role to User</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🏷️</div><div class=\"action-label\">Add Product Type</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Add Assets</div></button>
+        <button class=\"action-btn\" id=\"left_add_assets\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Add Assets</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🧑‍💼</div><div class=\"action-label\">Add User</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🧾</div><div class=\"action-label\">Add your Customer</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">✅</div><div class=\"action-label\">Add Certification</div></button>
+        <button class=\"action-btn\" id=\"left_add_cert\"><div class=\"action-icon\">🏅</div><div class=\"action-label\">Add Certification</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🏭</div><div class=\"action-label\">Add Supplier / Mfr</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">🗓️</div><div class=\"action-label\">Planning Setup</div></button>
         <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Packaging Setup</div></button>
-        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); setWorkHeading('Add Space'); loadSpaces(); }; const bk=document.getElementById('left_back_setup'); if(bk) bk.onclick=()=>{ leftShowMain(); showTab('company'); }; }catch(e){} }
+        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); setWorkHeading('Add Space'); loadSpaces(); }; const bk=document.getElementById('left_back_setup'); if(bk) bk.onclick=()=>{ leftShowMain(); showTab('company'); }; const ga=document.getElementById('left_add_assets'); if(ga) ga.onclick=()=>{ showTab('assets'); loadAssets(); }; const gc=document.getElementById('left_add_cert'); if(gc) gc.onclick=()=>{ showTab('certs'); loadCerts(); }; }catch(e){} }
     function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Company Profile'; grid.innerHTML = `
         <button class="action-btn" id="left_back"><div class="action-icon">⬅️</div><div class="action-label">Back</div></button>
         <button class="action-btn" id="left_head"><div class="action-icon">🏢</div><div class="action-label">Head Office</div></button>
@@ -330,22 +631,45 @@
 
     // Tabs using left action buttons
     function setWorkHeading(text){ const h=document.getElementById('workHeading'); if(h) h.textContent=text; }
+    function setActiveBizTab(which){ const map={ head:'tab_head', factory:'tab_factory', warehouse:'tab_warehouse' }; Object.values(map).forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('active'); }); const el=document.getElementById(map[which]); if(el) el.classList.add('active'); }
+    function renderProfileBizTabs(){
+      const tabs=document.getElementById('bizTabs'); if(!tabs) return; tabs.className='biz-tabs';
+      tabs.innerHTML = `
+        <button class="biz-tab active" id="tab_head">Head office Detail</button>
+        <button class="biz-tab" id="tab_factory">Factory/Land</button>
+        <button class="biz-tab" id="tab_warehouse">Warehouse</button>`;
+      const bind=(id,which)=>{ const el=document.getElementById(id); if(el) el.onclick=()=>showTab(which); };
+      bind('tab_head','company'); bind('tab_factory','factory'); bind('tab_warehouse','warehouses');
+    }
     function showTab(which){
       const p=document.getElementById('profilePane');
       const c=document.getElementById('companyPane');
       const w=document.getElementById('warehousesPane');
-      const s=document.getElementById('setupPane'); const x=document.getElementById('spacesPane');
-      if(which==='company'){
-        setWorkHeading('Company Setup'); if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
-      } else if(which==='warehouses'){
-        setWorkHeading('Warehouses'); if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display=''; if(s) s.style.display='none'; if(x) x.style.display='none';
-      } else if(which==='setup'){
-        setWorkHeading('Setup'); if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display=''; if(x) x.style.display='none';
-      } else if(which==='spaces'){
-        setWorkHeading('Add Space'); if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='';
+      const s=document.getElementById('setupPane');
+      const x=document.getElementById('spacesPane');
+      const a=document.getElementById('assetsPane');
+      const k=document.getElementById('certsPane');
+      const f=document.getElementById('factoryPane');
+      const u=document.getElementById('unionsPane');
+      // Adjust second-row tabs based on mode (in setup, hide second row; actions are in top bar)
+      // Keep Setup icons in top bar for all setup-related panes
+      if(['setup','spaces','assets','certs'].includes(which)){
+        const tabs=document.getElementById('bizTabs'); if(tabs) { tabs.className='biz-tabs'; tabs.innerHTML=''; }
+        if(window.showTopBarSetup) window.showTopBarSetup();
       } else {
-        setWorkHeading('Company Setup'); if(p) p.style.display='none'; if(c) c.style.display=''; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none';
+        renderProfileBizTabs();
+        if(window.showTopBarProfile) window.showTopBarProfile();
       }
+      // Hide all panes
+      if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none'; if(a) a.style.display='none'; if(k) k.style.display='none'; if(f) f.style.display='none'; if(u) u.style.display='none';
+      if(which==='company'){ setWorkHeading('Business Setup'); if(c) c.style.display=''; setActiveBizTab('head'); }
+      else if(which==='warehouses'){ setWorkHeading('Warehouses'); if(w) w.style.display=''; setActiveBizTab('warehouse'); try{ loadWarehouses(); }catch(e){} }
+      else if(which==='factory'){ setWorkHeading('Factory / Land'); if(f) f.style.display=''; setActiveBizTab('factory'); }
+      else if(which==='setup' || which==='spaces'){ setWorkHeading('Add Space'); if(x) x.style.display=''; try{ loadSpaces(); }catch(e){} }
+      else if(which==='assets'){ setWorkHeading('Assets'); if(a) a.style.display=''; try{ loadAssets(); }catch(e){} }
+      else if(which==='certs'){ setWorkHeading('Certifications'); if(k) k.style.display=''; try{ loadCerts(); }catch(e){} }
+      else if(which==='unions'){ setWorkHeading('Unions'); if(u) u.style.display=''; try{ loadUnions(); }catch(e){} }
+      else { setWorkHeading('Business Setup'); if(c) c.style.display=''; setActiveBizTab('head'); }
     }
     // Spaces JS
     let _spaces=[], _spSortField='Name', _spSortDir='asc';
@@ -372,6 +696,73 @@
     }
     window.deleteSpace = async (id)=>{ if(!confirm('Delete this space?')) return; await fetch('/api/company/spaces/'+id,{method:'DELETE',credentials:'include'}); loadSpaces(); };
     window.editSpace = (id)=>{ alert('Edit space coming soon'); };
+
+    // Certifications JS
+    let _certs=[], _ctSortField='Name', _ctSortDir='asc';
+    function renderCerts(){
+      const q=(document.getElementById('ctSearch')?.value||'').toLowerCase();
+      const rows=_certs.filter(s=>{ const hay=`${s.Name||''} ${s.Type||''} ${s.Policy||''}`.toLowerCase(); return !q || hay.includes(q); }).sort((a,b)=>{ const av=a[_ctSortField]; const bv=b[_ctSortField]; if(_ctSortField==='ValidFrom' || _ctSortField==='ValidTill'){ const da=new Date(av||0); const db=new Date(bv||0); return _ctSortDir==='asc'? (da-db):(db-da); } return _ctSortDir==='asc'? String(av||'').localeCompare(String(bv||'')):String(bv||'').localeCompare(String(av||'')); });
+      const tbody=document.getElementById('certsTBody'); if(!tbody) return; if(rows.length===0){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:12px;color:#94a3b8">No certifications</td></tr>'; return; }
+      tbody.innerHTML = rows.map(s=>`<tr>
+        <td>${s.Name||''}</td>
+        <td>${s.CertImageUrl? `<img src='${s.CertImageUrl}' style='height:36px;border-radius:6px'>`:''}</td>
+        <td>${s.ValidFrom? new Date(s.ValidFrom).toLocaleDateString(): ''}</td>
+        <td style='color:#ef4444'>${s.ValidTill? new Date(s.ValidTill).toLocaleDateString(): ''}</td>
+        <td>${s.LogoUrl? `<img src='${s.LogoUrl}' style='height:36px;border-radius:6px'>`:''}</td>
+        <td>${s.Detail||''}</td>
+        <td><button class='btn' onclick='deleteCert(${s.Id})'>Delete</button></td>
+      </tr>`).join('');
+    }
+    async function loadCerts(){ try{ const r=await fetch('/api/company/certifications',{credentials:'include'}); const j=await r.json(); if(j.success){ _certs=j.data||[]; renderCerts(); const head=document.querySelectorAll('#certsTable thead th[data-s]'); head.forEach(th=>th.onclick=()=>{ const f=th.getAttribute('data-s'); if(_ctSortField===f){ _ctSortDir=_ctSortDir==='asc'?'desc':'asc'; } else { _ctSortField=f; _ctSortDir='asc'; } renderCerts(); }); const inp=document.getElementById('ctSearch'); if(inp) inp.oninput=()=>renderCerts(); } }catch(e){}
+      const e1=document.getElementById('ctExportCsv'); if(e1) e1.onclick=()=>{ const rows=[['Certificate Name','Valid From','Valid Till','Detail']].concat((_certs||[]).map(s=>[s.Name||'',(s.ValidFrom? new Date(s.ValidFrom).toLocaleDateString(): ''),(s.ValidTill? new Date(s.ValidTill).toLocaleDateString(): ''),s.Detail||'' ])); const csv=rows.map(r=>r.map(v=>`\"${String(v).replace(/\"/g,'\"\"')}\"`).join(',')).join('\\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='certifications.csv'; a.click(); URL.revokeObjectURL(url); };
+      const e2=document.getElementById('ctExportPdf'); if(e2) e2.onclick=()=>{ const w=window.open(''); const tableHtml=document.getElementById('certsTable').outerHTML; w.document.write(`<html><head><meta name='viewport' content='width=device-width, initial-scale=1'><title>Certifications</title><style>body{font-family:Inter,Segoe UI,system-ui,Arial} table{width:100%;border-collapse:collapse} th,td{border:1px solid #e2e8f0;padding:8px} th{background:#f8fafc;text-transform:uppercase;font-size:12px}</style></head><body><h3>Certifications</h3>${tableHtml}</body></html>`); w.document.close(); w.focus(); w.print(); w.close(); };
+      const btn=document.getElementById('ctNewBtn'); if(btn) btn.onclick=()=>{ document.getElementById('ctModal').classList.add('open'); setTimeout(()=>document.getElementById('ctName')?.focus(),0); };
+    }
+    window.deleteCert = async (id)=>{ if(!confirm('Delete this certification?')) return; await fetch('/api/company/certifications/'+id,{method:'DELETE',credentials:'include'}); loadCerts(); };
+
+    // Unions JS
+    let _unions=[], _unSortField='Name', _unSortDir='asc';
+    function renderUnions(){
+      const q=(document.getElementById('unSearch')?.value||'').toLowerCase();
+      const rows=_unions.filter(s=>{ const hay=`${s.Name||''} ${s.Description||''}`.toLowerCase(); return !q || hay.includes(q); }).sort((a,b)=>{ const av=a[_unSortField]; const bv=b[_unSortField]; return _unSortDir==='asc'? String(av||'').localeCompare(String(bv||'')):String(bv||'').localeCompare(String(av||'')); });
+      const tbody=document.getElementById('unionsTBody'); if(!tbody) return; if(rows.length===0){ tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:12px;color:#94a3b8">No unions</td></tr>'; return; }
+      tbody.innerHTML = rows.map(s=>`<tr>
+        <td>${s.Name||''}</td>
+        <td>${s.Description||''}</td>
+        <td><button class='btn' onclick='editUnion(${s.Id})'>Edit</button> <button class='btn' onclick='deleteUnion(${s.Id})'>Delete</button></td>
+      </tr>`).join('');
+    }
+    async function loadUnions(){ try{ const r=await fetch('/api/company/unions',{credentials:'include'}); const j=await r.json(); if(j.success){ _unions=j.data||[]; renderUnions(); const head=document.querySelectorAll('#unionsTable thead th[data-s]'); head.forEach(th=>th.onclick=()=>{ const f=th.getAttribute('data-s'); if(_unSortField===f){ _unSortDir=_unSortDir==='asc'?'desc':'asc'; } else { _unSortField=f; _unSortDir='asc'; } renderUnions(); }); const inp=document.getElementById('unSearch'); if(inp) inp.oninput=()=>renderUnions(); } }catch(e){}
+      const btn=document.getElementById('unNewBtn'); if(btn) btn.onclick=()=>{ document.getElementById('unModal').classList.add('open'); setTimeout(()=>document.getElementById('unName')?.focus(),0); };
+    }
+    window.deleteUnion = async (id)=>{ if(!confirm('Delete this union?')) return; await fetch('/api/company/unions/'+id,{method:'DELETE',credentials:'include'}); loadUnions(); };
+    window.editUnion = (id)=>{ const row=_unions.find(x=>x.Id===id); if(!row) return; document.getElementById('unModal').classList.add('open'); document.getElementById('unId').value=id; document.getElementById('unName').value=row.Name||''; document.getElementById('unDesc').value=row.Description||''; };
+
+    // Certification modal handlers
+    (function(){ const close=()=>document.getElementById('ctModal').classList.remove('open'); const c1=document.getElementById('ctClose'); if(c1) c1.onclick=close; const c2=document.getElementById('ctCancel'); if(c2) c2.onclick=close; const modal=document.getElementById('ctModal'); if(modal) modal.addEventListener('click',(e)=>{ if(e.target.id==='ctModal') close(); }); const save=document.getElementById('ctSave'); if(save) save.onclick=async ()=>{ const payload={ name:ctName.value.trim(), type:ctType.value.trim(), policy:ctPolicy.value.trim(), validFrom:ctFrom.value||null, validTill:ctTill.value||null, detail:ctDetail.value.trim() }; if(!payload.name){ alert('Name required'); return; } const r=await fetch('/api/company/certifications',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); const j=await r.json(); if(j.success){ const img=document.getElementById('ctImage').files?.[0]; const logo=document.getElementById('ctLogo').files?.[0]; async function sendFile(f,url){ return new Promise((resolve)=>{ const reader=new FileReader(); reader.onload=async ()=>{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({dataUrl: reader.result})}); resolve(); }; reader.readAsDataURL(f); }); }
+        if(img) await sendFile(img, '/api/company/certifications/'+j.id+'/image'); if(logo) await sendFile(logo, '/api/company/certifications/'+j.id+'/logo'); close(); loadCerts(); } else { alert(j.error||'Failed to save'); } }; })();
+
+    // Assets JS
+    let _assets=[], _asSortField='AssetName', _asSortDir='asc';
+    function renderAssets(){
+      const q=(document.getElementById('asSearch')?.value||'').toLowerCase();
+      const rows=_assets.filter(s=>{ const hay=`${s.AssetName||''} ${s.AssetType||''} ${s.Supplier||''}`.toLowerCase(); return !q || hay.includes(q); }).sort((a,b)=>{ const av=a[_asSortField]; const bv=b[_asSortField]; if(['Quantity','PurchasePrice'].includes(_asSortField)) return _asSortDir==='asc'? (Number(av||0)-Number(bv||0)):(Number(bv||0)-Number(av||0)); if(_asSortField==='PurchaseDate' || _asSortField==='SavedOn'){ const da=new Date(av||0); const db=new Date(bv||0); return _asSortDir==='asc'? (da-db):(db-da); } return _asSortDir==='asc'? String(av||'').localeCompare(String(bv||'')):String(bv||'').localeCompare(String(av||'')); });
+      const tbody=document.getElementById('assetsTBody'); if(!tbody) return; if(rows.length===0){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:12px;color:#94a3b8">No assets</td></tr>'; return; }
+      tbody.innerHTML = rows.map(s=>`<tr>
+        <td>${s.AssetName||''}</td><td>${s.Quantity??''}</td><td>${s.AssetType||''}</td>
+        <td>${s.PurchaseDate? new Date(s.PurchaseDate).toLocaleDateString(): ''}</td>
+        <td>${s.PurchasePrice??''}</td><td>${s.Supplier||''}</td><td>${s.Notes||''}</td>
+        <td>${s.SavedOn? new Date(s.SavedOn).toLocaleDateString(): ''}</td>
+        <td><button class='btn' onclick='editAsset(${s.Id})'>Edit</button> <button class='btn' onclick='deleteAsset(${s.Id})'>Delete</button></td>
+      </tr>`).join('');
+    }
+    async function loadAssets(){ try{ const r=await fetch('/api/company/assets',{credentials:'include'}); const j=await r.json(); if(j.success){ _assets=j.data||[]; renderAssets(); const head=document.querySelectorAll('#assetsTable thead th[data-s]'); head.forEach(th=>th.onclick=()=>{ const f=th.getAttribute('data-s'); if(_asSortField===f){ _asSortDir=_asSortDir==='asc'?'desc':'asc'; } else { _asSortField=f; _asSortDir='asc'; } renderAssets(); }); const inp=document.getElementById('asSearch'); if(inp) inp.oninput=()=>renderAssets(); } }catch(e){}
+      const e1=document.getElementById('asExportCsv'); if(e1) e1.onclick=()=>{ const rows=[['Asset Name','Qty','Asset Type','Purchase Date','Purchase Price','Supplier','Notes','Saved On']].concat((_assets||[]).map(s=>[s.AssetName||'',s.Quantity||'',s.AssetType||'',(s.PurchaseDate? new Date(s.PurchaseDate).toLocaleDateString(): ''),s.PurchasePrice||'',s.Supplier||'',s.Notes||'',(s.SavedOn? new Date(s.SavedOn).toLocaleDateString(): '')])); const csv=rows.map(r=>r.map(v=>`\"${String(v).replace(/\"/g,'\"\"')}\"`).join(',')).join('\\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='assets.csv'; a.click(); URL.revokeObjectURL(url); };
+      const e2=document.getElementById('asExportPdf'); if(e2) e2.onclick=()=>{ const w=window.open(''); const tableHtml=document.getElementById('assetsTable').outerHTML; w.document.write(`<html><head><meta name='viewport' content='width=device-width, initial-scale=1'><title>Assets</title><style>body{font-family:Inter,Segoe UI,system-ui,Arial} table{width:100%;border-collapse:collapse} th,td{border:1px solid #e2e8f0;padding:8px} th{background:#f8fafc;text-transform:uppercase;font-size:12px}</style></head><body><h3>Assets</h3>${tableHtml}</body></html>`); w.document.close(); w.focus(); w.print(); w.close(); };
+      const btn=document.getElementById('asNewBtn'); if(btn) btn.onclick=()=>{ document.getElementById('asModal').classList.add('open'); setTimeout(()=>document.getElementById('asName')?.focus(),0); };
+    }
+    window.deleteAsset = async (id)=>{ if(!confirm('Delete this asset?')) return; await fetch('/api/company/assets/'+id,{method:'DELETE',credentials:'include'}); loadAssets(); };
+    window.editAsset = (id)=>{ alert('Edit asset coming soon'); };
 
     // Load profile
     async function loadProfile(){
@@ -421,6 +812,15 @@
       const d = j.data || {};
       cpAddress1.value=d.Address1||''; cpAddress2.value=d.Address2||''; cpCity.value=d.City||''; cpState.value=d.State||''; cpPostal.value=d.PostalCode||'';
       cpEmployees.value=d.Employees||''; cpCapacityType.value=d.CapacityType||''; cpCapacityQty.value=d.CapacityQty||''; cpMinOrder.value=d.MinOrderQty||''; cpSalesType.value=d.SalesProfitType||''; cpSalesValue.value=d.SalesProfitValue||''; cpMinWage.value=d.MinWage||''; cpMinAge.value=d.MinAge||''; cpRetAge.value=d.RetirementAge||''; cpDealGarments.checked = !!d.DealInGarments; cpDealHome.checked=!!d.DealInHomeTextile;
+      // Show saved logo (if any)
+      const logoImg = document.getElementById('cpLogoPreview');
+      const logoBox = document.getElementById('cpLogoPreviewBox');
+      if (logoImg && d.LogoUrl) {
+        logoImg.src = d.LogoUrl;
+        if (logoBox) logoBox.style.display = 'block';
+      } else if (logoBox) {
+        logoBox.style.display = 'none';
+      }
       renderLines(j.productLines||[]);
     }
     function renderLines(rows){
@@ -435,7 +835,36 @@
         address1: cpAddress1.value.trim(), address2: cpAddress2.value.trim(), city: cpCity.value.trim(), state: cpState.value.trim(), postalCode: cpPostal.value.trim(), employees: parseInt(cpEmployees.value||''), capacityType: cpCapacityType.value.trim(), capacityQty: parseInt(cpCapacityQty.value||''), minOrderQty: parseInt(cpMinOrder.value||''), salesProfitType: cpSalesType.value.trim(), salesProfitValue: parseFloat(cpSalesValue.value||''), minWage: parseFloat(cpMinWage.value||''), minAge: parseInt(cpMinAge.value||''), retirementAge: parseInt(cpRetAge.value||''), dealInGarments: cpDealGarments.checked, dealInHomeTextile: cpDealHome.checked };
       await fetch('/api/company/profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' }); alert('Company profile saved');
     };
-    document.getElementById('cpLogo').onchange = async (ev)=>{ const f=ev.target.files[0]; if(!f) return; if(f.size>10*1024*1024){ alert('Max 10MB'); return; } const reader=new FileReader(); reader.onload=async()=>{ const r=await fetch('/api/company/logo',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ dataUrl: reader.result }), credentials:'include' }); const j=await r.json(); if(!j.success) alert(j.error||'Upload failed'); }; reader.readAsDataURL(f); };
+    document.getElementById('cpLogo').onchange = async (ev)=>{
+      const f = ev.target.files[0];
+      if(!f) return;
+      if(f.size>10*1024*1024){ alert('Max 10MB'); return; }
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        const r=await fetch('/api/company/logo',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ dataUrl: reader.result }),
+          credentials:'include'
+        });
+        const j=await r.json();
+        if(!j.success){
+          alert(j.error||'Upload failed');
+        } else {
+          const logoImg=document.getElementById('cpLogoPreview');
+          const logoBox=document.getElementById('cpLogoPreviewBox');
+          if(logoImg){ logoImg.src = j.url; }
+          if(logoBox){ logoBox.style.display='block'; }
+        }
+      };
+      reader.readAsDataURL(f);
+    };
+
+    // Union modal handlers
+    (function(){ const close=()=>document.getElementById('unModal').classList.remove('open'); const c1=document.getElementById('unClose'); if(c1) c1.onclick=close; const c2=document.getElementById('unCancel'); if(c2) c2.onclick=close; const modal=document.getElementById('unModal'); if(modal) modal.addEventListener('click',(e)=>{ if(e.target.id==='unModal') close(); }); const save=document.getElementById('unSave'); if(save) save.onclick=async ()=>{ const id=document.getElementById('unId').value.trim(); const payload={ name:unName.value.trim(), description:unDesc.value.trim()||null }; if(!payload.name){ alert('Union Name required'); return; } if(id){ await fetch('/api/company/unions/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); } else { await fetch('/api/company/unions',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); } close(); loadUnions(); }; })();
+
+    // Assets modal handlers
+    (function(){ const close=()=>document.getElementById('asModal').classList.remove('open'); const c1=document.getElementById('asClose'); if(c1) c1.onclick=close; const c2=document.getElementById('asCancel'); if(c2) c2.onclick=close; const modal=document.getElementById('asModal'); if(modal) modal.addEventListener('click',(e)=>{ if(e.target.id==='asModal') close(); }); const save=document.getElementById('asSave'); if(save) save.onclick=async ()=>{ const payload={ assetName:asName.value.trim(), assetType:asType.value.trim(), quantity:parseInt(asQty.value||'0'), purchaseDate:asDate.value||null, purchasePrice:parseFloat(asPrice.value||'0'), supplier:asSupplier.value.trim(), notes:asNotes.value.trim() }; if(!payload.assetName){ alert('Asset Name required'); return; } const r=await fetch('/api/company/assets',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); const j=await r.json(); if(j.success){ close(); loadAssets(); } else { alert(j.error||'Failed to save'); } }; })();
 
     // Warehouses UI
     async function loadWarehouses(){ const r=await fetch('/api/company/warehouses',{credentials:'include'}); const j=await r.json(); if(!j.success) { document.getElementById('whList').innerHTML='<div class="muted">No warehouses yet</div>'; return; } renderWhList(j.data||[]); }
@@ -454,8 +883,12 @@
     loadProfile();
     loadCompany();
     loadWarehouses();
+    // Initialize profile tabs by default in second row and top bar state
+    renderProfileBizTabs(); if(window.showTopBarProfile) window.showTopBarProfile(); else if(window.forceTopBarProfile) window.forceTopBarProfile();
     // Default tab routing
-(function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='warehouses'){ leftShowProfile(); showTab('warehouses'); } else if(tab==='setup'){ leftShowSetup(); showTab('setup'); } else { leftShowMain(); showTab('company'); } const b=document.getElementById('btnSetupAddSpace'); if(b){ b.onclick=()=>{ leftShowSetup(); showTab('spaces'); loadSpaces(); }; } })();
+    (function(){ const p=new URLSearchParams(location.search); const tab=p.get('tab'); if(tab==='warehouses'){ showTab('warehouses'); } else if(tab==='factory'){ showTab('factory'); } else if(tab==='setup'){ leftShowSetup(); showTab('setup'); } else { showTab('company'); } })();
+    // Footer
   </script>
+  <footer style="margin:8px 12px;padding:10px;color:#64748b;font-size:12px;text-align:center">© ComplytEX</footer>
 </body>
 </html>

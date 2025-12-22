@@ -35,6 +35,13 @@
     .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:960px;width:96%;max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.2)}
     .modal-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e2e8f0}
     .modal-body{padding:12px 16px}
+
+    /* Auditor sheet styling */
+    .audit-sheet-table th,.audit-sheet-table td{vertical-align:top}
+    .audit-sheet-table textarea{min-height:48px;resize:vertical}
+    .audit-row.no-issue{background:#f9fafb}
+    .audit-row.has-issue{background:#fff7ed}
+    .audit-row.no-issue .issue-cell>*{opacity:.35;pointer-events:none}
   </style>
 </head>
 <body>
@@ -212,12 +219,39 @@
           <div style="font-weight:700" id="dTitle">Audit Details</div>
           <div class="muted" id="dMeta"></div>
         </div>
-        <div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn sec" onclick="closeDetail()">Back</button>
+          <button class="btn" style="background:#10b981" onclick="saveAuditSheet()">Save Audit Sheet</button>
         </div>
       </div>
-      <div style="margin-top:12px">
-        <div style="font-weight:600;margin:10px 0">Open Issues</div>
+
+      <!-- Auditor sheet: full checklist for this audit -->
+      <div style="margin-top:16px">
+        <div style="font-weight:600;margin:10px 0">Safety Audit Sheet</div>
+        <div class="data-table-container">
+          <table class="audit-sheet-table">
+            <thead>
+              <tr>
+                <th>HEAD</th>
+                <th>VALUE</th>
+                <th>NO ISSUE</th>
+                <th>ISSUE DETAIL</th>
+                <th>ATTACHMENT</th>
+                <th>SUGGESTED ACTION</th>
+                <th>INFORMED TO</th>
+              </tr>
+            </thead>
+            <tbody id="detailSheetBody"></tbody>
+          </table>
+        </div>
+        <div class="muted" style="margin-top:8px">
+          Rows are marked as <strong>no issue</strong> by default. Uncheck "No Issue" to record findings and actions.
+        </div>
+      </div>
+
+      <!-- Open issues (items flagged with problems) + RFQ actions -->
+      <div style="margin-top:20px">
+        <div style="font-weight:600;margin:10px 0">Open Issues &amp; Corrective Actions</div>
         <div id="issueRows" class="grid"></div>
       </div>
     </div>
@@ -229,6 +263,12 @@
     let currentTenantId = 1;
     let audits = [];
     let currentDetail = null;
+
+    // Support deep-linking: /safety-audits.html?auditId=123&focusItemId=456 opens that audit + focuses RFQ for item
+    const _urlParams = new URLSearchParams(window.location.search || '');
+    const _initialAuditId = _urlParams.get('auditId');
+    const _focusItemId = _urlParams.get('focusItemId');
+    let _initialAuditOpened = false;
 
     async function createPlan(){
       const payload = {
@@ -260,6 +300,19 @@
         audits.sort((a,b)=> new Date(b.AuditDate || 0) - new Date(a.AuditDate || 0));
         renderRows();
         loadQuoteStats();
+
+        // If page was opened with ?auditId=123, auto-open that audit once
+        if (!_initialAuditOpened && _initialAuditId) {
+          const idNum = parseInt(_initialAuditId, 10);
+          const focusItemNum = _focusItemId ? parseInt(_focusItemId, 10) : null;
+          if (!isNaN(idNum) && audits.some(a => a.Id === idNum)) {
+            _initialAuditOpened = true;
+            // Defer to ensure DOM is ready
+            setTimeout(() => {
+              try { viewAudit(idNum, focusItemNum); } catch(e) { console.warn(e); }
+            }, 0);
+          }
+        }
       }catch(e){ console.error(e); }
     }
 
@@ -324,17 +377,65 @@
       }
     }
 
-    async function viewAudit(id){
+    async function viewAudit(id, focusItemId){
       try{
         const res = await SafetyAPI.getAuditDetails(id);
         currentDetail = res.data;
-        document.getElementById('detail').classList.remove('hidden');
+        console.log('🔍 Loaded audit detail', currentDetail);
+
+        // Show detail card and header info
+        const detailCard = document.getElementById('detail');
+        detailCard.classList.remove('hidden');
         document.getElementById('dTitle').textContent = `${currentDetail.plan.AuditName} — ${currentDetail.plan.AuditType}`;
         document.getElementById('dMeta').textContent = `Company: ${currentDetail.plan.AuditCompany||'-'} • Date: ${currentDetail.plan.AuditDate?new Date(currentDetail.plan.AuditDate).toLocaleDateString():'-'} • Status: ${currentDetail.plan.Status}`;
-        // Render issues (items with NoIssue = 0)
+        // Ensure the detail section is visible to the user
+        detailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // ---------- Auditor sheet (all checklist rows) ----------
+        const sheetBody = document.getElementById('detailSheetBody');
+        sheetBody.innerHTML = '';
+        const allItems = currentDetail.items || [];
+        const itemById = Object.fromEntries(allItems.map(it => [it.Id, it]));
+        if (allItems.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="7" style="text-align:center;padding:12px;color:#94a3b8">No checklist items have been recorded for this audit yet.</td>';
+          sheetBody.appendChild(tr);
+        } else {
+          const esc = (s) => (s || '').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] || c));
+          allItems.forEach(it => {
+            const hasIssueDetail = !!(it.IssueDetails && it.IssueDetails.trim());
+            const noIssue = (typeof it.NoIssue === 'boolean') ? it.NoIssue : !hasIssueDetail;
+            const hasIssue = !noIssue;
+            const tr = document.createElement('tr');
+            tr.className = 'audit-row ' + (hasIssue ? 'has-issue' : 'no-issue');
+            const head = esc(it.Head || '');
+            const val = esc(it.Value || '');
+            const issue = esc(it.IssueDetails || '');
+            const sugg = esc(it.SuggestedAction || '');
+            const informed = esc(it.InformedTo || '');
+            const attachments = esc(it.Attachments || '');
+            tr.innerHTML = `
+              <td><div data-k="Head">${head}</div></td>
+              <td><div data-k="Value">${val}</div></td>
+              <td style="text-align:center"><input type="checkbox" data-k="NoIssue" ${noIssue ? 'checked' : ''} onchange="onNoIssueToggle(this)"></td>
+              <td class="issue-cell"><textarea data-k="IssueDetails" rows="2" style="width:100%">${issue}</textarea></td>
+              <td class="issue-cell">
+                <input type="file" onchange="onItemAttachmentChange(this)">
+                <input type="hidden" data-k="Attachments" value="${attachments}">
+                ${attachments ? '<div class="muted">File saved</div>' : ''}
+              </td>
+              <td class="issue-cell"><textarea data-k="SuggestedAction" rows="2" style="width:100%">${sugg}</textarea></td>
+              <td class="issue-cell"><input data-k="InformedTo" value="${informed}" style="width:100%"></td>
+            `;
+            sheetBody.appendChild(tr);
+          });
+        }
+
+        // ---------- Open issues (items flagged with problems) ----------
         const container = document.getElementById('issueRows');
         container.innerHTML = '';
-        (currentDetail.items||[]).filter(i=>!i.NoIssue).forEach(it=>{
+        const issueItems = (allItems).filter(i=>i.NoIssue===false || (i.IssueDetails && i.IssueDetails.trim()!==''));
+        issueItems.forEach(it=>{
           const row = document.createElement('div');
           row.className = 'card';
           row.innerHTML = `
@@ -396,6 +497,30 @@
           loadUnitsInto(`rfqUnit_${it.Id}`);
           loadRFQs(${it.Id});
         });
+
+        // If a specific item is requested (from verification sheet), open its RFQ section and prefill
+        if (focusItemId) {
+          const focusIdNum = parseInt(focusItemId, 10);
+          if (!isNaN(focusIdNum)) {
+            const focusItem = itemById[focusIdNum];
+            const form = document.getElementById(`rfqForm_${focusIdNum}`);
+            if (focusItem && form) {
+              form.classList.remove('hidden');
+              const itemNameInput = document.getElementById(`rfqItem_${focusIdNum}`);
+              const detailInput = document.getElementById(`rfqDetail_${focusIdNum}`);
+              if (itemNameInput && !itemNameInput.value) {
+                itemNameInput.value = focusItem.Head || '';
+              }
+              if (detailInput && !detailInput.value) {
+                const parts = [];
+                if (focusItem.IssueDetails) parts.push('Issue: ' + focusItem.IssueDetails);
+                if (focusItem.SuggestedAction) parts.push('Suggested Action: ' + focusItem.SuggestedAction);
+                detailInput.value = parts.join(' | ');
+              }
+              form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        }
       }catch(e){ SafetyAPI.showErrorMessage(e.message); }
     }
 
@@ -629,6 +754,64 @@
         const arr = (res.data||[]);
         listEl.innerHTML = arr.length===0 ? 'No RFQs yet' : arr.map(r=>`#${r.Id} • ${r.ItemName} • Qty ${r.Qty} ${r.Unit||''} • Status: ${r.Status}`).join('<br/>');
       }catch(e){ console.warn(e); }
+    }
+
+    function onNoIssueToggle(cb){
+      const tr = cb.closest('tr');
+      if(!tr) return;
+      const noIssue = cb.checked;
+      tr.classList.toggle('has-issue', !noIssue);
+      tr.classList.toggle('no-issue', noIssue);
+    }
+
+    function onItemAttachmentChange(input){
+      const tr = input.closest('tr');
+      if(!tr || !input.files || !input.files[0]) return;
+      const hidden = tr.querySelector('input[data-k="Attachments"]');
+      if(!hidden) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        hidden.value = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveAuditSheet(){
+      if(!currentDetail) return;
+      const tbody = document.getElementById('detailSheetBody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const items = [];
+      rows.forEach(row=>{
+        const headEl = row.querySelector('[data-k="Head"]');
+        if(!headEl) return; // skip placeholder row
+        const m = {};
+        const valEl = row.querySelector('[data-k="Value"]');
+        const noIssueCb = row.querySelector('input[data-k="NoIssue"]');
+        const issueEl = row.querySelector('textarea[data-k="IssueDetails"]');
+        const attEl = row.querySelector('input[data-k="Attachments"]');
+        const suggEl = row.querySelector('textarea[data-k="SuggestedAction"]');
+        const infEl = row.querySelector('input[data-k="InformedTo"]');
+        m.Head = headEl.textContent.trim();
+        m.Value = valEl ? valEl.textContent.trim() : '';
+        m.NoIssue = noIssueCb ? noIssueCb.checked : true;
+        m.IssueDetails = issueEl ? issueEl.value.trim() : '';
+        m.Attachments = attEl ? attEl.value : '';
+        m.SuggestedAction = suggEl ? suggEl.value.trim() : '';
+        m.InformedTo = infEl ? infEl.value.trim() : '';
+        items.push(m);
+      });
+      if(items.length === 0){
+        SafetyAPI.showErrorMessage('No rows to save');
+        return;
+      }
+      try{
+        await SafetyAPI.saveAuditItems(currentDetail.plan.Id, items);
+        SafetyAPI.showSuccessMessage('Audit sheet saved');
+        await loadAudits();
+      }catch(e){
+        SafetyAPI.showErrorMessage(e.message);
+      }
     }
 
     function closeDetail(){

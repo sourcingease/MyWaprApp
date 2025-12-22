@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Notes • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Add Phone Notes</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:8px">Phone Call Notes</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Customer Name</label><input id="Customer" class="form-input" placeholder="Company or contact"/></div>
+        <div class="form-group"><label class="form-label">Contact Person</label><input id="ContactPerson" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="Phone" class="form-input" placeholder="Number dialed"/></div>
+        <div class="form-group"><label class="form-label">Call Type</label><select id="CallType" class="form-select"><option value="">Select</option><option>Incoming</option><option>Outgoing</option><option>Missed</option></select></div>
+        <div class="form-group"><label class="form-label">Call Date</label><input id="CallDate" type="date" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Call Time</label><input id="CallTime" type="time" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Customer Journey</label><select id="Journey" class="form-select"><option value="">Select</option><option>Phone Call</option><option>Website</option><option>Pricing</option><option>Agreement and E-Signature</option><option>Onboarding</option></select></div>
+        <div class="form-group"><label class="form-label">Sales Pitch</label><select id="SalesPitch" class="form-select"><option value="">Select</option><option>Intro</option><option>Product Demo</option><option>Pricing Discussion</option><option>Objection Handling</option><option>Closing</option></select></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notes</label><textarea id="Body" class="form-textarea" rows="4"></textarea></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remarks</label><textarea id="Remarks" class="form-textarea" rows="3"></textarea></div>
+        <div class="form-group"><label class="form-label">Follow-up</label><div><input id="HasFollowUp" type="checkbox"/> Follow-up required</div></div>
+        <div class="form-group"><label class="form-label">Follow-up At</label><input id="FollowUpAt" type="datetime-local" class="form-input"/></div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-weight:600;margin-bottom:4px">Quick Notes</div>
+        <div id="quickNotes" class="muted" style="font-size:12px;margin-bottom:4px">No quick notes yet.</div>
+        <button class="ct" type="button" onclick="addQuickNote()">New Quick Note</button>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;align-items:center">
+        <span class="muted" style="margin-right:auto">WhatsApp • Zoom</span>
+        <a class="ct" href="/crm/dashboard.html?embedded=1">Back</a>
+        <button class="ct" type="button" onclick="openAppt()">Appointment</button>
+        <button class="ct" type="button" onclick="sendEmail()">Send Email</button>
+        <button class="ct" type="button" onclick="resetForm()">Reset</button>
+        <button class="ct primary" type="button" onclick="saveNote()">Save</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    const QN_KEY='crm_quick_notes_v1';
+    function loadQuickNotes(){
+      let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
+      const box=document.getElementById('quickNotes');
+      if(!arr.length){ box.textContent='No quick notes yet.'; return; }
+      box.innerHTML=arr.map((t,i)=>`<label style='margin-right:8px;font-size:12px'><input type='radio' name='qn' value='${i}' onclick='applyQuickNote(${i})'/> ${esc(t)}</label>`).join('');
+    }
+    function addQuickNote(){
+      const txt=prompt('Add new quick note text:'); if(!txt) return;
+      let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
+      arr.push(txt); localStorage.setItem(QN_KEY, JSON.stringify(arr)); loadQuickNotes();
+    }
+    function applyQuickNote(i){
+      let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
+      const v=arr[i]||''; const body=document.getElementById('Body'); body.value = v + (body.value?('\n'+body.value):'');
+    }
+    function resetForm(){ ['Customer','ContactPerson','Phone','Body','Remarks','CallDate','CallTime'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('HasFollowUp').checked=false; document.getElementById('FollowUpAt').value=''; document.getElementById('msg').style.display='none'; }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+    function openAppt(){ location.href='/crm/appointment.html?embedded=1'; }
+    function sendEmail(){ location.href='mailto:'; }
+    async function saveNote(){
+      const customer=(document.getElementById('Customer').value||'').trim();
+      const body=(document.getElementById('Body').value||'').trim();
+      if(!body){ show(false,'Notes are required'); return; }
+      const contact=(document.getElementById('ContactPerson').value||'').trim();
+      const followUpAt=document.getElementById('HasFollowUp').checked ? (document.getElementById('FollowUpAt').value||null): null;
+      const subject = 'Call with '+(contact||customer||'Customer');
+      try{
+        await j('/api/crm/notes',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, body, followUpAt, customerName: customer||null, salesPersonName: null }) });
+        show(true,'Saved'); resetForm();
+      }catch(e){ console.error(e); show(false,'Failed to save'); }
+    }
+    loadQuickNotes();
+  </script>
+</body>
+</html>

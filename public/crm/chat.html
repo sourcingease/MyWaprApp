@@ -7,31 +7,169 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css">
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1100px;margin:0 auto;padding:22px}
-    .grid{display:grid;grid-template-columns:260px 1fr;gap:10px}
-    .panel{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:12px;min-height:420px}
-    .muted{color:#94a3b8}
-    input{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#0f172a;color:#e5e7eb;width:100%}
-    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f5f7fa;color:#0f172a}
+    .shell{max-width:1180px;margin:0 auto;padding:16px}
+    .grid{display:grid;grid-template-columns:320px 1fr;gap:12px}
+    .panel{background:#fff;border:1px solid #e2e8f0;border-radius:12px;min-height:540px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    .left{display:flex;flex-direction:column}
+    .left .top{display:flex;justify-content:space-between;align-items:center;padding:12px 12px;border-bottom:1px solid #e2e8f0}
+    .left .list{overflow:auto}
+    .conv{padding:10px 12px;border-bottom:1px solid #f1f5f9;cursor:pointer}
+    .conv:hover{background:#f8fafc}
+    .conv .title{font-weight:700}
+    .conv .preview{font-size:12px;color:#64748b}
+    .right{display:flex;flex-direction:column}
+    .right .head{padding:12px 12px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center}
+    .msgs{flex:1;overflow:auto;padding:12px}
+    .msg{display:flex;gap:8px;margin:8px 0;align-items:flex-end}
+    .msg.me{flex-direction:row-reverse}
+    .bubble{max-width:60%;padding:8px 12px;border-radius:14px;background:#e2e8f0;color:#0f172a}
+    .msg.me .bubble{background:#3b82f6;color:#fff}
+    .avatar{width:28px;height:28px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+    .avatar img{width:28px;height:28px;border-radius:50%;display:block}
+    .composer{display:flex;gap:8px;padding:10px;border-top:1px solid #e2e8f0}
+    .composer input{flex:1;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px}
+    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer;font-weight:700}
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 10px 30px rgba(0,0,0,.2);max-width:700px;width:96%}
+    .modal .hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-weight:800}
+    .modal .body{padding:12px 16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    select[multiple]{min-height:200px;width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
   </style>
 </head>
 <body>
   <div class="shell">
-    <h2>Chat</h2>
-    <div class="grid" style="margin-top:10px">
-      <div class="panel">
-        <div style="font-weight:700">Conversations</div>
-        <div class="muted" style="margin-top:8px">No conversations</div>
+    <div class="grid">
+      <div class="panel left">
+        <div class="top"><div style="font-weight:800">Conversations</div><button class="btn" id="newBtn">＋ New</button></div>
+        <div class="list" id="convList"></div>
       </div>
-      <div class="panel">
-        <div style="height:320px" class="muted">Select a chat to view messages.</div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <input placeholder="Type a message"/>
-          <button class="btn" onclick="alert('Send (placeholder)')">Send</button>
+      <div class="panel right">
+        <div class="head"><div id="convTitle" style="font-weight:800">Select a conversation</div><div id="members" class="muted" style="font-size:12px"></div></div>
+        <div class="msgs" id="msgs"></div>
+        <div class="composer">
+          <input id="message" placeholder="Type a message..." />
+          <button class="btn" id="send">Send</button>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="overlay" id="dlg">
+    <div class="modal">
+      <div class="hdr">Start New Conversation <button class="btn" id="dlgClose" style="background:#e5e7eb;color:#111827">✕</button></div>
+      <div class="body">
+        <div class="row">
+          <div style="flex:1 1 100%"><label>Subject</label><input id="subj" class="form-input" /></div>
+          <div style="flex:1 1 100%"><label>Participants</label><select id="pick" multiple></select></div>
+          <div style="flex:1 1 100%;display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="dlgCreate">Create</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let me = null; let currentId = null; let users = [];
+    // cache conversation meta: id -> { title, members }
+    const convMeta = new Map();
+    async function api(p, opts){ const r = await fetch(p, opts||{}); const j = await r.json(); if(!j.success) throw new Error(j.error||'Request failed'); return j.data || j; }
+    function initials(name){ name = String(name||'').trim(); const parts = name.split(/\s+/).slice(0,2); return parts.map(p=>p[0]?.toUpperCase()||'').join('')||'?'; }
+    function avatarHtml(u){ if(u && u.AvatarUrl){ return `<img src="${u.AvatarUrl}" alt="${u.FullName||''}">`; } return initials(u?.FullName); }
+
+    async function loadMe(){ try{ const r = await fetch('/api/auth/me',{credentials:'include'}); const j = await r.json(); if(j && j.success) me = j.data; }catch(e){} }
+async function loadUsers(){
+      const tid = (me && (me.tenantId || me.user?.TenantId)) ? (me.tenantId || me.user?.TenantId) : '';
+      let usersResp = null;
+      try{
+        const r = await fetch('/api/chat/users'+(tid?('?tenantId='+encodeURIComponent(tid)):'') ,{credentials:'include'});
+        usersResp = await r.json();
+      }catch(e){ usersResp = { success:false, error:String(e) }; }
+      users = Array.isArray(usersResp?.data)? usersResp.data: [];
+      // Fallback: use Employees API to mirror the list used by the Employees page
+      if(users.length===0 && tid){
+        try{
+          const r2 = await fetch(`/api/tenant/${encodeURIComponent(tid)}/employees`, { credentials:'include' });
+          const j2 = await r2.json();
+          if(j2 && j2.success && Array.isArray(j2.data)){
+            users = j2.data.map(e => ({ UserId: e.UserId, FullName: e.FullName, Email: e.Email, AvatarUrl: e.AvatarUrl }));
+          }
+        }catch(e){}
+      }
+      const sel = document.getElementById('pick');
+      sel.innerHTML = users.length? users.map(u=>`<option value='${u.UserId}'>${u.FullName||u.Email||('User '+u.UserId)}</option>`).join('') : '<option disabled>(No users found)</option>';
+    }
+async function listConvs(){
+      const r = await fetch('/api/chat/conversations',{credentials:'include'});
+      const j = await r.json().catch(()=>({}));
+      const data = Array.isArray(j?.data)? j.data: [];
+      convMeta.clear();
+      const el = document.getElementById('convList');
+      el.innerHTML = data.map(c=>{
+        const title = (c.Title||'').trim() || 'Untitled';
+        convMeta.set(c.Id, { title, members: c.Members||'' });
+        return `<div class='conv' data-id='${c.Id}'><div class='title'>${escapeHtml(title)}</div><div class='preview'>${c.LastBody? escapeHtml(String(c.LastBody).slice(0,80)) : ''}</div></div>`;
+      }).join('');
+      Array.from(el.children).forEach(d=> d.onclick = ()=> openConv(parseInt(d.getAttribute('data-id'))));
+    }
+async function openConv(id){
+      currentId = id;
+      const r = await fetch(`/api/chat/conversations/${id}/messages`, { credentials:'include' });
+      const j = await r.json().catch(()=>({}));
+      const data = Array.isArray(j?.data)? j.data: [];
+      const meta = convMeta.get(id) || { title: `Conversation #${id}`, members: '' };
+      const mwrap = document.getElementById('msgs');
+      mwrap.innerHTML = data.map(m=>{
+        const mine = me && (m.UserId===(me.user?.UserId||me.uid));
+        const a = { FullName:m.FullName, AvatarUrl:m.AvatarUrl };
+        return `<div class='msg ${mine?'me':''}'><div class='avatar'>${avatarHtml(a)}</div><div class='bubble'>${escapeHtml(m.Body)}<div style='font-size:11px;opacity:.7;margin-top:2px'>${new Date(m.CreatedAt).toLocaleTimeString()}</div></div></div>`;
+      }).join('');
+      document.getElementById('convTitle').textContent = meta.title;
+      document.getElementById('members').textContent = meta.members || '';
+      mwrap.scrollTop = mwrap.scrollHeight;
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+async function send(){ const body = document.getElementById('message').value.trim(); if(!body || !currentId) return; await fetch(`/api/chat/conversations/${currentId}/messages`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ body }) }).catch(()=>{}); document.getElementById('message').value=''; openConv(currentId); }
+
+    // New dialog
+    document.getElementById('newBtn').onclick = ()=>{ document.getElementById('dlg').classList.add('open'); };
+    document.getElementById('dlgClose').onclick = ()=>{ document.getElementById('dlg').classList.remove('open'); };
+    document.getElementById('dlgCreate').onclick = async ()=>{
+      const title = document.getElementById('subj').value.trim(); if(!title){ alert('Subject required'); return; }
+      const memberIds = Array.from(document.getElementById('pick').selectedOptions).map(o=> parseInt(o.value));
+const tid = me && (me.tenantId || me.user?.TenantId);
+// Try multiple endpoints to maximize compatibility
+      const payload = JSON.stringify({ title, memberIds, tenantId: tid });
+      async function tryPost(url){ try{ const r=await fetch(url,{ method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: payload }); return r; }catch(e){ return { ok:false, statusText:String(e), status:0, json: async()=>({success:false,error:String(e)}) }; }
+      }
+      let resp = await tryPost('/api/chat/conversations');
+      if(!resp.ok) resp = await tryPost('/api/chat/create');
+      if(!resp.ok) resp = await tryPost('/api/chat/conversations/create');
+      if(!resp.ok) resp = await tryPost('/api/chat/start');
+      let j = null; try{ j = await resp.json(); }catch(e){ j = { success:false, error:`HTTP ${resp.status}` }; }
+      if(!j || j.success!==true || !j.data?.id){ alert(j?.error||`HTTP ${resp.status}`); return; }
+      document.getElementById('dlg').classList.remove('open'); document.getElementById('subj').value=''; await listConvs(); await openConv(j.data.id);
+    };
+
+    document.getElementById('send').onclick = send; document.getElementById('message').addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } });
+
+(async function init(){
+      await loadMe();
+      // Ensure we have a tenant id for scoping
+      try{
+        if(!me || !me.tenantId){
+          const r = await fetch('/api/auth/tenants',{credentials:'include'});
+          const j = await r.json();
+          const first = Array.isArray(j?.data) && j.data[0];
+          if(first){ me = me||{}; me.tenantId = first.TenantId; }
+        }
+      }catch(e){}
+      await loadUsers();
+      await listConvs();
+    })();
+  </script>
 </body>
 </html>

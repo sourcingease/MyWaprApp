@@ -1436,8 +1436,20 @@ function setupSafetyRoutes(app, pool) {
           Attachments NVARCHAR(MAX) NULL,
           CorrectiveActionBy NVARCHAR(255) NULL,
           CorrectiveActionOn DATETIME2 NULL,
+          ResolutionMode NVARCHAR(50) NULL,
+          ResolutionAmount DECIMAL(18,2) NULL,
+          Status NVARCHAR(50) NULL,
           CreatedDate DATETIME2 NOT NULL DEFAULT(GETDATE())
         );
+      END;
+      IF COL_LENGTH('dbo.SafetyAuditCorrectiveAction','ResolutionMode') IS NULL BEGIN
+        ALTER TABLE dbo.SafetyAuditCorrectiveAction ADD ResolutionMode NVARCHAR(50) NULL;
+      END;
+      IF COL_LENGTH('dbo.SafetyAuditCorrectiveAction','ResolutionAmount') IS NULL BEGIN
+        ALTER TABLE dbo.SafetyAuditCorrectiveAction ADD ResolutionAmount DECIMAL(18,2) NULL;
+      END;
+      IF COL_LENGTH('dbo.SafetyAuditCorrectiveAction','Status') IS NULL BEGIN
+        ALTER TABLE dbo.SafetyAuditCorrectiveAction ADD Status NVARCHAR(50) NULL;
       END;
       IF OBJECT_ID('dbo.SafetyAuditReaudit','U') IS NULL BEGIN
         CREATE TABLE dbo.SafetyAuditReaudit(
@@ -1523,22 +1535,39 @@ function setupSafetyRoutes(app, pool) {
     }
   });
 
-  // Auditor saves audit items (standards checklist)
+  // Auditor (or system) saves audit items (standards checklist)
+  // NOTE: this route is also used when the Safety Officer first plans an audit and we seed
+  // default items. In that initial case, items are "unanswered" and the audit should
+  // remain in Planned status with Compliance = Pending.
   app.post('/api/safety/audits/:id/items', async (req, res) => {
     try {
       await ensureAuditTables();
       const id = parseInt(req.params.id);
       const items = Array.isArray(req.body.items) ? req.body.items : [];
       if (items.length === 0) return res.status(400).json({ success: false, error: 'No items provided' });
-      const request = pool.request();
-      request.input('AuditId', sql.Int, id);
+
+      // Replace existing items for this audit so that re-saving the sheet
+      // overwrites instead of duplicating rows.
+      await pool.request()
+        .input('AuditId', sql.Int, id)
+        .query('DELETE FROM SafetyAuditItem WHERE AuditId = @AuditId');
+
       // Insert items in a single batch
       for (const it of items) {
+        // Map NoIssue to a non-null BIT value. For seeded items we may not yet
+        // have an explicit NoIssue flag; in that case default to 1 to satisfy
+        // the NOT NULL constraint and rely on the audit Status to drive the
+        // Pending/Closed compliance pill on the frontend.
+        const hasNoIssueFlag = (typeof it.NoIssue === 'boolean');
+        const noIssueBit = hasNoIssueFlag
+          ? (it.NoIssue === false ? 0 : 1)
+          : 1;
+
         await pool.request()
           .input('AuditId', sql.Int, id)
           .input('Head', sql.NVarChar, it.Head || '')
           .input('Value', sql.NVarChar, it.Value || null)
-          .input('NoIssue', sql.Bit, it.NoIssue === false ? 0 : 1)
+          .input('NoIssue', sql.Bit, noIssueBit)
           .input('IssueDetails', sql.NVarChar, it.IssueDetails || null)
           .input('Attachments', sql.NVarChar, it.Attachments || null)
           .input('SuggestedAction', sql.NVarChar, it.SuggestedAction || null)
@@ -1548,13 +1577,25 @@ function setupSafetyRoutes(app, pool) {
             VALUES (@AuditId, @Head, @Value, @NoIssue, @IssueDetails, @Attachments, @SuggestedAction, @InformedTo);
           `);
       }
-      // Determine status
+      // Determine status based on whether any answers (Yes/No/Issue) were recorded
+      const anyAnswered = items.some(i =>
+        typeof i.NoIssue === 'boolean' || (i.IssueDetails && i.IssueDetails.trim() !== '')
+      );
       const anyIssues = items.some(i => i.NoIssue === false || (i.IssueDetails && i.IssueDetails.trim() !== ''));
+      let newStatus = null;
+      if (!anyAnswered) {
+        // Seeded defaults only -> keep Planned
+        newStatus = 'Planned';
+      } else if (anyIssues) {
+        newStatus = 'OpenIssues';
+      } else {
+        newStatus = 'Closed';
+      }
       await pool.request()
         .input('Id', sql.Int, id)
-        .input('Status', sql.NVarChar, anyIssues ? 'OpenIssues' : 'Closed')
+        .input('Status', sql.NVarChar, newStatus)
         .query('UPDATE SafetyAuditPlan SET Status = @Status, UpdatedDate = GETDATE() WHERE Id = @Id');
-      return res.json({ success: true, message: 'Audit items saved', status: anyIssues ? 'OpenIssues' : 'Closed' });
+      return res.json({ success: true, message: 'Audit items saved', status: newStatus });
     } catch (err) {
       console.error('Error saving audit items:', err);
       return res.status(500).json({ success: false, error: err.message });
@@ -1566,16 +1607,73 @@ function setupSafetyRoutes(app, pool) {
     try {
       await ensureAuditTables();
       const { auditId, itemId } = req.params;
-      const { correctiveActionTaken, attachments, correctiveActionBy, correctiveActionOn } = req.body;
+      const {
+        correctiveActionTaken,
+        attachments,
+        correctiveActionBy,
+        correctiveActionOn,
+        resolutionMode,
+        resolutionAmount,
+        status
+      } = req.body || {};
+
+      // Check if user has permission to change status
+      // Status can only be changed by Safety Auditor (audit officer), not Safety Officer
+      let statusToSave = null;
+      if (status !== undefined && status !== null) {
+        // Get user's role from authentication context
+        const userId = req.auth?.uid;
+        const tenantId = req.auth?.tid;
+        
+        if (userId && tenantId) {
+          // Query user's roles
+          const roleResult = await pool.request()
+            .input('UserId', sql.Int, userId)
+            .input('TenantId', sql.Int, tenantId)
+            .query(`
+              SELECT r.Name
+              FROM dbo.UserRoles ur
+              JOIN dbo.Roles r ON r.RoleId = ur.RoleId
+              WHERE ur.UserId = @UserId AND ur.TenantId = @TenantId
+            `);
+          
+          const roles = roleResult.recordset.map(r => (r.Name || '').toLowerCase());
+          const isAuditOfficer = roles.includes('safety auditor') || roles.includes('audit officer');
+          
+          if (isAuditOfficer) {
+            // User is authorized to change status
+            statusToSave = status;
+          } else {
+            // User is not authorized - ignore requested status change
+            console.log('User does not have permission to change status - role check failed');
+            statusToSave = null;
+          }
+        } else {
+          // No auth context - for security, do NOT allow status changes
+          console.log('No auth context present; ignoring requested status change');
+          statusToSave = null;
+        }
+      }
+
+      // Normalize amount to a decimal or null
+      let amountVal = null;
+      if (resolutionAmount !== undefined && resolutionAmount !== null && resolutionAmount !== '') {
+        const n = Number(resolutionAmount);
+        amountVal = Number.isFinite(n) ? n : null;
+      }
+
       const result = await pool.request()
         .input('AuditItemId', sql.Int, parseInt(itemId))
         .input('CorrectiveActionTaken', sql.NVarChar, correctiveActionTaken || null)
         .input('Attachments', sql.NVarChar, attachments || null)
         .input('CorrectiveActionBy', sql.NVarChar, correctiveActionBy || null)
         .input('CorrectiveActionOn', sql.DateTime2, correctiveActionOn || null)
+        .input('ResolutionMode', sql.NVarChar, resolutionMode || null)
+        .input('ResolutionAmount', sql.Decimal(18, 2), amountVal)
+        .input('Status', sql.NVarChar, statusToSave)
         .query(`
-          INSERT INTO SafetyAuditCorrectiveAction (AuditItemId, CorrectiveActionTaken, Attachments, CorrectiveActionBy, CorrectiveActionOn)
-          VALUES (@AuditItemId, @CorrectiveActionTaken, @Attachments, @CorrectiveActionBy, @CorrectiveActionOn);
+          INSERT INTO SafetyAuditCorrectiveAction (AuditItemId, CorrectiveActionTaken, Attachments, CorrectiveActionBy, CorrectiveActionOn, ResolutionMode, ResolutionAmount, Status)
+          VALUES (@AuditItemId, @CorrectiveActionTaken, @Attachments, @CorrectiveActionBy, @CorrectiveActionOn, @ResolutionMode, @ResolutionAmount, @Status);
           SELECT SCOPE_IDENTITY() AS Id;
         `);
       // Move audit to CorrectiveSubmitted

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Received / Paid • Accounting</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .tabs{display:flex;gap:6px;margin-bottom:8px}
+    .tab{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer}
+    .tab.active{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Received / Paid</div></div><div class="header-right"></div></div>
+  <div class="shell">
+    <div class="card">
+      <div class="tabs">
+        <button id="tReceived" class="tab">Received</button>
+        <button id="tPaid" class="tab">Paid</button>
+        <div style="margin-left:auto"><button class="ct" onclick="exportCSV()">Export CSV</button></div>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Ref</th><th>Bank</th><th>Amount</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="4">No data</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    function qs(k){ const u=new URL(location.href); return u.searchParams.get(k); }
+    let _currentKind = 'received'; let _lastList = [];
+    async function render(kind){ const [banksResp, listResp]=await Promise.all([ fetchJson('/api/accounting/banks'), fetchJson(`/api/accounting/ledger?type=${kind==='received'?'CR':'DR'}&limit=500`) ]);
+      const map=new Map((banksResp.data||[]).map(x=>[x.BankId, x])); const list=(listResp.data||[]); _lastList = list; const rows=document.getElementById('rows');
+      rows.innerHTML = list.length? list.slice(0,50).map(x=>`<tr><td>${new Date(x.EntryDate).toLocaleString()}</td><td>${esc(x.Reference||'')}</td><td>${esc((map.get(x.BankId)||{}).Name||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="4">No data</td></tr>'; }
+    function activate(kind){ _currentKind = kind; document.getElementById('tReceived').classList.toggle('active', kind==='received'); document.getElementById('tPaid').classList.toggle('active', kind==='paid'); render(kind); }
+    function exportCSV(){ const lines = [['Date','Ref','Type','Amount']]; _lastList.sort((a,b)=> new Date(a.EntryDate)-new Date(b.EntryDate)).forEach(x=>{ lines.push([new Date(x.EntryDate).toISOString(), x.Reference||'', _currentKind==='received'?'CR':'DR', String(x.Amount||0)]); }); const csv = lines.map(r=> r.map(v=> '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download = _currentKind==='received'? 'received.csv':'paid.csv'; a.click(); }
+    document.getElementById('tReceived').onclick=()=>activate('received'); document.getElementById('tPaid').onclick=()=>activate('paid');
+    const tab=qs('tab')||'received'; activate(tab);
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+  </script>
+</body>
+</html>

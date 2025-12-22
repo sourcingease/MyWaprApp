@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Deposit Summary</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Bank Deposit Summary</div></div><div class="header-right"></div></div>
+  <div class="shell">
+    <div class="card">
+      <table>
+        <thead><tr><th>Bank</th><th>Account #</th><th>Branch</th><th>Balance</th><th>Statement</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="5">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    async function fetchJson(url, options){ const res=await fetch(url,{credentials:'include',...(options||{})}); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    function embedded(){ return new URL(location.href).searchParams.get('embedded')==='1'; }
+    if(embedded()){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
+    async function load(){ const r=await fetchJson('/api/accounting/bank-summary'); const rows=document.getElementById('rows'); const list=r.data||[]; rows.innerHTML = list.length? list.map(b=>`<tr><td>${esc(b.Name)}</td><td>${esc(b.AccountNumber||'')}</td><td>${esc(b.BranchName||'')}</td><td>$${Number(b.Balance||0).toFixed(2)}</td><td><a class='ct' href='/accounting/bank-statement.html?bankId=${b.BankId}${embedded()?"&embedded=1":""}'>View</a></td></tr>`).join(''):'<tr><td colspan="5">No banks</td></tr>'; }
+    load();
+  </script>
+</body>
+</html>

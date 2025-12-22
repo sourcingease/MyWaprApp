@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Campaigns • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Email Campaigns</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <input id="q" class="form-input" placeholder="Search name/subject..." style="flex:1"/>
+        <a class="ct" href="/crm/campaign-new.html?embedded=1">New</a>
+      </div>
+      <table>
+        <thead><tr><th>Name</th><th>Subject</th><th>Created</th><th>Scheduled</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="4">No data</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]||c));
+    async function load(){ const q=(document.getElementById('q').value||'').toLowerCase(); try{
+      const r=await j('/api/crm/campaigns'); const list=(r.data||[]).filter(x=> !q || (String(x.Name||'').toLowerCase().includes(q) || String(x.Subject||'').toLowerCase().includes(q)));
+      document.getElementById('rows').innerHTML = list.length? list.map(x=>`<tr><td>${esc(x.Name)}</td><td>${esc(x.Subject||'')}</td><td>${new Date(x.CreatedAt).toLocaleString()}</td><td>${x.ScheduledAt? new Date(x.ScheduledAt).toLocaleString(): ''}</td></tr>`).join(''):'<tr><td colspan="4">No data</td></tr>';
+    }catch(e){ console.error(e); alert('Failed to load'); }}
+    document.getElementById('q').addEventListener('input', load);
+    load();
+  </script>
+</body>
+</html>

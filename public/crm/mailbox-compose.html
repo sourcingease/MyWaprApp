@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compose Email • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:800px){.row{grid-template-columns:1fr}}
+    .editor-toolbar{display:flex;gap:6px;margin-bottom:6px}
+    .editor-toolbar button{border:1px solid #e2e8f0;background:#f8fafc;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
+    .editor{min-height:180px;border:1px solid #e2e8f0;border-radius:8px;padding:8px;background:#fff}
+    .editor:focus{outline:2px solid #0ea5e9}
+    .attachments{margin-top:6px;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Compose Email</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="row">
+        <div class="form-group"><label class="form-label">To</label><input id="to" class="form-input" placeholder="recipient@example.com"/></div>
+        <div class="form-group"><label class="form-label">Company</label><select id="company" class="form-select"><option value="">(Optional) Select company</option></select></div>
+        <div class="form-group"><label class="form-label">CC</label><input id="cc" class="form-input" placeholder="cc@example.com"/></div>
+        <div class="form-group"><label class="form-label">Subject</label><input id="subject" class="form-input"/></div>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label class="form-label">Message</label>
+        <div class="editor-toolbar">
+          <button type="button" onclick="fmt('bold')">Bold</button>
+          <button type="button" onclick="fmt('italic')">Italic</button>
+          <button type="button" onclick="fmt('underline')">Underline</button>
+          <button type="button" onclick="fmt('insertUnorderedList')">Bullets</button>
+        </div>
+        <div id="body" class="editor" contenteditable="true"></div>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label class="form-label">Attachments</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="file" id="file" class="form-input" style="padding:6px"/>
+          <button class="ct" type="button" onclick="addAttachment()">Add</button>
+        </div>
+        <div id="attList" class="attachments"></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+        <a class="ct" href="/crm/mailbox.html?embedded=1">Back</a>
+        <button class="ct" type="button" onclick="saveDraft()">Save</button>
+        <button class="ct primary" type="button" onclick="sendNow()">Send</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none"></div>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    const atts=[];
+    function fmt(cmd){ document.execCommand(cmd,false,null); }
+    async function loadCompanies(){
+      try{
+        const r=await j('/api/crm/companies');
+        const list=r.data||[]; const sel=document.getElementById('company');
+        sel.innerHTML='<option value="">(Optional) Select company</option>' + list.map(c=>`<option value='${c.Id}' data-email='${esc(c.Email||'')}'>${esc(c.CompanyName)}</option>`).join('');
+      }catch(e){ console.error(e); }
+    }
+    document.getElementById('company').addEventListener('change',()=>{
+      const opt=document.getElementById('company').selectedOptions[0]; if(!opt) return; const email=opt.getAttribute('data-email'); if(email){ document.getElementById('to').value=email; }
+    });
+    async function addAttachment(){
+      const input=document.getElementById('file'); if(!input.files || !input.files[0]) return; const f=input.files[0];
+      try{
+        const reader=new FileReader(); reader.onload=async e=>{
+          try{
+            const r=await j('/api/uploads',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ filename:f.name, dataUrl:e.target.result }) });
+            atts.push({ name:f.name, url:r.url });
+            renderAtts(); input.value='';
+          }catch(err){ console.error(err); alert('Failed to upload attachment'); }
+        }; reader.readAsDataURL(f);
+      }catch(e){ console.error(e); }
+    }
+    function renderAtts(){
+      const box=document.getElementById('attList');
+      if(!atts.length){ box.textContent='No attachments'; return; }
+      box.innerHTML=atts.map((a,i)=>`<span style='margin-right:8px'>${esc(a.name)} <a href='#' onclick='remAtt(${i});return false;'>×</a></span>`).join('');
+    }
+    function remAtt(i){ atts.splice(i,1); renderAtts(); }
+    function show(ok,t){ const m=document.getElementById('msg'); m.className='status-message '+(ok?'success':'error'); m.textContent=t; m.style.display='block'; }
+    async function saveDraft(){ await submitMail('Drafts'); }
+    async function sendNow(){ await submitMail('Sent'); }
+    async function submitMail(folder){
+      const to=(document.getElementById('to').value||'').trim();
+      if(folder==='Sent' && !to){ show(false,'To is required'); return; }
+      const payload={
+        toAddresses: to,
+        ccAddresses: (document.getElementById('cc').value||'').trim(),
+        subject: document.getElementById('subject').value||'',
+        body: document.getElementById('body').innerHTML||'',
+        folder,
+        attachments: atts
+      };
+      try{
+        await j('/api/crm/email',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        show(true, folder==='Sent'?'Email sent':'Draft saved');
+        if(folder==='Sent') setTimeout(()=>{ location.href='/crm/mailbox.html?embedded=1'; },800);
+      }catch(e){ console.error(e); show(false,'Failed to save email'); }
+    }
+    async function loadForReplyOrForward(){
+      const url=new URL(location.href);
+      const replyId=parseInt(url.searchParams.get('replyTo')||'');
+      const fwdId=parseInt(url.searchParams.get('forwardFrom')||'');
+      const id=replyId||fwdId; if(!id) return;
+      try{
+        const r=await j('/api/crm/email/'+id); const m=r.data||{};
+        if(replyId){
+          document.getElementById('to').value=m.FromAddress||'';
+          document.getElementById('subject').value = (m.Subject?('Re: '+m.Subject):'');
+        }else{
+          document.getElementById('subject').value = (m.Subject?('Fwd: '+m.Subject):'');
+        }
+        const quoted = `<br><br><hr><div style="font-size:12px;color:#64748b">On ${m.SentAt||m.CreatedAt} &lt;${esc(m.FromAddress||'')}&gt; wrote:</div>` + (m.Body||'');
+        document.getElementById('body').innerHTML = quoted;
+      }catch(e){ console.error(e); }
+    }
+    loadCompanies();
+    loadForReplyOrForward();
+    renderAtts();
+  </script>
+</body>
+</html>

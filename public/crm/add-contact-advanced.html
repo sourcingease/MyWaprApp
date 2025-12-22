@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Contact • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-1{display:grid;grid-template-columns:1fr;gap:12px}
+    @media (max-width:900px){ .grid{grid-template-columns:1fr} }
+    .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:560px;width:100%;max-height:80vh;overflow:auto}
+    .modal .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700}
+    .modal .bd{padding:12px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Add Contact</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="hdr"><div style="font-weight:800">Company</div></div>
+      <div class="grid">
+        <div class="form-group"><label class="form-label">Company Name</label><input id="CompanyName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Company Type</label><select id="CompanyType" class="form-select"><option value="buyer">Buyer</option><option value="manufacturer">Manufacturer</option><option value="supplier">Supplier</option><option value="other">Other</option></select></div>
+        <div class="form-group grid-1" style="grid-column:1/-1"><label class="form-label">Company Details</label><textarea id="CompanyDetails" class="form-textarea" rows="3"></textarea></div>
+        <div class="form-group"><label class="form-label">Category</label><div style="display:flex;gap:8px"><input id="CategoryText" class="form-input" placeholder="Select categories" readonly/><button class="ct" onclick="openCat()">Select</button></div></div>
+        <div class="form-group"><label class="form-label">Source of Contact</label><input id="SourceOfContact" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Product</label><input id="Product" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">HS Code</label><input id="HSCode" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="Phone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Cell Phone</label><input id="CellPhone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Whatsapp</label><input id="Whatsapp" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Website</label><input id="Website" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Address</label><input id="Address" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">City</label><input id="City" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">State/Province</label><input id="State" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Zip Code</label><input id="Zip" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Country</label><select id="Country" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">NTN</label><input id="NTN" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Instagram</label><input id="Instagram" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Facebook</label><input id="Facebook" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">X (Twitter)</label><input id="Twitter" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Linkedin</label><input id="Linkedin" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Skype</label><input id="Skype" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Saved/Updated on</label><input id="SavedUpdatedOn" class="form-input" type="date"/></div>
+        <div class="form-group"><label class="form-label">Email on Save</label><div><input id="SendEmailOnSave" type="checkbox"/> Same Email on Save</div></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Business Card(s)</label><div id="bcWrap"><input type="file" class="form-input"/></div><button class="ct" onclick="addBC()" type="button" style="margin-top:8px">Add</button></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Search by Company Name</label><div style="display:flex;gap:8px"><input id="SearchName" class="form-input" placeholder="Type to search..."/><button class="ct">Upload From File</button></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="hdr"><div style="font-weight:800">Add New Contact (persons)</div><button class="ct" onclick="addPerson()">Add Contact Person</button></div>
+      <div id="persons"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <a class="ct" href="/crm/dashboard.html?embedded=1">Back</a>
+      <button class="ct primary" onclick="saveAll()">Save</button>
+    </div>
+
+    <div class="overlay" id="catModal">
+      <div class="modal">
+        <div class="hd">Select Categories<button class="ct" onclick="closeCat()">Close</button></div>
+        <div class="bd">
+          <div class="muted" style="margin-bottom:8px">Based on user type</div>
+          <div id="catList">Loading...</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="ct" onclick="applyCats()">Apply</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    const url = new URL(location.href);
+    const editId = parseInt(url.searchParams.get('id') || url.searchParams.get('companyId') || '0');
+    let catData=[]; let selectedCatIds[];
+    async function loadCountries(){ try{ const r=await j('/api/crm/countries'); const sel=document.getElementById('Country'); sel.innerHTML = r.data.map(c=>`<option>${esc(c)}</option>`).join(''); }catch(e){ console.error(e); }}
+    async function loadCats(){ const role=document.getElementById('CompanyType').value; const r=await j('/api/crm/categories?role='+encodeURIComponent(role)); catData=r.data||[]; const box=document.getElementById('catList'); box.innerHTML = catData.map(x=>`<label style='display:block;margin:6px 0'><input type='checkbox' value='${x.Id}' ${selectedCatIds.includes(x.Id)?'checked':''}/> ${esc(x.Name)}</label>`).join(''); }
+    function openCat(){ document.getElementById('catModal').classList.add('open'); loadCats(); }
+    function closeCat(){ document.getElementById('catModal').classList.remove('open'); }
+    function applyCats(){ const checks=[...document.querySelectorAll('#catList input[type=checkbox]')]; selectedCatIds=checks.filter(c=>c.checked).map(c=>parseInt(c.value)); document.getElementById('CategoryText').value = catData.filter(c=>selectedCatIds.includes(c.Id)).map(c=>c.Name).join(', '); closeCat(); }
+    document.getElementById('CompanyType').addEventListener('change', ()=>{ selectedCatIds=[]; document.getElementById('CategoryText').value=''; });
+
+    function addBC(){
+      const w=document.getElementById('bcWrap');
+      const inp=document.createElement('input');
+      inp.type='file';
+      inp.className='form-input';
+      w.appendChild(inp);
+    }
+    function personItem(values){ values = values||{}; return `<div class='card' style='padding:12px;margin:8px 0'>
+      <div class='grid'>
+        <div class='form-group'><label class='form-label'>First Name</label><input data-k='firstName' class='form-input' value='${esc(values.FirstName||values.firstName||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Last Name</label><input data-k='lastName' class='form-input' value='${esc(values.LastName||values.lastName||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Designation</label><input data-k='designation' class='form-input' value='${esc(values.Designation||values.designation||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Email</label><input data-k='email' class='form-input' value='${esc(values.Email||values.email||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Phone</label><input data-k='phone' class='form-input' value='${esc(values.Phone||values.phone||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Cell Phone</label><input data-k='cellPhone' class='form-input' value='${esc(values.CellPhone||values.cellPhone||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Whatsapp</label><input data-k='whatsapp' class='form-input' value='${esc(values.Whatsapp||values.whatsapp||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Linkedin</label><input data-k='linkedin' class='form-input' value='${esc(values.Linkedin||values.linkedin||'')}'/></div>
+        <div class='form-group'><label class='form-label'>Skype</label><input data-k='skype' class='form-input' value='${esc(values.Skype||values.skype||'')}'/></div>
+      </div>
+    </div>`; }
+    function addPerson(values){ const c=document.getElementById('persons'); c.insertAdjacentHTML('beforeend', personItem(values)); }
+
+    async function saveAll(){
+      const payload = {
+        companyName: CompanyName.value.trim(),
+        companyDetails: CompanyDetails.value||null,
+        companyType: CompanyType.value,
+        sourceOfContact: SourceOfContact.value||null,
+        product: Product.value||null,
+        hsCode: HSCode.value||null,
+        phone: Phone.value||null,
+        cellPhone: CellPhone.value||null,
+        whatsapp: Whatsapp.value||null,
+        website: Website.value||null,
+        address: Address.value||null,
+        city: City.value||null,
+        state: State.value||null,
+        zip: Zip.value||null,
+        country: Country.value||null,
+        ntn: NTN.value||null,
+        instagram: Instagram.value||null,
+        facebook: Facebook.value||null,
+        twitter: Twitter.value||null,
+        linkedin: Linkedin.value||null,
+        skype: Skype.value||null,
+        savedUpdatedOn: SavedUpdatedOn.value||null,
+        sendEmailOnSave: SendEmailOnSave.checked,
+        status: 'Lead',
+        categoryIds: selectedCatIds,
+        persons: [...document.querySelectorAll('#persons .card')].map(box=>{
+          const obj={}; [...box.querySelectorAll('input')].forEach(i=>{ obj[i.getAttribute('data-k')] = i.value||null; }); return obj;
+        })
+      };
+      if(!payload.companyName){ alert('Company Name required'); return; }
+      try{
+        const method = editId? 'PUT':'POST';
+        const urlPath = editId? '/api/crm/companies/'+editId: '/api/crm/companies';
+        await j(urlPath,{ method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Saved'); location.href='/crm/dashboard.html?embedded=1';
+      }catch(e){ console.error(e); alert('Failed to save'); }
+    }
+
+    async function loadForEdit(){
+      if(!editId) { addPerson(); return; }
+      try{
+        const r = await j('/api/crm/companies/'+editId);
+        const { company, persons, categoryIds } = r.data;
+        document.getElementById('CompanyName').value = company.CompanyName||'';
+        document.getElementById('CompanyDetails').value = company.CompanyDetails||'';
+        document.getElementById('CompanyType').value = company.CompanyType||'buyer';
+        document.getElementById('SourceOfContact').value = company.SourceOfContact||'';
+        document.getElementById('Product').value = company.Product||'';
+        document.getElementById('HSCode').value = company.HSCode||'';
+        document.getElementById('Phone').value = company.Phone||'';
+        document.getElementById('CellPhone').value = company.CellPhone||'';
+        document.getElementById('Whatsapp').value = company.Whatsapp||'';
+        document.getElementById('Website').value = company.Website||'';
+        document.getElementById('Address').value = company.Address||'';
+        document.getElementById('City').value = company.City||'';
+        document.getElementById('State').value = company.State||'';
+        document.getElementById('Zip').value = company.Zip||'';
+        document.getElementById('Country').value = company.Country||'';
+        document.getElementById('NTN').value = company.NTN||'';
+        document.getElementById('Instagram').value = company.Instagram||'';
+        document.getElementById('Facebook').value = company.Facebook||'';
+        document.getElementById('Twitter').value = company.Twitter||'';
+        document.getElementById('Linkedin').value = company.Linkedin||'';
+        document.getElementById('Skype').value = company.Skype||'';
+        document.getElementById('SavedUpdatedOn').value = company.SavedUpdatedOn? new Date(company.SavedUpdatedOn).toISOString().slice(0,10): '';
+        document.getElementById('SendEmailOnSave').checked = !!company.SendEmailOnSave;
+        selectedCatIds = categoryIds||[];
+        document.getElementById('CategoryText').value = '';
+        await loadCats();
+        // persons
+        const wrap = document.getElementById('persons');
+        wrap.innerHTML='';
+        (persons||[]).forEach(p=>addPerson(p));
+        if(!persons || !persons.length) addPerson();
+      }catch(e){ console.error(e); addPerson(); }
+    }
+    loadCountries().then(loadForEdit);
+  </script>
+</body>
+</html>

@@ -3,35 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mailbox • ComplytEX CRM</title>
+  <title>Mailbox • CRM</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css">
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1100px;margin:0 auto;padding:22px}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{padding:10px 14px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer}
-    .folder{background:#0f172a;border:1px solid #1f2a3b;border-radius:10px;padding:10px}
-    .muted{color:#94a3b8}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:10px;border-bottom:1px solid #1f2a3b;text-align:left}
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .folder-tabs{display:flex;gap:6px;flex-wrap:wrap}
+    .tab{padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;background:#fff;font-size:13px;cursor:pointer}
+    .tab.active{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}
+    th{background:#f8fafc;text-transform:uppercase;font-size:11px;color:#475569}
+    .muted{color:#64748b}
+    .btn{padding:8px 12px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer;font-size:13px}
   </style>
 </head>
 <body>
-  <div class="shell">
-    <h2>Mailbox</h2>
-    <div class="row" style="margin-top:8px">
-      <div class="folder">Inbox (0)</div>
-      <div class="folder">Sent (0)</div>
-      <div class="folder">Drafts (0)</div>
-      <button class="btn" onclick="alert('Compose (placeholder)')">Compose</button>
-    </div>
-    <table>
-      <thead><tr><th>From</th><th>Subject</th><th>Date</th></tr></thead>
-      <tbody>
-        <tr><td class="muted" colspan="3">No messages</td></tr>
-      </tbody>
-    </table>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Mailbox</div></div>
+    <div class="header-right"></div>
   </div>
+  <div class="shell">
+    <div class="toolbar">
+      <div class="folder-tabs">
+        <button class="tab active" data-folder="Inbox">Inbox</button>
+        <button class="tab" data-folder="Sent">Sent Items</button>
+        <button class="tab" data-folder="Drafts">Draft Items</button>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="openCompose()">Compose New</button>
+      <a class="ct" href="/crm/dashboard.html?embedded=1">Back</a>
+    </div>
+    <div style="overflow:auto;border-radius:12px;border:1px solid #e2e8f0;background:#fff">
+      <table>
+        <thead>
+          <tr id="hdrRow">
+            <th>Email From</th>
+            <th>Email To</th>
+            <th>CC</th>
+            <th>Subject</th>
+            <th>Message</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    let currentFolder='Inbox';
+    async function load(){
+      try{
+        const r=await j('/api/crm/email?folder='+encodeURIComponent(currentFolder));
+        const list=r.data||[];
+        const rows=document.getElementById('rows');
+        if(!list.length){ rows.innerHTML=`<tr><td colspan="7" class="muted">No messages in ${esc(currentFolder)}.</td></tr>`; return; }
+        rows.innerHTML=list.map(m=>{
+          const preview=(m.Body||'').replace(/<[^>]+>/g,'').slice(0,80);
+          const dt=new Date(m.SentAt||m.CreatedAt).toLocaleString();
+          return `<tr>
+            <td>${esc(m.FromAddress||'')}</td>
+            <td>${esc(m.ToAddresses||'')}</td>
+            <td>${esc(m.CcAddresses||'')}</td>
+            <td>${esc(m.Subject||'')}</td>
+            <td>${esc(preview)}</td>
+            <td>${esc(dt)}</td>
+            <td>
+              ${currentFolder==='Inbox'||currentFolder==='Drafts'?`<button class='ct' onclick='reply(${m.Id})'>Reply</button>`:''}
+              <button class='ct' onclick='forwardMail(${m.Id})'>Forward</button>
+              <button class='ct' onclick='openAttachments(${m.Id})'>Attachments</button>
+              <button class='ct' onclick='delMail(${m.Id})'>Delete</button>
+            </td>
+          </tr>`; }).join('');
+      }catch(e){ console.error(e); alert('Failed to load mailbox'); }
+    }
+    function setFolder(f){ currentFolder=f; document.querySelectorAll('.tab').forEach(t=>{ t.classList.toggle('active', t.getAttribute('data-folder')===f); }); load(); }
+    function openCompose(){ location.href='/crm/mailbox-compose.html?embedded=1'; }
+    function reply(id){ location.href='/crm/mailbox-compose.html?embedded=1&replyTo='+id; }
+    function forwardMail(id){ location.href='/crm/mailbox-compose.html?embedded=1&forwardFrom='+id; }
+    async function openAttachments(id){
+      try{
+        const r=await j('/api/crm/email/'+id); const m=r.data||{};
+        if(!m.AttachmentsJson){ alert('No attachments'); return; }
+        let arr=[]; try{ arr=JSON.parse(m.AttachmentsJson)||[]; }catch{}
+        if(!arr.length){ alert('No attachments'); return; }
+        window.open(arr[0].url,'_blank');
+      }catch(e){ console.error(e); alert('Failed to open attachments'); }
+    }
+    async function delMail(id){ if(!confirm('Delete this email?')) return; try{ await j('/api/crm/email/'+id,{ method:'DELETE' }); load(); }catch(e){ console.error(e); alert('Failed to delete'); } }
+    document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setFolder(t.getAttribute('data-folder'))));
+    load();
+  </script>
 </body>
 </html>

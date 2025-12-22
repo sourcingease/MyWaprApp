@@ -21,12 +21,24 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'API request failed');
+    const text = await response.text();
+    let result = {};
+
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch (parseErr) {
+      console.error('API JSON parse error for', endpoint, parseErr, text);
+      // If server returned non-JSON (e.g., HTML error page), surface that text.
+      if (!response.ok) {
+        throw new Error(text || 'API request failed');
+      }
+      throw new Error('Invalid JSON response from server');
     }
-    
+
+    if (!response.ok) {
+      throw new Error(result.error || text || 'API request failed');
+    }
+
     return result;
   } catch (error) {
     console.error('API Error:', error);
@@ -474,13 +486,19 @@ function showSuccessMessage(message) {
 }
 
 function showErrorMessage(message) {
-  // Display error message to user (customize based on your UI framework)
-  console.error('❌ Error:', message);
-  // You can replace this with your toast/notification system
+  // Accept either an Error object or a string
+  let msg = message;
+  if (message && typeof message === 'object' && 'message' in message) {
+    msg = message.message;
+  }
+  if (msg === undefined || msg === null || msg === '') {
+    msg = 'An unexpected error occurred';
+  }
+  console.error('❌ Error:', msg);
   if (window.showToast) {
-    window.showToast(message, 'error');
+    window.showToast(msg, 'error');
   } else {
-    alert('Error: ' + message);
+    alert('Error: ' + msg);
   }
 }
 

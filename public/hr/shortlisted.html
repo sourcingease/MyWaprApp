@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shortlisted Applicants • HR</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.65);display:none;align-items:center;justify-content:center;z-index:1000}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:620px;width:100%;max-height:80vh;overflow:auto}
+    .modal .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700}
+    .modal .bd{padding:12px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Shortlisted Applicants</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="grid" style="margin-bottom:8px">
+        <div class="form-group"><label class="form-label">Job Title</label><input id="fJob" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Name</label><input id="fName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input id="fEmail" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="fPhone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Address</label><input id="fAddress" class="form-input"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="ct" onclick="load()">Search</button>
+        <button class="ct" onclick="clearFilters()">Clear</button>
+        <a class="ct" href="/hr/index.html">Back</a>
+      </div>
+      <table>
+        <thead><tr><th>Job Title</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Status</th><th>Shortlist Reason</th><th>Actions</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="8">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Evaluation Modal -->
+  <div class="overlay" id="evalModal">
+    <div class="modal">
+      <div class="hd">Candidate Evaluation<button class="ct" onclick="closeEval()">Close</button></div>
+      <div class="bd">
+        <div class="form-group"><label class="form-label">Candidate Name</label><input id="EvCand" class="form-input" readonly/></div>
+        <div class="form-group"><label class="form-label">Interviewer Name</label><input id="EvName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Technical Skills Assessment</label><textarea id="EvTech" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Teamwork Experience</label><textarea id="EvTeam" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Leadership Experience</label><textarea id="EvLead" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Problem-Solving Scenario</label><textarea id="EvProb" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Communication Skills Assessment</label><textarea id="EvComm" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Test Details</label><textarea id="EvTest" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Interview Agenda Questions</label><textarea id="EvAgenda" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Overall Recommendation</label><select id="EvRec" class="form-select"><option value="">Select</option><option>Hired</option><option>Not Hired</option><option>Put for further consideration</option></select></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="ct primary" onclick="saveEval()">Submit</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offer Letter Modal -->
+  <div class="overlay" id="offerModal">
+    <div class="modal">
+      <div class="hd">Offer Letter<button class="ct" onclick="closeOffer()">Close</button></div>
+      <div class="bd">
+        <div class="form-group"><label class="form-label">Full Name</label><input id="OfName" class="form-input" readonly/></div>
+        <div class="form-group"><label class="form-label">Job Title</label><input id="OfJob" class="form-input" readonly/></div>
+        <div class="form-group"><label class="form-label">Employment Type</label><select id="OfType" class="form-select"><option value="">Select</option><option>Full-Time</option><option>Part-Time</option><option>Contract</option></select></div>
+        <div class="form-group"><label class="form-label">Benefits Package</label><textarea id="OfBenefits" class="form-textarea" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Salary Offer</label><input id="OfSalary" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Start Date</label><input id="OfStart" type="date" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Agreements</label><div><label><input type="checkbox" id="OfConf"/> Confidentiality Agreement</label><br/><label><input type="checkbox" id="OfNonComp"/> Non Compete Agreement</label><br/><label><input type="checkbox" id="OfAtWill"/> Employment At-Will Statement</label></div></div>
+        <div class="form-group"><label class="form-label">Offer Status</label><select id="OfStatus" class="form-select"><option value="">Select</option><option>Accepted</option><option>Rejected</option><option>Tentative</option></select></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="ct" onclick="offerBack()">Back</button>
+          <button class="ct" onclick="saveOffer()">Submit</button>
+          <button class="ct primary" onclick="addToEmployee()">Add to Employee</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+    let currentId=null; let currentRow=null;
+    function buildQuery(){ const p=new URLSearchParams(); const m=id=>document.getElementById(id).value||''; if(m('fJob')) p.set('jobTitle',m('fJob')); if(m('fName')) p.set('name',m('fName')); if(m('fEmail')) p.set('email',m('fEmail')); if(m('fPhone')) p.set('phone',m('fPhone')); if(m('fAddress')) p.set('address',m('fAddress')); p.set('shortlisted','1'); return p.toString(); }
+    async function load(){ try{ const qs=buildQuery(); const r=await fetchJson('/api/hr/applicants?'+qs); const arr=r.data||[]; const tbody=document.getElementById('rows'); if(!arr.length){ tbody.innerHTML='<tr><td colspan="8">No shortlisted applicants</td></tr>'; return; } tbody.innerHTML=arr.map(x=>`<tr data-id="${x.Id}" data-name="${esc(x.Name||'')}" data-job="${esc(x.JobTitle||'')}"><td>${esc(x.JobTitle||'')}</td><td><a href="#" onclick="viewApp(${x.Id});return false;">${esc(x.Name||'')}</a></td><td>${esc(x.Email||'')}</td><td>${esc(x.Phone||'')}</td><td>${esc(x.Address||'')}</td><td>${esc(x.Status||'Shortlisted')}</td><td>${''}</td><td><button class=\"ct\" onclick=\"openEval(${x.Id}, this)\">Evaluate Candidate</button> <button class=\"ct\" onclick=\"openOffer(${x.Id}, this)\">Offer Letter</button></td></tr>`).join(''); }catch(e){ console.error(e); alert('Failed to load'); } }
+    function clearFilters(){ ['fJob','fName','fEmail','fPhone','fAddress'].forEach(id=>document.getElementById(id).value=''); load(); }
+    function viewApp(id){ alert('Detailed applicant profiles will be available in a future update.'); }
+
+    function openEval(id, btn){
+      currentId=id;
+      currentRow=btn.closest('tr');
+      document.getElementById('EvCand').value=currentRow.dataset.name||'';
+      document.getElementById('EvName').value='';
+      ['EvTech','EvTeam','EvLead','EvProb','EvComm','EvTest','EvAgenda'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('EvRec').value='';
+      document.getElementById('evalModal').classList.add('open');
+    }
+    function closeEval(){ document.getElementById('evalModal').classList.remove('open'); }
+    async function saveEval(){
+      if(!currentId) return;
+      const payload={
+        interviewerName: EvName.value||null,
+        technicalSkills: EvTech.value||null,
+        teamwork: EvTeam.value||null,
+        leadership: EvLead.value||null,
+        problemSolving: EvProb.value||null,
+        communication: EvComm.value||null,
+        testDetails: EvTest.value||null,
+        agenda: EvAgenda.value||null,
+        recommendation: EvRec.value||null
+      };
+      try{
+        await fetchJson('/api/hr/applicants/'+currentId+'/evaluation',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Interview details and evaluation have been submitted successfully.');
+        closeEval();
+        load();
+      }catch(e){ console.error(e); alert('Failed to submit'); }
+    }
+
+    function openOffer(id, btn){
+      currentId=id;
+      currentRow=btn.closest('tr');
+      document.getElementById('OfName').value=currentRow.dataset.name||'';
+      document.getElementById('OfJob').value=currentRow.dataset.job||'';
+      document.getElementById('OfType').value='';
+      document.getElementById('OfBenefits').value='';
+      document.getElementById('OfSalary').value='';
+      document.getElementById('OfStart').value='';
+      document.getElementById('OfConf').checked=false;
+      document.getElementById('OfNonComp').checked=false;
+      document.getElementById('OfAtWill').checked=false;
+      document.getElementById('OfStatus').value='';
+      document.getElementById('offerModal').classList.add('open');
+    }
+    function closeOffer(){ document.getElementById('offerModal').classList.remove('open'); }
+    function offerBack(){ closeOffer(); }
+    async function saveOffer(){
+      if(!currentId) return;
+      const payload={
+        employmentType: OfType.value||null,
+        benefits: OfBenefits.value||null,
+        salaryOffer: OfSalary.value||null,
+        startDate: OfStart.value||null,
+        confidentiality: OfConf.checked,
+        nonComp: OfNonComp.checked,
+        atWill: OfAtWill.checked,
+        offerStatus: OfStatus.value||null
+      };
+      try{
+        await fetchJson('/api/hr/applicants/'+currentId+'/offer',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        alert('Offer letter details saved successfully.');
+      }catch(e){ console.error(e); alert('Failed to submit offer'); }
+    }
+    function addToEmployee(){
+      if(!currentRow){
+        alert('Please select a candidate first.');
+        return;
+      }
+      const name = currentRow.dataset.name || '';
+      const job  = currentRow.dataset.job || '';
+      const emailCell = currentRow.querySelector('td:nth-child(3)');
+      const email = emailCell ? emailCell.textContent.trim() : '';
+      const params = new URLSearchParams();
+      params.set('embedded','1');
+      if(name) params.set('candidateName', name);
+      if(email) params.set('candidateEmail', email);
+      if(job) params.set('candidateJob', job);
+      // Redirect directly to Add New Employee form within HR module
+      location.href = '/hr/index.html?'+params.toString();
+    }
+    load();
+    function addToEmployee(){ alert('After the offer is accepted, this should take you to the Add New Employee form.'); }
+
+    load();
+  </script>
+</body>
+</html>

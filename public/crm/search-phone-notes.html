@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Notes • CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Search Notes</div></div>
+    <div class="header-right"></div>
+  </div>
+  <div class="shell">
+    <div class="card">
+      <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+        <div class="form-group"><label class="form-label">Customer</label><select id="cust" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">Salesperson</label><select id="sales" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">From</label><input id="from" type="date" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">To</label><input id="to" type="date" class="form-input"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px"><input id="q" class="form-input" placeholder="Search subject or text..." style="flex:1"><button class="ct" onclick="runFilter()">Search</button><button class="ct" onclick="exportCsv()">Export to Excel</button><a class="ct" href="/crm/dashboard.html?embedded=1">Back</a></div>
+      <div style="margin-top:10px">
+        <table>
+          <thead><tr><th>When</th><th>Customer</th><th>Salesperson</th><th>Subject</th><th>Notes</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="5">No data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/master-layout.js"></script>
+  <script>
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
+    async function fetchJson(url, options){ const res=await fetch(url,{ credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c)); }
+    let allNotes=[];
+    async function loadAll(){
+      try{
+        const r=await fetchJson('/api/crm/notes');
+        allNotes=r.data||[];
+        const customers=[...new Set(allNotes.map(n=>n.CustomerName).filter(Boolean))];
+        const sales=[...new Set(allNotes.map(n=>n.SalesPersonName).filter(Boolean))];
+        const custSel=document.getElementById('cust');
+        const salesSel=document.getElementById('sales');
+        custSel.innerHTML='<option value="">(All Customers)</option>'+customers.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
+        salesSel.innerHTML='<option value="">(All Salespersons)</option>'+sales.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
+        runFilter();
+      }catch(e){ console.error(e); alert('Failed to load'); }
+    }
+    function runFilter(){
+      const q=(document.getElementById('q').value||'').toLowerCase();
+      const cust=document.getElementById('cust').value||'';
+      const sales=document.getElementById('sales').value||'';
+      const from=document.getElementById('from').value||'';
+      const to=document.getElementById('to').value||'';
+      const fromD=from? new Date(from): null;
+      const toD=to? new Date(to): null;
+      const rows=document.getElementById('rows');
+      const f=allNotes.filter(x=>{
+        if(cust && x.CustomerName!==cust) return false;
+        if(sales && x.SalesPersonName!==sales) return false;
+        const when=new Date(x.CreatedAt);
+        if(fromD && when<fromD) return false;
+        if(toD && when>toD) return false;
+        if(q && !(String(x.Subject||'').toLowerCase().includes(q) || String(x.Body||'').toLowerCase().includes(q))) return false;
+        return true;
+      });
+      rows.innerHTML = f.length? f.map(x=>`<tr><td>${new Date(x.CreatedAt).toLocaleString()}</td><td>${escapeHtml(x.CustomerName||'')}</td><td>${escapeHtml(x.SalesPersonName||'')}</td><td>${escapeHtml(x.Subject||'')}</td><td>${escapeHtml(x.Body||'')}</td></tr>`).join(''):'<tr><td colspan="5">No data</td></tr>';
+    }
+    function exportCsv(){
+      const rows=[...document.querySelectorAll('#rows tr')];
+      if(!rows.length) return;
+      const header=['When','Customer','Salesperson','Subject','Notes'];
+      const lines=[header.join(',')];
+      rows.forEach(tr=>{
+        const cols=[...tr.querySelectorAll('td')].map(td=>`"${(td.textContent||'').replace(/"/g,'""')}"`);
+        if(cols.length===5) lines.push(cols.join(','));
+      });
+      const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='phone-notes.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    loadAll();
+    function exportCsv(){
+      const rows=[...document.querySelectorAll('#rows tr')];
+      if(!rows.length) return;
+      const header=['When','Customer','Salesperson','Subject','Notes'];
+      const lines=[header.join(',')];
+      rows.forEach(tr=>{
+        const cols=[...tr.querySelectorAll('td')].map(td=>`"${(td.textContent||'').replace(/"/g,'""')}"`);
+        if(cols.length===5) lines.push(cols.join(','));
+      });
+      const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='phone-notes.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    load();
+  </script>
+</body>
+</html>

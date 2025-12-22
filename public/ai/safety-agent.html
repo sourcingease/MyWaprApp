@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Agent • Document Ingestion</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{background:#f5f7fa;font-family:Inter,Segoe UI,system-ui,Arial}
+    .container{max-width:980px;margin:24px auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 16px 20px 16px}
+    .h{font-weight:800;letter-spacing:-.02em}
+    .muted{color:#64748b}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .btn{padding:10px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:700}
+    .btn.primary{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
+    .btn.success{background:#10b981;color:#fff;border-color:#10b981}
+    .btn.danger{background:#ef4444;color:#fff;border-color:#ef4444}
+    .list{margin-top:10px;border-top:1px dashed #e2e8f0;padding-top:10px}
+    code{background:#f1f5f9;padding:2px 6px;border-radius:6px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:700;font-size:12px}
+    .kvs{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div class="h" style="font-size:22px">Safety Agent</div>
+          <div class="muted">Upload a file (PDF/TXT). I will extract key facts and create a pending proposal. No database changes happen until you click Approve.</div>
+        </div>
+        <a class="btn" href="/masters/safety-office.html">← Back</a>
+      </div>
+      <form id="uform" class="row" style="margin-top:12px;gap:10px">
+        <input type="file" id="file" required />
+        <button type="submit" class="btn primary">Upload</button>
+      </form>
+      <div id="res" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+<script>
+  async function api(path, opts){
+    const r = await fetch(path, opts);
+    const j = await r.json().catch(()=>({success:false,error:'Invalid response'}));
+    if(!j.success) throw new Error(j.error||'Request failed');
+    return j.data||{};
+  }
+  const el = (sel)=>document.querySelector(sel);
+  const res = el('#res');
+  el('#uform').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    res.innerHTML = '<div class="muted">Uploading...</div>';
+    const f = el('#file').files[0]; if(!f){ res.textContent='Select a file'; return; }
+    const fd = new FormData(); fd.append('file', f);
+    try{
+      const data = await api('/api/safety/agent/upload', { method:'POST', body: fd, credentials:'include' });
+      const items = (data.proposedItems||[]).map((p,i)=>`<li><span class="pill">${p.targetTable}</span> <span class="muted">${p.action}</span> <span class="kvs">${escapeHtml(JSON.stringify(p.payload))}</span></li>`).join('');
+      const facts = (data.facts||[]).map(f=>`<li>${escapeHtml(f)}</li>`).join('');
+      res.innerHTML = `
+        <div class="card">
+          <div class="h" style="font-size:18px">Proposal #${data.proposalId}</div>
+          <div class="muted">File: <code>${escapeHtml(data.fileUrl||'')}</code></div>
+          <div class="row" style="margin-top:10px; gap:8px">
+            <button class="btn success" id="approve">Approve and Apply</button>
+            <button class="btn danger" id="reject">Reject</button>
+          </div>
+          <div class="list"><div class="h" style="font-size:14px">Extracted Facts</div><ul>${facts||'<li>No facts</li>'}</ul></div>
+          <div class="list"><div class="h" style="font-size:14px">Proposed Changes</div><ul>${items||'<li>No changes</li>'}</ul></div>
+        </div>`;
+      el('#approve').onclick = async ()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include' }); alert('Approved and applied'); }catch(ex){ alert(ex.message);} };
+      el('#reject').onclick = async ()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reason:'User rejected'}), credentials:'include' }); alert('Rejected'); }catch(ex){ alert(ex.message);} };
+    }catch(ex){ res.innerHTML = `<div style="color:#ef4444">${escapeHtml(ex.message)}</div>`; }
+  });
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+</script>
+</body>
+</html>

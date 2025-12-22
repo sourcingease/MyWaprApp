@@ -5,30 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Safety Auditor • ComplytEX</title>
   <link rel="stylesheet" href="/app.css" />
+  <script src="/js/master-layout.js"></script>
   <style>
-    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1100px;margin:0 auto;padding:22px}
-    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px;margin-bottom:16px}
-    a{color:#a78bfa}
-    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #1f2a3b;background:#111827;color:#e5e7eb}
-    .btn{padding:10px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer}
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f5f7fa;color:#0f172a}
+    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin:8px 12px 4px 12px;padding:12px 20px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
+    .header-left{display:flex;align-items:center;gap:12px}
+    .header-right{display:flex;align-items:center;gap:12px;position:relative}
+    .logo-small{max-height:40px}
+    .dashboard-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
+    .auditor-shell{max-width:1200px;margin:0 auto 24px auto;padding:8px 16px 24px 16px}
+    .page-title{margin:4px 0 2px 0;font-size:20px;font-weight:700}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+    a{color:#0ea5e9}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#0f172a;font-family:inherit}
+    .btn{padding:8px 14px;border-radius:8px;border:0;background:#0ea5e9;color:#fff;cursor:pointer;font-size:13px;font-weight:600}
+    .btn:hover{background:#0284c7}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #1f2a3b;font-size:14px}
-    th{text-align:left;color:#94a3b8;letter-spacing:.05em;text-transform:uppercase;font-size:12px}
+    th,td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:14px}
+    th{text-align:left;color:#64748b;letter-spacing:.05em;text-transform:uppercase;font-size:12px;background:#f8fafc}
     .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
-    .pill.new{background:#1f2937;color:#e5e7eb}
-    .pill.open{background:#784317;color:#fde68a;color:#fff}
-    .pill.closed{background:#065f46;color:#a7f3d0}
+    .pill.new{background:#e5e7eb;color:#111827}
+    .pill.open{background:#f97316;color:#fff}
+    .pill.closed{background:#16a34a;color:#ecfdf5}
     .grid{display:grid;gap:12px}
     .grid.two{grid-template-columns:1fr 1fr}
-    .muted{color:#94a3b8;font-size:13px}
+    .muted{color:#6b7280;font-size:13px}
     .hidden{display:none}
-    label{font-size:13px;color:#e5e7eb}
+    label{font-size:13px;color:#0f172a}
   </style>
 </head>
 <body>
-  <div class="shell">
-    <h2>Safety Auditor Dashboard</h2>
+  <script>
+    (function(){
+      function hideIfEmbedded(){
+        try{
+          const p = new URLSearchParams(location.search||'');
+          if(p.get('embedded') === '1'){
+            const hdr = document.querySelector('.dashboard-header');
+            if(hdr) hdr.remove();
+          }
+        }catch(e){}
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', hideIfEmbedded);
+      }else{
+        hideIfEmbedded();
+      }
+    })();
+  </script>
+  <div class="dashboard-header">
+    <div class="header-left">
+      <img src="/logo.png" alt="ComplytEX" class="logo-small"/>
+      <div>
+        <div class="dashboard-title">SAFETY AUDITOR DASHBOARD</div>
+      </div>
+    </div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="auditor-shell">
+    <h2 class="page-title">Safety Auditor Dashboard</h2>
     <p class="muted">Work queue for new audits, open issues, reaudit, and closed audits.</p>
 
     <!-- New Audits -->
@@ -142,6 +178,72 @@
     let audits = [];
     let current = null;
 
+    // Default checklist templates per audit type (used when no items exist yet)
+    const DEFAULT_ITEMS = {
+      fire: [
+        { Head:'Smoking prohibited inside all buildings', Value:'', NoIssue:true },
+        { Head:'"No Smoking" signs in Urdu & English posted at entrances', Value:'', NoIssue:true },
+        { Head:'Designated outdoor smoking areas provided, and clearly marked (if applicable)', Value:'', NoIssue:true },
+        { Head:'Microstanding policy in writing with regular cleaning schedule', Value:'', NoIssue:true },
+        { Head:'Room, walls, ceilings, ventilation cleaned to avoid fire/dust accumulation', Value:'', NoIssue:true },
+        { Head:'Egress paths kept clear and unobstructed', Value:'', NoIssue:true }
+      ],
+      electrical: [
+        { Head:'Main Electrical Panel', Value:'Check for clear labeling, proper grounding, and no overheating signs.', NoIssue:true },
+        { Head:'Wiring & Conduits',    Value:'Inspect for exposed wires, damaged conduits, or improper connections.', NoIssue:true },
+        { Head:'Emergency Power System', Value:'Verify generator/UPS is maintained and tested regularly.', NoIssue:true },
+        { Head:'Grounding and Bonding', Value:'Confirm all equipment and systems are properly grounded.', NoIssue:true }
+      ],
+      structural: [
+        { Head:'Columns & Beams', Value:'Look for visible cracks, deformation, or corrosion.', NoIssue:true },
+        { Head:'Floor Loadings', Value:'Check overloading and condition of floors and mezzanines.', NoIssue:true }
+      ],
+      'health': [
+        { Head:'PPE Usage', Value:'Verify workers are using appropriate PPE for tasks.', NoIssue:true },
+        { Head:'Chemical Exposure', Value:'Review handling, labeling, and storage of chemicals.', NoIssue:true }
+      ],
+      gas: [
+        { Head:'Gas Piping', Value:'Inspect piping for leaks, damage, and proper supports.', NoIssue:true },
+        { Head:'Leak Detection', Value:'Verify gas detectors and alarms are installed and tested.', NoIssue:true }
+      ],
+      boiler: [
+        { Head:'Boiler Safety Devices', Value:'Check safety valves, gauges, and interlocks.', NoIssue:true },
+        { Head:'Operator Logbook', Value:'Review logs for inspections and maintenance.', NoIssue:true }
+      ],
+      'consultant engagement': [
+        { Head:'Scope of Work', Value:'Confirm agreed audit scope and deliverables.', NoIssue:true },
+        { Head:'Competence Evidence', Value:'Verify auditor certifications / experience.', NoIssue:true }
+      ],
+      dsa: [
+        { Head:'Approval Certificates', Value:'Check validity of DSA/authority certificates.', NoIssue:true }
+      ],
+      'emergency power': [
+        { Head:'Generator Test', Value:'Verify recent load tests and automatic start.', NoIssue:true },
+        { Head:'Fuel Storage', Value:'Assess fuel storage condition and safety.', NoIssue:true }
+      ],
+      'usc-safe': [
+        { Head:'USC Checklist', Value:'Review human rights / worker protection checklist.', NoIssue:true }
+      ]
+    };
+
+    function getDefaultItemsForTypes(typeStr){
+      // AuditType may be a comma-separated string like "USC-Safe, Fire, Electrical"
+      if(!typeStr) return [];
+      const key = typeStr.toString().toLowerCase();
+      const out = [];
+      if(key.includes('usc'))       out.push(...(DEFAULT_ITEMS['usc-safe'] || []));
+      if(key.includes('fire'))      out.push(...(DEFAULT_ITEMS.fire || []));
+      if(key.includes('electrical'))out.push(...(DEFAULT_ITEMS.electrical || []));
+      if(key.includes('struct'))    out.push(...(DEFAULT_ITEMS.structural || []));
+      if(key.includes('health'))    out.push(...(DEFAULT_ITEMS.health || []));
+      if(key.includes('gas'))       out.push(...(DEFAULT_ITEMS.gas || []));
+      if(key.includes('boiler'))    out.push(...(DEFAULT_ITEMS.boiler || []));
+      if(key.includes('consult'))   out.push(...(DEFAULT_ITEMS['consultant engagement'] || []));
+      if(key.includes('dsa'))       out.push(...(DEFAULT_ITEMS.dsa || []));
+      if(key.includes('emergency')) out.push(...(DEFAULT_ITEMS['emergency power'] || []));
+      return out;
+    }
+
     async function load(){
       const all = (await SafetyAPI.searchAudits({ tenantId: currentTenantId })).data || [];
       audits = all;
@@ -162,37 +264,35 @@
 
     function rowNew(a){
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${new Date(a.CreatedDate).toLocaleDateString()}</td><td><button class='btn' onclick='view(${a.Id})'>Details</button></td>`;
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${new Date(a.CreatedDate).toLocaleDateString()}</td><td><button class='btn' onclick='openAuditForm(${a.Id})'>Details</button></td>`;
       return tr;
     }
     function rowOpen(a){
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td><span class='pill open'>${a.Status}</span></td><td><button class='btn' onclick='view(${a.Id})'>Details</button></td>`;
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td><span class='pill open'>${a.Status}</span></td><td><button class='btn' onclick='openAuditForm(${a.Id})'>Details</button></td>`;
       return tr;
     }
     function rowReaudit(a){
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${a.CreatedBy||'-'}</td><td><button class='btn' onclick='view(${a.Id})'>Details</button></td>`;
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${a.CreatedBy||'-'}</td><td><button class='btn' onclick='openAuditForm(${a.Id})'>Details</button></td>`;
       return tr;
     }
     function rowClosed(a){
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${new Date(a.CreatedDate).toLocaleDateString()}</td><td><button class='btn' onclick='view(${a.Id})'>View</button></td>`;
+      tr.innerHTML = `<td>${a.AuditName}</td><td>${a.AuditType}</td><td>${new Date(a.CreatedDate).toLocaleDateString()}</td><td><button class='btn' onclick='openAuditForm(${a.Id})'>View</button></td>`;
       return tr;
     }
 
-    async function view(id){
-      const res = await SafetyAPI.getAuditDetails(id);
-      current = res.data;
-      document.getElementById('detail').classList.remove('hidden');
-      document.getElementById('dTitle').textContent = `${current.plan.AuditName} — ${current.plan.AuditType}`;
-      document.getElementById('dMeta').textContent = `Company: ${current.plan.AuditCompany||'-'} • Date: ${current.plan.AuditDate?new Date(current.plan.AuditDate).toLocaleDateString():'-'} • Status: ${current.plan.Status}`;
-      document.getElementById('reauditBox').classList.toggle('hidden', current.plan.Status!=='CorrectiveSubmitted');
-      // Render items (existing) and allow adding more
-      const container = document.getElementById('itemsContainer');
-      container.innerHTML = '';
-      (current.items||[]).forEach(addItemFromRecord);
-      if((current.items||[]).length===0) addItem();
+    function openAuditForm(id){
+      // When the auditor clicks Details, open the dedicated auditor sheet form
+      // inside the master app shell's working area so the global header is reused.
+      let targetUrl = `/auditor-audit-sheet.html?auditId=${id}`;
+      // Let master-layout force embedded=1 and load inside appFrame/working-pane
+      if (window.mlOpenInWorkingArea && window.mlOpenInWorkingArea(targetUrl)) {
+        return;
+      }
+      // Fallback: navigate directly
+      window.location.href = targetUrl;
     }
 
     function closeDetail(){
