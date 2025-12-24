@@ -3,19 +3,19 @@
   "version": "1.0.0",
   "description": "An agent for your SaaS application with Azure SQL Database integration",
   "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "test": "node tests/health-check.js",
-    "health-check": "node tests/health-check.js",
-    "contact-test": "node tests/contact-test.js",
-    "app-test-agent": "node tests/app-test-agent.js",
-    "web": "npm install && node src/web-server.js",
-    "db:setup": "node src/setup-db.js",
-    "seed:sample": "node src/seed-sample.js",
-    "lint": "echo \"No linting configured yet\"",
-    "build": "echo \"No build step required for Node.js\""
-  },
+ "scripts": {
+  "start": "node src/web-server.js",
+  "dev": "node --watch src/index.js",
+  "test": "node tests/health-check.js",
+  "health-check": "node tests/health-check.js",
+  "contact-test": "node tests/contact-test.js",
+  "app-test-agent": "node tests/app-test-agent.js",
+  "web": "node src/web-server.js",
+  "db:setup": "node src/setup-db.js",
+  "seed:sample": "node src/seed-sample.js",
+  "lint": "echo \"No linting configured yet\"",
+  "build": "echo \"No build step required for Node.js\""
+},
   "keywords": [
     "saas",
     "agent",
