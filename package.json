@@ -19,6 +19,6 @@
     "build": "echo \"No build step required for Node.js\""
   },
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   }
 }
