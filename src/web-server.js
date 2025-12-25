@@ -23,11 +23,7 @@ const { agentModules } = require('./agents-config');
 const { buildAgentGraph, createCrmContactFromText } = require('./multi-agent');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, "0.0.0.0", function () {
-  console.log("SaaS Agent Web UI started on port " + PORT);
-});
+const PORT = process.env.PORT || 8080;   // Azure usually sets PORT=8080
 app.set('trust proxy', true);
 
 // File upload (binary) for ingestion APIs
