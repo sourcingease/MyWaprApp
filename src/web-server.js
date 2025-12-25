@@ -24,8 +24,9 @@ const { buildAgentGraph, createCrmContactFromText } = require('./multi-agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.listen(port, "0.0.0.0", () => {
-  console.log("SaaS Agent Web UI started on port " + port);
+
+app.listen(PORT, "0.0.0.0", function () {
+  console.log("SaaS Agent Web UI started on port " + PORT);
 });
 app.set('trust proxy', true);
 
