@@ -42,19 +42,33 @@
     async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
     const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
     let lastCompanies=[];
+
+    function renderCompanies(){
+      const box=document.getElementById('companiesBox');
+      if(!lastCompanies.length){
+        box.textContent='No companies found.';
+        return;
+      }
+      box.innerHTML = lastCompanies.map(c=>`<label style='display:block;margin:4px 0;font-size:13px'><input type='checkbox' value='${c.Id}'/> ${esc(c.CompanyName)} <span class='muted'>${esc(c.City||'')}, ${esc(c.Country||'')}</span></label>`).join('');
+    }
+
     async function searchCompanies(){
       const q=(document.getElementById('q').value||'').trim();
-      if(!q){ document.getElementById('companiesBox').textContent='Type to search above and press Enter…'; return; }
       try{
-        const p=new URLSearchParams(); p.set('q',q);
-        const r=await j('/api/crm/companies?'+p.toString());
+        const p=new URLSearchParams();
+        if(q) p.set('q',q);
+        const qs = p.toString();
+        const r=await j('/api/crm/companies'+(qs?('?'+qs):''));
         lastCompanies=r.data||[];
-        const box=document.getElementById('companiesBox');
-        if(!lastCompanies.length){ box.textContent='No companies found.'; return; }
-        box.innerHTML = lastCompanies.map(c=>`<label style='display:block;margin:4px 0;font-size:13px'><input type='checkbox' value='${c.Id}'/> ${esc(c.CompanyName)} <span class='muted'>${esc(c.City||'')}, ${esc(c.Country||'')}</span></label>`).join('');
+        renderCompanies();
       }catch(e){ console.error(e); alert('Failed to search companies'); }
     }
-    document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); searchCompanies(); }});
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      // Load all saved companies initially so user immediately sees them in the list
+      searchCompanies();
+      document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); searchCompanies(); }});
+    });
     async function createSegment(){
       const name=(document.getElementById('segName').value||'').trim();
       if(!name){ show(false,'Segment name is required'); return; }

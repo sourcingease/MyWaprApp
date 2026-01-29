@@ -19,6 +19,8 @@ const Tesseract = require('tesseract.js');
 const XLSX = require('xlsx');
 const mammoth = require('mammoth');
 const pdfParse = require('pdf-parse');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 const { agentModules } = require('./agents-config');
 const { buildAgentGraph, createCrmContactFromText } = require('./multi-agent');
 
@@ -48,6 +50,12 @@ if (process.env.SMTP_HOST) {
 
 // stripe
 const stripe = process.env.STRIPE_SECRET ? new Stripe(process.env.STRIPE_SECRET) : null;
+
+// 2FA configuration flags
+// ENABLE_EMAIL_OTP=1 -> keep legacy email-based OTP flow
+// ENABLE_TOTP_2FA=0  -> disable TOTP (Google Authenticator) even if user has it enabled
+const ENABLE_EMAIL_OTP = process.env.ENABLE_EMAIL_OTP === '1';
+const ENABLE_TOTP_2FA = process.env.ENABLE_TOTP_2FA !== '0';
 
 // Middleware
 app.use(cors());
@@ -155,6 +163,20 @@ async function determineRedirect(connectorOrNull, uid, tid){
     try{ if(created && connector) await connector.disconnect(); }catch{}
     return '/dashboard';
   }
+}
+
+// Ensure TOTP 2FA table exists (per-user secret for Google Authenticator-style codes)
+async function ensureTwoFactorTable(connector) {
+  await connector.pool.request().query(`
+    IF OBJECT_ID('dbo.UserTwoFactor','U') IS NULL BEGIN
+      CREATE TABLE dbo.UserTwoFactor(
+        UserId INT NOT NULL PRIMARY KEY,
+        Secret NVARCHAR(200) NOT NULL,
+        Enabled BIT NOT NULL DEFAULT(0),
+        CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
+        LastUsedAt DATETIME2 NULL
+      );
+    END;`);
 }
 
 // Auto-seed demo users if missing (dev convenience)
@@ -554,6 +576,20 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// Get current session
+app.get('/api/auth/session', (req, res) => {
+  const token = req.cookies?.auth;
+  if (!token) {
+    return res.json({ success: false, user: null });
+  }
+  try {
+    const decoded = verifyToken(token);
+    res.json({ success: true, user: { uid: decoded.uid, tid: decoded.tid, email: decoded.email } });
+  } catch (e) {
+    res.json({ success: false, user: null });
+  }
+});
+
 // Logout
 app.post('/api/auth/logout', (req, res) => {
   res.clearCookie('auth');
@@ -639,6 +675,169 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// 2FA (Google Authenticator / TOTP) endpoints
+// Get current 2FA status
+app.get('/api/auth/2fa/status', requireAuth, async (req, res) => {
+  try {
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureTwoFactorTable(connector);
+    const r = await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('SELECT Enabled FROM dbo.UserTwoFactor WHERE UserId=@uid');
+    await connector.disconnect();
+    const enabled = r.recordset[0]?.Enabled === 1 || r.recordset[0]?.Enabled === true;
+    res.json({ success: true, data: { enabled } });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// Begin 2FA setup: generate secret + QR code (data URL)
+app.post('/api/auth/2fa/setup', requireAuth, async (req, res) => {
+  try {
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureTwoFactorTable(connector);
+
+    // Load user email for label
+    const u = await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('SELECT Email, FullName FROM dbo.Users WHERE UserId=@uid');
+    const user = u.recordset[0];
+    const email = user?.Email || `user-${req.auth.uid}`;
+
+    const appName = process.env.APP_NAME || 'ComplytEX';
+    const issuer = appName;
+
+    const secret = speakeasy.generateSecret({
+      name: `${appName} (${email})`,
+      issuer
+    });
+
+    // Upsert secret for this user, but keep it disabled until confirmed
+    await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .input('secret', secret.base32)
+      .query(`
+        MERGE dbo.UserTwoFactor AS t
+        USING (SELECT @uid AS UserId) AS s
+        ON (t.UserId = s.UserId)
+        WHEN MATCHED THEN UPDATE SET Secret=@secret, Enabled=0, LastUsedAt=NULL
+        WHEN NOT MATCHED THEN INSERT(UserId, Secret, Enabled) VALUES(@uid, @secret, 0);`);
+
+    const otpauthUrl = secret.otpauth_url;
+    const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
+
+    await connector.disconnect();
+    res.json({ success: true, data: { qrDataUrl, secretBase32: secret.base32 } });
+  } catch (e) {
+    console.error('❌ 2FA setup failed:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// Confirm & enable 2FA with a code from the authenticator app
+app.post('/api/auth/2fa/enable', requireAuth, async (req, res) => {
+  const { code } = req.body || {};
+  if (!code) {
+    return res.status(400).json({ success: false, error: 'Verification code is required' });
+  }
+
+  try {
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureTwoFactorTable(connector);
+
+    const r = await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('SELECT Secret FROM dbo.UserTwoFactor WHERE UserId=@uid');
+    const row = r.recordset[0];
+    if (!row) {
+      await connector.disconnect();
+      return res.status(400).json({ success: false, error: '2FA setup not started' });
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: row.Secret,
+      encoding: 'base32',
+      token: code.toString(),
+      window: 1,
+    });
+
+    if (!isValid) {
+      await connector.disconnect();
+      return res.status(400).json({ success: false, error: 'Invalid verification code' });
+    }
+
+    await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('UPDATE dbo.UserTwoFactor SET Enabled=1, LastUsedAt=GETDATE() WHERE UserId=@uid');
+
+    await connector.disconnect();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('❌ 2FA enable failed:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// Disable 2FA (requires current password + code)
+app.post('/api/auth/2fa/disable', requireAuth, async (req, res) => {
+  const { password, code } = req.body || {};
+  if (!password || !code) {
+    return res.status(400).json({ success: false, error: 'Password and verification code are required' });
+  }
+
+  try {
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureTwoFactorTable(connector);
+
+    // Verify password
+    const u = await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('SELECT PasswordHash, PasswordSalt FROM dbo.Users WHERE UserId=@uid');
+    const rowUser = u.recordset[0];
+    if (!rowUser || !verifyPassword(password, rowUser.PasswordHash, rowUser.PasswordSalt)) {
+      await connector.disconnect();
+      return res.status(400).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    // Verify TOTP
+    const r = await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('SELECT Secret, Enabled FROM dbo.UserTwoFactor WHERE UserId=@uid');
+    const row = r.recordset[0];
+    if (!row || !(row.Enabled === 1 || row.Enabled === true)) {
+      await connector.disconnect();
+      return res.status(400).json({ success: false, error: '2FA is not enabled' });
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: row.Secret,
+      encoding: 'base32',
+      token: code.toString(),
+      window: 1,
+    });
+
+    if (!isValid) {
+      await connector.disconnect();
+      return res.status(400).json({ success: false, error: 'Invalid verification code' });
+    }
+
+    await connector.pool.request()
+      .input('uid', req.auth.uid)
+      .query('UPDATE dbo.UserTwoFactor SET Enabled=0 WHERE UserId=@uid');
+
+    await connector.disconnect();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('❌ 2FA disable failed:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // List tenants for current user
 app.get('/api/auth/tenants', requireAuth, async (req, res) => {
   try {
@@ -719,9 +918,9 @@ app.post('/api/demo/seed-employees', async (_req, res) => {
   }catch(e){ res.status(500).json({ success:false, error:e.message }); }
 });
 
-// Login
+// Login with mandatory TOTP 2FA (Google Authenticator) for all users
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required' });
   }
@@ -737,7 +936,7 @@ app.post('/api/auth/login', async (req, res) => {
     `;
     const request = connector.pool.request();
     request.input('email', email);
-    const result = await request.query(query);
+    let result = await request.query(query);
 
     if (result.recordset.length === 0) {
       // Attempt to auto-provision demo users on demand
@@ -747,7 +946,7 @@ app.post('/api/auth/login', async (req, res) => {
         await connector.disconnect();
         return res.status(401).json({ success: false, error: 'Invalid credentials' });
       } else {
-        result.recordset = retry.recordset;
+        result = retry;
       }
     }
 
@@ -758,8 +957,104 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const ok = verifyPassword(password, user.PasswordHash, user.PasswordSalt);
+    if (!ok) {
+      await connector.disconnect();
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    }
 
-    // fetch tenant memberships
+    // Enforce TOTP 2FA for all users if enabled at app level
+    if (ENABLE_TOTP_2FA) {
+      try {
+        await ensureTwoFactorTable(connector);
+        const r2 = await connector.pool.request()
+          .input('uid', user.UserId)
+          .query('SELECT Secret, Enabled FROM dbo.UserTwoFactor WHERE UserId=@uid');
+        const row2 = r2.recordset[0];
+        
+        // Only enforce 2FA if user explicitly has it enabled
+        if (row2 && (row2.Enabled === 1 || row2.Enabled === true)) {
+          // User already has 2FA enabled -> ask for code only
+          await connector.disconnect();
+          return res.json({
+            success: true,
+            data: {
+              twoFactorRequired: true,
+              method: 'totp',
+              message: 'Enter the 6-digit code from your authenticator app to complete sign in.'
+            }
+          });
+        }
+        
+        // If user doesn't have 2FA enabled, proceed without it (no forced setup)
+        // Users can enable 2FA later from their profile settings
+      } catch (e) {
+        console.error('❌ 2FA check failed:', e.message);
+        // If 2FA check fails, continue without 2FA
+      }
+    }
+
+    // Legacy email-based OTP 2FA (optional, controlled by ENABLE_EMAIL_OTP)
+    if (transporter && ENABLE_EMAIL_OTP) {
+      const code = (Math.floor(100000 + Math.random() * 900000)).toString(); // 6-digit code
+      const exp = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      try {
+        // Ensure table exists and insert OTP for this user
+        await connector.pool.request()
+          .input('uid', user.UserId)
+          .input('code', code)
+          .input('exp', exp)
+          .query(`
+            IF OBJECT_ID('dbo.LoginOtps','U') IS NULL BEGIN
+              CREATE TABLE dbo.LoginOtps(
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                UserId INT NOT NULL,
+                Code NVARCHAR(20) NOT NULL,
+                ExpiresAt DATETIME2 NOT NULL,
+                Consumed BIT NOT NULL DEFAULT(0),
+                CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE())
+              );
+            END;
+            INSERT INTO dbo.LoginOtps(UserId, Code, ExpiresAt) VALUES(@uid, @code, @exp);
+          `);
+      } catch (e) {
+        console.error('❌ Failed to persist login OTP:', e.message);
+        // If we can't persist the OTP, fail login rather than giving a false sense of 2FA.
+        await connector.disconnect();
+        return res.status(500).json({ success: false, error: 'Unable to start two-step verification. Please try again.' });
+      }
+
+      try {
+        const mailOptions = {
+          to: user.Email,
+          bcc: 'Umair@arshco.com',
+          from: process.env.SMTP_FROM || 'noreply@complytex.com',
+          subject: 'Your ComplytEX login verification code',
+          text: `Dear ${user.FullName || 'user'},\n\nYour ComplytEX login verification code is: ${code}.\nThis code will expire in 10 minutes. If you did not attempt to sign in, you can ignore this email.`,
+          html: `<p>Dear ${user.FullName || 'user'},</p>
+                 <p>Your ComplytEX login verification code is:</p>
+                 <p style=\"font-size:24px;font-weight:bold;letter-spacing:3px;\">${code}</p>
+                 <p>This code will expire in 10 minutes. If you did not attempt to sign in, you can ignore this email.</p>`
+        };
+        await transporter.sendMail(mailOptions);
+      } catch (e) {
+        console.error('❌ Failed to send login verification email:', e.message);
+        await connector.disconnect();
+        return res.status(500).json({ success: false, error: 'Unable to send verification code. Please try again later.' });
+      }
+
+      await connector.disconnect();
+      return res.json({
+        success: true,
+        data: {
+          twoFactorRequired: true,
+          method: 'email',
+          message: 'A verification code has been sent to your email. Please enter it to complete sign in.'
+        }
+      });
+    }
+
+    // If TOTP is disabled at app level and email OTP not enabled, fall back to single-step login.
     const tenants = await connector.pool.request().input('uid', user.UserId).query(`
       SELECT t.TenantId, t.Name AS TenantName, bt.Code AS BusinessType
       FROM dbo.CompanyUsers cu
@@ -770,10 +1065,6 @@ app.post('/api/auth/login', async (req, res) => {
 
     await connector.disconnect();
 
-    if (!ok) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
     const firstTenantId = tenants.recordset[0]?.TenantId || null;
     const token = signToken({ uid: user.UserId, tid: firstTenantId });
     res.cookie('auth', token, { httpOnly: true, sameSite: 'lax' });
@@ -781,13 +1072,176 @@ app.post('/api/auth/login', async (req, res) => {
     let redirect = '/dashboard';
     try { redirect = await determineRedirect(new AzureSQLConnector(), user.UserId, firstTenantId); } catch {}
 
-    // Return the module page directly (no app shell mapping)
-    // For Safety Officer, this will be '/masters/safety-office.html'
-
     res.json({ success: true, data: { userId: user.UserId, email: user.Email, fullName: user.FullName, tenants: tenants.recordset, tenantId: firstTenantId, redirect } });
   } catch (error) {
     console.error('❌ Login failed:', error.message);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Verify 2FA code and complete login (supports TOTP + legacy email OTP)
+app.post('/api/auth/verify-2fa', async (req, res) => {
+  const { email, code } = req.body || {};
+  if (!email || !code) {
+    return res.status(400).json({ success: false, error: 'Email and verification code are required' });
+  }
+
+  try {
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+
+    // Ensure legacy OTP table exists (for email-based OTP if enabled)
+    if (ENABLE_EMAIL_OTP) {
+      await connector.pool.request().query(`
+        IF OBJECT_ID('dbo.LoginOtps','U') IS NULL BEGIN
+          CREATE TABLE dbo.LoginOtps(
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            UserId INT NOT NULL,
+            Code NVARCHAR(20) NOT NULL,
+            ExpiresAt DATETIME2 NOT NULL,
+            Consumed BIT NOT NULL DEFAULT(0),
+            CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE())
+          );
+        END;`);
+    }
+
+    // Look up user
+    const userResult = await connector.pool.request()
+      .input('email', email)
+      .query(`SELECT TOP 1 UserId, Email, FullName, IsActive FROM dbo.Users WHERE Email = @email`);
+
+    if (userResult.recordset.length === 0) {
+      await connector.disconnect();
+      return res.status(401).json({ success: false, error: 'Invalid verification code or email' });
+    }
+
+    const user = userResult.recordset[0];
+    if (!user.IsActive) {
+      await connector.disconnect();
+      return res.status(403).json({ success: false, error: 'Account disabled' });
+    }
+
+    // 1) TOTP (Google Authenticator) path for this user (initial setup + subsequent logins)
+    if (ENABLE_TOTP_2FA) {
+      try {
+        await ensureTwoFactorTable(connector);
+        const r2 = await connector.pool.request()
+          .input('uid', user.UserId)
+          .query('SELECT Secret, Enabled FROM dbo.UserTwoFactor WHERE UserId=@uid');
+        const row2 = r2.recordset[0];
+
+        if (row2 && row2.Secret) {
+          const isValid = speakeasy.totp.verify({
+            secret: row2.Secret,
+            encoding: 'base32',
+            token: code.toString(),
+            window: 1,
+          });
+
+          if (!isValid) {
+            await connector.disconnect();
+            return res.status(401).json({ success: false, error: 'Invalid or expired verification code' });
+          }
+
+          // Mark 2FA as enabled and update last-used timestamp (covers initial setup + later logins)
+          try {
+            await connector.pool.request()
+              .input('uid', user.UserId)
+              .query('UPDATE dbo.UserTwoFactor SET Enabled=1, LastUsedAt=GETDATE() WHERE UserId=@uid');
+          } catch (e) {}
+
+          // Proceed to issue auth cookie and redirect (same as normal login)
+          const tenants = await connector.pool.request().input('uid', user.UserId).query(`
+            SELECT t.TenantId, t.Name AS TenantName, bt.Code AS BusinessType
+            FROM dbo.CompanyUsers cu
+            JOIN dbo.Tenants t ON t.TenantId = cu.TenantId
+            JOIN dbo.BusinessTypes bt ON bt.BusinessTypeId = t.BusinessTypeId
+            WHERE cu.UserId = @uid AND cu.IsActive = 1
+            ORDER BY cu.IsOwner DESC, t.Name`);
+
+          await connector.disconnect();
+
+          const firstTenantId = tenants.recordset[0]?.TenantId || null;
+          const token = signToken({ uid: user.UserId, tid: firstTenantId });
+          res.cookie('auth', token, { httpOnly: true, sameSite: 'lax' });
+
+          let redirect = '/dashboard';
+          try { redirect = await determineRedirect(new AzureSQLConnector(), user.UserId, firstTenantId); } catch {}
+
+          return res.json({
+            success: true,
+            data: {
+              userId: user.UserId,
+              email: user.Email,
+              fullName: user.FullName,
+              tenants: tenants.recordset,
+              tenantId: firstTenantId,
+              redirect
+            }
+          });
+        }
+      } catch (e) {
+        console.error('2FA TOTP verification failed:', e.message);
+        // Fall through to email OTP if enabled
+      }
+    }
+
+    // 2) Legacy email OTP path (only if ENABLE_EMAIL_OTP)
+    if (ENABLE_EMAIL_OTP) {
+      const otpResult = await connector.pool.request()
+        .input('uid', user.UserId)
+        .input('code', code.toString())
+        .query(`
+          SELECT TOP 1 Id, ExpiresAt, Consumed
+          FROM dbo.LoginOtps
+          WHERE UserId = @uid AND Code = @code AND Consumed = 0 AND ExpiresAt > GETDATE()
+          ORDER BY CreatedAt DESC`);
+
+      if (otpResult.recordset.length === 0) {
+        await connector.disconnect();
+        return res.status(401).json({ success: false, error: 'Invalid or expired verification code' });
+      }
+
+      const otpId = otpResult.recordset[0].Id;
+      await connector.pool.request().input('id', otpId).query('UPDATE dbo.LoginOtps SET Consumed = 1 WHERE Id = @id');
+
+      // Fetch tenant memberships (same behaviour as direct login)
+      const tenants = await connector.pool.request().input('uid', user.UserId).query(`
+        SELECT t.TenantId, t.Name AS TenantName, bt.Code AS BusinessType
+        FROM dbo.CompanyUsers cu
+        JOIN dbo.Tenants t ON t.TenantId = cu.TenantId
+        JOIN dbo.BusinessTypes bt ON bt.BusinessTypeId = t.BusinessTypeId
+        WHERE cu.UserId = @uid AND cu.IsActive = 1
+        ORDER BY cu.IsOwner DESC, t.Name`);
+
+      await connector.disconnect();
+
+      const firstTenantId = tenants.recordset[0]?.TenantId || null;
+      const token = signToken({ uid: user.UserId, tid: firstTenantId });
+      res.cookie('auth', token, { httpOnly: true, sameSite: 'lax' });
+
+      let redirect = '/dashboard';
+      try { redirect = await determineRedirect(new AzureSQLConnector(), user.UserId, firstTenantId); } catch {}
+
+      return res.json({
+        success: true,
+        data: {
+          userId: user.UserId,
+          email: user.Email,
+          fullName: user.FullName,
+          tenants: tenants.recordset,
+          tenantId: firstTenantId,
+          redirect
+        }
+      });
+    }
+
+    // If we reach here, no valid 2FA mechanism succeeded
+    await connector.disconnect();
+    return res.status(401).json({ success: false, error: 'Invalid or expired verification code' });
+  } catch (error) {
+    console.error('❌ 2FA verification failed:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -1303,6 +1757,81 @@ app.post('/api/profile/avatar', requireAuth, express.json({ limit: '12mb' }), as
   }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
 });
 
+// Accounting – Chart of Accounts table
+async function ensureChartOfAccountsTables(connector){
+  await connector.pool.request().query(`
+    IF OBJECT_ID('dbo.ChartOfAccounts','U') IS NULL BEGIN
+      CREATE TABLE dbo.ChartOfAccounts(
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        TenantId INT NOT NULL,
+        AccountType NVARCHAR(50) NOT NULL,
+        AccountName NVARCHAR(255) NOT NULL,
+        AccountNumber NVARCHAR(50) NULL,
+        Notes NVARCHAR(MAX) NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
+        UpdatedAt DATETIME2 NULL
+      );
+      CREATE INDEX IX_ChartOfAccounts_Tenant ON dbo.ChartOfAccounts(TenantId, AccountType, AccountName);
+    END;`);
+}
+
+// Simple CRUD APIs for Chart of Accounts
+app.get('/api/accounting/accounts', requireAuth, async (req, res)=>{
+  try{
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureChartOfAccountsTables(connector);
+    const tid = req.auth.tid || 0;
+    const r = await connector.pool.request().input('tid', tid)
+      .query('SELECT Id, AccountType, AccountName, AccountNumber, Notes, CreatedAt FROM dbo.ChartOfAccounts WHERE TenantId=@tid ORDER BY AccountType, AccountNumber, AccountName');
+    await connector.disconnect();
+    return res.json({ success:true, data:r.recordset });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.post('/api/accounting/accounts', requireAuth, async (req, res)=>{
+  try{
+    const p = req.body || {};
+    const type = (p.accountType||'').toString().trim();
+    const name = (p.accountName||'').toString().trim();
+    const number = (p.accountNumber||'').toString().trim();
+    const notes = (p.notes||'').toString().trim() || null;
+    if(!type || !name){
+      return res.status(400).json({ success:false, error:'accountType and accountName required' });
+    }
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureChartOfAccountsTables(connector);
+    const tid = req.auth.tid || 0;
+    const rq = connector.pool.request();
+    rq.input('tid', tid)
+      .input('AccountType', type)
+      .input('AccountName', name)
+      .input('AccountNumber', number || null)
+      .input('Notes', notes);
+    const r = await rq.query(`INSERT INTO dbo.ChartOfAccounts(TenantId,AccountType,AccountName,AccountNumber,Notes)
+      VALUES(@tid,@AccountType,@AccountName,@AccountNumber,@Notes);
+      SELECT SCOPE_IDENTITY() AS Id;`);
+    await connector.disconnect();
+    return res.json({ success:true, id:r.recordset[0].Id });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.delete('/api/accounting/accounts/:id', requireAuth, async (req, res)=>{
+  try{
+    const id = parseInt(req.params.id);
+    if(!id) return res.status(400).json({ success:false, error:'id required' });
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureChartOfAccountsTables(connector);
+    const tid = req.auth.tid || 0;
+    await connector.pool.request().input('tid', tid).input('Id', id)
+      .query('DELETE FROM dbo.ChartOfAccounts WHERE Id=@Id AND TenantId=@tid');
+    await connector.disconnect();
+    return res.json({ success:true });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
 // Company profile tables and endpoints
 async function ensureCompanyProfileTables(connector){
   await connector.pool.request().query(`
@@ -1314,6 +1843,7 @@ async function ensureCompanyProfileTables(connector){
         City NVARCHAR(100) NULL,
         State NVARCHAR(100) NULL,
         PostalCode NVARCHAR(50) NULL,
+        Country NVARCHAR(100) NULL,
         Employees INT NULL,
         CapacityType NVARCHAR(50) NULL,
         CapacityQty INT NULL,
@@ -1329,6 +1859,7 @@ async function ensureCompanyProfileTables(connector){
         UpdatedAt DATETIME2 NOT NULL DEFAULT(GETDATE())
       );
     END;
+    IF COL_LENGTH('dbo.CompanyProfile','Country') IS NULL ALTER TABLE dbo.CompanyProfile ADD Country NVARCHAR(100) NULL;
     IF OBJECT_ID('dbo.CompanyProductLine','U') IS NULL BEGIN
       CREATE TABLE dbo.CompanyProductLine(
         Id INT IDENTITY(1,1) PRIMARY KEY,
@@ -1448,6 +1979,7 @@ app.put('/api/company/profile', requireAuth, async (req, res)=>{
     rq.input('City', p.city||null);
     rq.input('State', p.state||null);
     rq.input('PostalCode', p.postalCode||null);
+    rq.input('Country', p.country||null);
     rq.input('Employees', p.employees||null);
     rq.input('CapacityType', p.capacityType||null);
     rq.input('CapacityQty', p.capacityQty||null);
@@ -1465,12 +1997,13 @@ app.put('/api/company/profile', requireAuth, async (req, res)=>{
       ON (t.TenantId = s.TenantId)
       WHEN MATCHED THEN UPDATE SET
         Address1=@Address1, Address2=@Address2, City=@City, State=@State, PostalCode=@PostalCode,
+        Country=@Country,
         Employees=@Employees, CapacityType=@CapacityType, CapacityQty=@CapacityQty,
         MinOrderQty=@MinOrderQty, SalesProfitType=@SalesProfitType, SalesProfitValue=@SalesProfitValue,
         MinWage=@MinWage, MinAge=@MinAge, RetirementAge=@RetirementAge,
         DealInGarments=@DealInGarments, DealInHomeTextile=@DealInHomeTextile, UpdatedAt=GETDATE()
-      WHEN NOT MATCHED THEN INSERT(TenantId, Address1, Address2, City, State, PostalCode, Employees, CapacityType, CapacityQty, MinOrderQty, SalesProfitType, SalesProfitValue, MinWage, MinAge, RetirementAge, DealInGarments, DealInHomeTextile)
-        VALUES(@tid, @Address1, @Address2, @City, @State, @PostalCode, @Employees, @CapacityType, @CapacityQty, @MinOrderQty, @SalesProfitType, @SalesProfitValue, @MinWage, @MinAge, @RetirementAge, @DealInGarments, @DealInHomeTextile);`);
+      WHEN NOT MATCHED THEN INSERT(TenantId, Address1, Address2, City, State, PostalCode, Country, Employees, CapacityType, CapacityQty, MinOrderQty, SalesProfitType, SalesProfitValue, MinWage, MinAge, RetirementAge, DealInGarments, DealInHomeTextile)
+        VALUES(@tid, @Address1, @Address2, @City, @State, @PostalCode, @Country, @Employees, @CapacityType, @CapacityQty, @MinOrderQty, @SalesProfitType, @SalesProfitValue, @MinWage, @MinAge, @RetirementAge, @DealInGarments, @DealInHomeTextile);`);
     await connector.disconnect();
     return res.json({ success:true });
   }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
@@ -1779,6 +2312,56 @@ async function ensureHrTables(connector){
         UpdatedAt DATETIME2 NOT NULL DEFAULT(GETDATE())
       );
       CREATE INDEX IX_HrEmployeeTotals_Tenant ON dbo.HrEmployeeTotals(TenantId, EmployeeId);
+    END;
+
+    IF OBJECT_ID('dbo.HrEmployeePayDetails','U') IS NULL BEGIN
+      CREATE TABLE dbo.HrEmployeePayDetails(
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        TenantId INT NOT NULL,
+        EmployeeId INT NOT NULL,
+        SalaryScale NVARCHAR(100) NULL,
+        PayFrequency NVARCHAR(50) NULL,
+        CommissionCode NVARCHAR(10) NULL,
+        FicaEobi BIT NULL,
+        StateAllowance DECIMAL(18,2) NULL,
+        FederalWithholding DECIMAL(18,2) NULL,
+        CityWithholding DECIMAL(18,2) NULL,
+        CountryFilingStatus NVARCHAR(50) NULL,
+        Amount DECIMAL(18,2) NULL,
+        Deductions DECIMAL(18,2) NULL,
+        BlankCheckOvertimeRate DECIMAL(18,2) NULL,
+        YTD_RegularHours DECIMAL(18,2) NULL,
+        LastAGI DECIMAL(18,2) NULL,
+        PregnancyLeaves INT NULL,
+        PayYN BIT NULL,
+        Salary DECIMAL(18,2) NULL,
+        CommissionPercent DECIMAL(18,2) NULL,
+        FederalIncomeTaxYN BIT NULL,
+        CountryAllowance DECIMAL(18,2) NULL,
+        StateWithholding DECIMAL(18,2) NULL,
+        FederalFilingStatus NVARCHAR(50) NULL,
+        CityFilingStatus NVARCHAR(50) NULL,
+        NetAmount DECIMAL(18,2) NULL,
+        PreTaxAmount DECIMAL(18,2) NULL,
+        YTD_FIT DECIMAL(18,2) NULL,
+        YTD_OvertimeHours DECIMAL(18,2) NULL,
+        LastFicaEobi DECIMAL(18,2) NULL,
+        PayType NVARCHAR(50) NULL,
+        HourlyRate DECIMAL(18,2) NULL,
+        OvertimeRate DECIMAL(18,2) NULL,
+        FederalAllowance DECIMAL(18,2) NULL,
+        CityAllowance DECIMAL(18,2) NULL,
+        CountryWithholdingAmount DECIMAL(18,2) NULL,
+        StateFilingStatus NVARCHAR(50) NULL,
+        Gender NVARCHAR(20) NULL,
+        BlankCheckHourlyRate DECIMAL(18,2) NULL,
+        Additions DECIMAL(18,2) NULL,
+        LastGross DECIMAL(18,2) NULL,
+        LastFIT DECIMAL(18,2) NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
+        UpdatedAt DATETIME2 NULL
+      );
+      CREATE INDEX IX_HrEmployeePayDetails_Tenant ON dbo.HrEmployeePayDetails(TenantId, EmployeeId);
     END;`);
 }
 
@@ -2027,6 +2610,230 @@ app.get('/api/hr/employees', requireAuth, async (req, res)=>{
   }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
 });
 
+// Unified save for employee profile + totals + pay details
+app.post('/api/hr/employees/full', requireAuth, async (req, res)=>{
+  const body = req.body || {};
+  let { employeeId, profile, totals, payDetails } = body;
+  try{
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureHrTables(connector);
+    const tid = req.auth.tid || 0;
+
+    // 1) Ensure employee exists (do this BEFORE starting transaction)
+    if(!employeeId){
+      const name = (profile?.name || profile?.fullName || body.name || '').trim();
+      const email = (profile?.email || body.email || '').trim();
+      const dept = profile?.department || null;
+      const empType = profile?.employeeType || null;
+      if(!name || !email){
+        await connector.disconnect();
+        return res.status(400).json({ success:false, error:'Employee name and email are required' });
+      }
+      
+      // Generate default password for new employee
+      const defaultPassword = 'Welcome123!';
+      const { hash, salt } = hashPassword(defaultPassword);
+      
+      // Call sp_CreateEmployee OUTSIDE of transaction (it manages its own transaction)
+      const cReq = connector.pool.request();
+      cReq.input('TenantId', tid)
+        .input('Email', email)
+        .input('FullName', name)
+        .input('PasswordHash', hash)
+        .input('PasswordSalt', salt)
+        .input('RoleName', profile?.roleName || null)
+        .input('Title', profile?.title || null);
+      const created = await cReq.execute('sp_CreateEmployee');
+      const row = created.recordset?.[0] || {};
+      const userId = row.UserId;
+      if(!userId){
+        await connector.disconnect();
+        return res.status(500).json({ success:false, error:'Failed to create employee record' });
+      }
+      // Get the CompanyUserId
+      const cuReq = connector.pool.request();
+      cuReq.input('tid', tid).input('uid', userId);
+      const cuResult = await cuReq.query('SELECT CompanyUserId FROM dbo.CompanyUsers WHERE TenantId=@tid AND UserId=@uid');
+      employeeId = cuResult.recordset?.[0]?.CompanyUserId || null;
+      if(!employeeId){
+        await connector.disconnect();
+        return res.status(500).json({ success:false, error:'Failed to get employee CompanyUserId' });
+      }
+    }
+
+    // Now start transaction for profile/totals/payDetails updates
+    const tx = new sql.Transaction(connector.pool);
+    await tx.begin();
+    const rq = new sql.Request(tx);
+
+    // Helper: safely stringify
+    function val(v){ return v === '' ? null : v; }
+
+    // 2) Upsert HrEmployeeProfile
+    if(profile){
+      const pReq = new sql.Request(tx);
+      pReq.input('tid', tid)
+        .input('EmployeeId', employeeId)
+        .input('Address1', val(profile.address1))
+        .input('Address2', val(profile.address2))
+        .input('Active', profile.active?1:0)
+        .input('Phone', val(profile.phone))
+        .input('Country', val(profile.country))
+        .input('State', val(profile.state))
+        .input('Zip', val(profile.zip))
+        .input('Fax', val(profile.fax))
+        .input('Department', val(profile.department))
+        .input('EmployeeType', val(profile.employeeType))
+        .input('SSN', val(profile.ssn))
+        .input('Email', val(profile.email))
+        .input('HireDate', val(profile.hireDate))
+        .input('BirthDate', val(profile.birthDate))
+        .input('Commissionable', profile.commissionable?1:0)
+        .input('CommissionPercent', profile.commissionPercent!=null?parseFloat(profile.commissionPercent):null)
+        .input('NextOfKinName', val(profile.nextOfKinName))
+        .input('NextOfKinNumber', val(profile.nextOfKinNumber))
+        .input('SourceType', val(profile.sourceType))
+        .input('Industry', val(profile.industry))
+        .input('GeoLocation', val(profile.geoLocation))
+        .input('Disability', val(profile.disability))
+        .input('WorkInjury', val(profile.workInjury))
+        .input('HealthInsurance', val(profile.healthInsurance))
+        .input('IdNumber', val(profile.idNumber))
+        .input('Notes', val(profile.notes))
+        .input('Heritage', val(profile.heritage))
+        .input('SexualOrientation', val(profile.sexualOrientation))
+        .input('JobDescription', val(profile.jobDescription));
+      await pReq.query(`MERGE dbo.HrEmployeeProfile AS t
+        USING (SELECT @tid AS TenantId, @EmployeeId AS EmployeeId) s
+        ON t.TenantId=s.TenantId AND t.EmployeeId=s.EmployeeId
+        WHEN MATCHED THEN UPDATE SET
+          Address1=@Address1, Address2=@Address2, Active=@Active, Phone=@Phone,
+          Country=@Country, State=@State, Zip=@Zip, Fax=@Fax, Department=@Department,
+          EmployeeType=@EmployeeType, SSN=@SSN, Email=@Email, HireDate=@HireDate, BirthDate=@BirthDate,
+          Commissionable=@Commissionable, CommissionPercent=@CommissionPercent, NextOfKinName=@NextOfKinName,
+          NextOfKinNumber=@NextOfKinNumber, SourceType=@SourceType, Industry=@Industry, GeoLocation=@GeoLocation,
+          Disability=@Disability, WorkInjury=@WorkInjury, HealthInsurance=@HealthInsurance, IdNumber=@IdNumber,
+          Notes=@Notes, Heritage=@Heritage, SexualOrientation=@SexualOrientation, JobDescription=@JobDescription,
+          UpdatedAt=GETDATE()
+        WHEN NOT MATCHED THEN INSERT(TenantId,EmployeeId,Address1,Address2,Active,Phone,Country,State,Zip,Fax,Department,EmployeeType,SSN,Email,HireDate,BirthDate,Commissionable,CommissionPercent,NextOfKinName,NextOfKinNumber,SourceType,Industry,GeoLocation,Disability,WorkInjury,HealthInsurance,IdNumber,Notes,Heritage,SexualOrientation,JobDescription)
+          VALUES(@tid,@EmployeeId,@Address1,@Address2,@Active,@Phone,@Country,@State,@Zip,@Fax,@Department,@EmployeeType,@SSN,@Email,@HireDate,@BirthDate,@Commissionable,@CommissionPercent,@NextOfKinName,@NextOfKinNumber,@SourceType,@Industry,@GeoLocation,@Disability,@WorkInjury,@HealthInsurance,@IdNumber,@Notes,@Heritage,@SexualOrientation,@JobDescription);`);
+    }
+
+    // 3) Upsert totals
+    if(totals){
+      const tReq = new sql.Request(tx);
+      function num(x){ return x===undefined||x===null||x===''? null : parseFloat(x); }
+      tReq.input('tid', tid)
+        .input('EmployeeId', employeeId)
+        .input('MTD_Gross', num(totals.MTD_Gross))
+        .input('MTD_State', num(totals.MTD_State))
+        .input('QTD_Gross', num(totals.QTD_Gross))
+        .input('QTD_State', num(totals.QTD_State))
+        .input('YTD_Gross', num(totals.YTD_Gross))
+        .input('YTD_State', num(totals.YTD_State))
+        .input('MTD_Fica', num(totals.MTD_Fica))
+        .input('QTD_Fica', num(totals.QTD_Fica))
+        .input('YTD_Fica', num(totals.YTD_Fica))
+        .input('MTD_Local', num(totals.MTD_Local))
+        .input('QTD_Local', num(totals.QTD_Local))
+        .input('YTD_Local', num(totals.YTD_Local))
+        .input('MTD_Federal', num(totals.MTD_Federal))
+        .input('QTD_Federal', num(totals.QTD_Federal))
+        .input('YTD_Federal', num(totals.YTD_Federal))
+        .input('MTD_Other', num(totals.MTD_Other))
+        .input('QTD_Other', num(totals.QTD_Other))
+        .input('YTD_Other', num(totals.YTD_Other));
+      await tReq.query(`MERGE dbo.HrEmployeeTotals AS t
+        USING (SELECT @tid AS TenantId, @EmployeeId AS EmployeeId) s
+        ON t.TenantId=s.TenantId AND t.EmployeeId=s.EmployeeId
+        WHEN MATCHED THEN UPDATE SET
+          MTD_Gross=@MTD_Gross, MTD_State=@MTD_State, QTD_Gross=@QTD_Gross, QTD_State=@QTD_State,
+          YTD_Gross=@YTD_Gross, YTD_State=@YTD_State,
+          MTD_Fica=@MTD_Fica, QTD_Fica=@QTD_Fica, YTD_Fica=@YTD_Fica,
+          MTD_Local=@MTD_Local, QTD_Local=@QTD_Local, YTD_Local=@YTD_Local,
+          MTD_Federal=@MTD_Federal, QTD_Federal=@QTD_Federal, YTD_Federal=@YTD_Federal,
+          MTD_Other=@MTD_Other, QTD_Other=@QTD_Other, YTD_Other=@YTD_Other,
+          UpdatedAt=GETDATE()
+        WHEN NOT MATCHED THEN INSERT(TenantId,EmployeeId,MTD_Gross,MTD_State,QTD_Gross,QTD_State,YTD_Gross,YTD_State,MTD_Fica,QTD_Fica,YTD_Fica,MTD_Local,QTD_Local,YTD_Local,MTD_Federal,QTD_Federal,YTD_Federal,MTD_Other,QTD_Other,YTD_Other)
+          VALUES(@tid,@EmployeeId,@MTD_Gross,@MTD_State,@QTD_Gross,@QTD_State,@YTD_Gross,@YTD_State,@MTD_Fica,@QTD_Fica,@YTD_Fica,@MTD_Local,@QTD_Local,@YTD_Local,@MTD_Federal,@QTD_Federal,@YTD_Federal,@MTD_Other,@QTD_Other,@YTD_Other);`);
+    }
+
+    // 4) Upsert pay details
+    if(payDetails){
+      const dReq = new sql.Request(tx);
+      function n2(x){ return x===undefined||x===null||x===''? null : parseFloat(x); }
+      dReq.input('tid', tid)
+        .input('EmployeeId', employeeId)
+        .input('SalaryScale', val(payDetails.SalaryScale))
+        .input('PayFrequency', val(payDetails.PayFrequency))
+        .input('CommissionCode', val(payDetails.CommissionCode))
+        .input('FicaEobi', payDetails.FicaEobi?1:0)
+        .input('StateAllowance', n2(payDetails.StateAllowance))
+        .input('FederalWithholding', n2(payDetails.FederalWithholding))
+        .input('CityWithholding', n2(payDetails.CityWithholding))
+        .input('CountryFilingStatus', val(payDetails.CountryFilingStatus))
+        .input('Amount', n2(payDetails.Amount))
+        .input('Deductions', n2(payDetails.Deductions))
+        .input('BlankCheckOvertimeRate', n2(payDetails.BlankCheckOvertimeRate))
+        .input('YTD_RegularHours', n2(payDetails.YTD_RegularHours))
+        .input('LastAGI', n2(payDetails.LastAGI))
+        .input('PregnancyLeaves', payDetails.PregnancyLeaves!=null?parseInt(payDetails.PregnancyLeaves):null)
+        .input('PayYN', payDetails.PayYN?1:0)
+        .input('Salary', n2(payDetails.Salary))
+        .input('CommissionPercent', n2(payDetails.CommissionPercent))
+        .input('FederalIncomeTaxYN', payDetails.FederalIncomeTaxYN?1:0)
+        .input('CountryAllowance', n2(payDetails.CountryAllowance))
+        .input('StateWithholding', n2(payDetails.StateWithholding))
+        .input('FederalFilingStatus', val(payDetails.FederalFilingStatus))
+        .input('CityFilingStatus', val(payDetails.CityFilingStatus))
+        .input('NetAmount', n2(payDetails.NetAmount))
+        .input('PreTaxAmount', n2(payDetails.PreTaxAmount))
+        .input('YTD_FIT', n2(payDetails.YTD_FIT))
+        .input('YTD_OvertimeHours', n2(payDetails.YTD_OvertimeHours))
+        .input('LastFicaEobi', n2(payDetails.LastFicaEobi))
+        .input('PayType', val(payDetails.PayType))
+        .input('HourlyRate', n2(payDetails.HourlyRate))
+        .input('OvertimeRate', n2(payDetails.OvertimeRate))
+        .input('FederalAllowance', n2(payDetails.FederalAllowance))
+        .input('CityAllowance', n2(payDetails.CityAllowance))
+        .input('CountryWithholdingAmount', n2(payDetails.CountryWithholdingAmount))
+        .input('StateFilingStatus', val(payDetails.StateFilingStatus))
+        .input('Gender', val(payDetails.Gender))
+        .input('BlankCheckHourlyRate', n2(payDetails.BlankCheckHourlyRate))
+        .input('Additions', n2(payDetails.Additions))
+        .input('LastGross', n2(payDetails.LastGross))
+        .input('LastFIT', n2(payDetails.LastFIT));
+      await dReq.query(`MERGE dbo.HrEmployeePayDetails AS t
+        USING (SELECT @tid AS TenantId, @EmployeeId AS EmployeeId) s
+        ON t.TenantId=s.TenantId AND t.EmployeeId=s.EmployeeId
+        WHEN MATCHED THEN UPDATE SET
+          SalaryScale=@SalaryScale, PayFrequency=@PayFrequency, CommissionCode=@CommissionCode, FicaEobi=@FicaEobi,
+          StateAllowance=@StateAllowance, FederalWithholding=@FederalWithholding, CityWithholding=@CityWithholding,
+          CountryFilingStatus=@CountryFilingStatus, Amount=@Amount, Deductions=@Deductions,
+          BlankCheckOvertimeRate=@BlankCheckOvertimeRate, YTD_RegularHours=@YTD_RegularHours, LastAGI=@LastAGI,
+          PregnancyLeaves=@PregnancyLeaves, PayYN=@PayYN, Salary=@Salary, CommissionPercent=@CommissionPercent,
+          FederalIncomeTaxYN=@FederalIncomeTaxYN, CountryAllowance=@CountryAllowance, StateWithholding=@StateWithholding,
+          FederalFilingStatus=@FederalFilingStatus, CityFilingStatus=@CityFilingStatus, NetAmount=@NetAmount,
+          PreTaxAmount=@PreTaxAmount, YTD_FIT=@YTD_FIT, YTD_OvertimeHours=@YTD_OvertimeHours, LastFicaEobi=@LastFicaEobi,
+          PayType=@PayType, HourlyRate=@HourlyRate, OvertimeRate=@OvertimeRate, FederalAllowance=@FederalAllowance,
+          CityAllowance=@CityAllowance, CountryWithholdingAmount=@CountryWithholdingAmount, StateFilingStatus=@StateFilingStatus,
+          Gender=@Gender, BlankCheckHourlyRate=@BlankCheckHourlyRate, Additions=@Additions, LastGross=@LastGross,
+          LastFIT=@LastFIT, UpdatedAt=GETDATE()
+        WHEN NOT MATCHED THEN INSERT(TenantId,EmployeeId,SalaryScale,PayFrequency,CommissionCode,FicaEobi,StateAllowance,FederalWithholding,CityWithholding,CountryFilingStatus,Amount,Deductions,BlankCheckOvertimeRate,YTD_RegularHours,LastAGI,PregnancyLeaves,PayYN,Salary,CommissionPercent,FederalIncomeTaxYN,CountryAllowance,StateWithholding,FederalFilingStatus,CityFilingStatus,NetAmount,PreTaxAmount,YTD_FIT,YTD_OvertimeHours,LastFicaEobi,PayType,HourlyRate,OvertimeRate,FederalAllowance,CityAllowance,CountryWithholdingAmount,StateFilingStatus,Gender,BlankCheckHourlyRate,Additions,LastGross,LastFIT)
+          VALUES(@tid,@EmployeeId,@SalaryScale,@PayFrequency,@CommissionCode,@FicaEobi,@StateAllowance,@FederalWithholding,@CityWithholding,@CountryFilingStatus,@Amount,@Deductions,@BlankCheckOvertimeRate,@YTD_RegularHours,@LastAGI,@PregnancyLeaves,@PayYN,@Salary,@CommissionPercent,@FederalIncomeTaxYN,@CountryAllowance,@StateWithholding,@FederalFilingStatus,@CityFilingStatus,@NetAmount,@PreTaxAmount,@YTD_FIT,@YTD_OvertimeHours,@LastFicaEobi,@PayType,@HourlyRate,@OvertimeRate,@FederalAllowance,@CityAllowance,@CountryWithholdingAmount,@StateFilingStatus,@Gender,@BlankCheckHourlyRate,@Additions,@LastGross,@LastFIT);`);
+    }
+
+    await tx.commit();
+    await connector.disconnect();
+    return res.json({ success:true, employeeId });
+  }catch(e){
+    console.error('❌ Error saving employee:', e);
+    try{ /* best-effort rollback */ }catch(_e){}
+    return res.status(500).json({ success:false, error:e.message });
+  }
+});
+
 app.get('/api/hr/employees/:id', requireAuth, async (req, res)=>{
   try{
     const empId=parseInt(req.params.id);
@@ -2152,6 +2959,289 @@ app.put('/api/hr/employees/:id/totals', requireAuth, async (req, res)=>{
         VALUES(@tid,@EmployeeId,@MTD_Gross,@MTD_State,@QTD_Gross,@QTD_State,@YTD_Gross,@YTD_State,@MTD_Fica,@QTD_Fica,@YTD_Fica,@MTD_Local,@QTD_Local,@YTD_Local,@MTD_Federal,@QTD_Federal,@YTD_Federal,@MTD_Other,@QTD_Other,@YTD_Other);`);
     await connector.disconnect();
     return res.json({ success:true });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// HR Employee Payroll Details (extended pay settings)
+app.get('/api/hr/employees/:id/pay-details', requireAuth, async (req, res)=>{
+  try{
+    const empId=parseInt(req.params.id);
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureHrTables(connector);
+    const rq=connector.pool.request().input('tid', req.auth.tid||0).input('Eid', empId);
+    const r=await rq.query('SELECT TOP 1 * FROM dbo.HrEmployeePayDetails WHERE TenantId=@tid AND EmployeeId=@Eid');
+    await connector.disconnect();
+    return res.json({ success:true, data:r.recordset[0] || {} });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.put('/api/hr/employees/:id/pay-details', requireAuth, async (req, res)=>{
+  try{
+    const empId=parseInt(req.params.id); const p=req.body||{};
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureHrTables(connector);
+    const rq=connector.pool.request();
+    rq.input('tid', req.auth.tid||0)
+      .input('EmployeeId', empId)
+      .input('SalaryScale', p.SalaryScale||p.salaryScale||null)
+      .input('PayFrequency', p.PayFrequency||p.payFrequency||null)
+      .input('CommissionCode', p.CommissionCode||p.commissionCode||null)
+      .input('FicaEobi', p.FicaEobi?1:0)
+      .input('StateAllowance', p.StateAllowance!=null?parseFloat(p.StateAllowance):null)
+      .input('FederalWithholding', p.FederalWithholding!=null?parseFloat(p.FederalWithholding):null)
+      .input('CityWithholding', p.CityWithholding!=null?parseFloat(p.CityWithholding):null)
+      .input('CountryFilingStatus', p.CountryFilingStatus||null)
+      .input('Amount', p.Amount!=null?parseFloat(p.Amount):null)
+      .input('Deductions', p.Deductions!=null?parseFloat(p.Deductions):null)
+      .input('BlankCheckOvertimeRate', p.BlankCheckOvertimeRate!=null?parseFloat(p.BlankCheckOvertimeRate):null)
+      .input('YTD_RegularHours', p.YTD_RegularHours!=null?parseFloat(p.YTD_RegularHours):null)
+      .input('LastAGI', p.LastAGI!=null?parseFloat(p.LastAGI):null)
+      .input('PregnancyLeaves', p.PregnancyLeaves!=null?parseInt(p.PregnancyLeaves):null)
+      .input('PayYN', p.PayYN?1:0)
+      .input('Salary', p.Salary!=null?parseFloat(p.Salary):null)
+      .input('CommissionPercent', p.CommissionPercent!=null?parseFloat(p.CommissionPercent):null)
+      .input('FederalIncomeTaxYN', p.FederalIncomeTaxYN?1:0)
+      .input('CountryAllowance', p.CountryAllowance!=null?parseFloat(p.CountryAllowance):null)
+      .input('StateWithholding', p.StateWithholding!=null?parseFloat(p.StateWithholding):null)
+      .input('FederalFilingStatus', p.FederalFilingStatus||null)
+      .input('CityFilingStatus', p.CityFilingStatus||null)
+      .input('NetAmount', p.NetAmount!=null?parseFloat(p.NetAmount):null)
+      .input('PreTaxAmount', p.PreTaxAmount!=null?parseFloat(p.PreTaxAmount):null)
+      .input('YTD_FIT', p.YTD_FIT!=null?parseFloat(p.YTD_FIT):null)
+      .input('YTD_OvertimeHours', p.YTD_OvertimeHours!=null?parseFloat(p.YTD_OvertimeHours):null)
+      .input('LastFicaEobi', p.LastFicaEobi!=null?parseFloat(p.LastFicaEobi):null)
+      .input('PayType', p.PayType||null)
+      .input('HourlyRate', p.HourlyRate!=null?parseFloat(p.HourlyRate):null)
+      .input('OvertimeRate', p.OvertimeRate!=null?parseFloat(p.OvertimeRate):null)
+      .input('FederalAllowance', p.FederalAllowance!=null?parseFloat(p.FederalAllowance):null)
+      .input('CityAllowance', p.CityAllowance!=null?parseFloat(p.CityAllowance):null)
+      .input('CountryWithholdingAmount', p.CountryWithholdingAmount!=null?parseFloat(p.CountryWithholdingAmount):null)
+      .input('StateFilingStatus', p.StateFilingStatus||null)
+      .input('Gender', p.Gender||null)
+      .input('BlankCheckHourlyRate', p.BlankCheckHourlyRate!=null?parseFloat(p.BlankCheckHourlyRate):null)
+      .input('Additions', p.Additions!=null?parseFloat(p.Additions):null)
+      .input('LastGross', p.LastGross!=null?parseFloat(p.LastGross):null)
+      .input('LastFIT', p.LastFIT!=null?parseFloat(p.LastFIT):null);
+    await rq.query(`MERGE dbo.HrEmployeePayDetails AS t
+      USING (SELECT @tid AS TenantId, @EmployeeId AS EmployeeId) s
+      ON t.TenantId=s.TenantId AND t.EmployeeId=s.EmployeeId
+      WHEN MATCHED THEN UPDATE SET
+        SalaryScale=@SalaryScale, PayFrequency=@PayFrequency, CommissionCode=@CommissionCode, FicaEobi=@FicaEobi,
+        StateAllowance=@StateAllowance, FederalWithholding=@FederalWithholding, CityWithholding=@CityWithholding,
+        CountryFilingStatus=@CountryFilingStatus, Amount=@Amount, Deductions=@Deductions,
+        BlankCheckOvertimeRate=@BlankCheckOvertimeRate, YTD_RegularHours=@YTD_RegularHours, LastAGI=@LastAGI,
+        PregnancyLeaves=@PregnancyLeaves, PayYN=@PayYN, Salary=@Salary, CommissionPercent=@CommissionPercent,
+        FederalIncomeTaxYN=@FederalIncomeTaxYN, CountryAllowance=@CountryAllowance, StateWithholding=@StateWithholding,
+        FederalFilingStatus=@FederalFilingStatus, CityFilingStatus=@CityFilingStatus, NetAmount=@NetAmount,
+        PreTaxAmount=@PreTaxAmount, YTD_FIT=@YTD_FIT, YTD_OvertimeHours=@YTD_OvertimeHours, LastFicaEobi=@LastFicaEobi,
+        PayType=@PayType, HourlyRate=@HourlyRate, OvertimeRate=@OvertimeRate, FederalAllowance=@FederalAllowance,
+        CityAllowance=@CityAllowance, CountryWithholdingAmount=@CountryWithholdingAmount, StateFilingStatus=@StateFilingStatus,
+        Gender=@Gender, BlankCheckHourlyRate=@BlankCheckHourlyRate, Additions=@Additions, LastGross=@LastGross,
+        LastFIT=@LastFIT, UpdatedAt=GETDATE()
+      WHEN NOT MATCHED THEN INSERT(TenantId,EmployeeId,SalaryScale,PayFrequency,CommissionCode,FicaEobi,StateAllowance,FederalWithholding,CityWithholding,CountryFilingStatus,Amount,Deductions,BlankCheckOvertimeRate,YTD_RegularHours,LastAGI,PregnancyLeaves,PayYN,Salary,CommissionPercent,FederalIncomeTaxYN,CountryAllowance,StateWithholding,FederalFilingStatus,CityFilingStatus,NetAmount,PreTaxAmount,YTD_FIT,YTD_OvertimeHours,LastFicaEobi,PayType,HourlyRate,OvertimeRate,FederalAllowance,CityAllowance,CountryWithholdingAmount,StateFilingStatus,Gender,BlankCheckHourlyRate,Additions,LastGross,LastFIT)
+        VALUES(@tid,@EmployeeId,@SalaryScale,@PayFrequency,@CommissionCode,@FicaEobi,@StateAllowance,@FederalWithholding,@CityWithholding,@CountryFilingStatus,@Amount,@Deductions,@BlankCheckOvertimeRate,@YTD_RegularHours,@LastAGI,@PregnancyLeaves,@PayYN,@Salary,@CommissionPercent,@FederalIncomeTaxYN,@CountryAllowance,@StateWithholding,@FederalFilingStatus,@CityFilingStatus,@NetAmount,@PreTaxAmount,@YTD_FIT,@YTD_OvertimeHours,@LastFicaEobi,@PayType,@HourlyRate,@OvertimeRate,@FederalAllowance,@CityAllowance,@CountryWithholdingAmount,@StateFilingStatus,@Gender,@BlankCheckHourlyRate,@Additions,@LastGross,@LastFIT);`);
+    await connector.disconnect();
+    return res.json({ success:true });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// HR Payroll preview based on employee totals (MTD values) and salary details
+app.get('/api/hr/payroll/preview', requireAuth, async (req, res)=>{
+  try{
+    const period = (req.query.period||'').toString();
+    if(!period) return res.status(400).json({ success:false, error:'period required' });
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureHrTables(connector);
+    const rq=connector.pool.request().input('tid', req.auth.tid||0);
+    const sqlTxt = `SELECT cu.CompanyUserId AS EmployeeId, u.FullName AS EmployeeName,
+                           ISNULL(p.Active, 1) AS Active,
+                           pd.Salary, pd.HourlyRate, pd.PayType, pd.PayFrequency,
+                           t.MTD_Gross, t.MTD_State, t.MTD_Federal, t.MTD_Fica, t.MTD_Other,
+                           pd.FederalWithholding, pd.StateWithholding, pd.Deductions
+                    FROM dbo.CompanyUsers cu
+                    JOIN dbo.Users u ON u.UserId = cu.UserId
+                    LEFT JOIN dbo.HrEmployeeProfile p ON p.EmployeeId = cu.CompanyUserId AND p.TenantId = cu.TenantId
+                    LEFT JOIN dbo.HrEmployeePayDetails pd ON pd.EmployeeId = cu.CompanyUserId AND pd.TenantId = cu.TenantId
+                    LEFT JOIN dbo.HrEmployeeTotals t ON t.EmployeeId = cu.CompanyUserId AND t.TenantId = cu.TenantId
+                    WHERE cu.TenantId=@tid
+                    ORDER BY u.FullName`;
+    const r=await rq.query(sqlTxt);
+    await connector.disconnect();
+    const rows = (r.recordset||[]).map(row=>{
+      // Calculate basic salary based on pay type and frequency
+      let basic = Number(row.MTD_Gross||0);
+      
+      // If no MTD_Gross but we have salary info, calculate it
+      if (!basic && row.Salary) {
+        basic = Number(row.Salary||0);
+        // Adjust based on pay frequency if needed
+        // Monthly = full salary, Semi-Monthly = half, Bi-Weekly = salary/26*12, Weekly = salary/52*12
+        const freq = (row.PayFrequency||'').toLowerCase();
+        if (freq === 'semi-monthly') basic = basic / 2;
+        else if (freq === 'bi-weekly') basic = basic / 26 * 12;
+        else if (freq === 'weekly') basic = basic / 52 * 12;
+      }
+      
+      // Calculate deductions - use actual values or estimate
+      let tax = Number(row.MTD_State||0) + Number(row.MTD_Federal||0);
+      if (!tax) {
+        // Use withholding amounts if available
+        tax = Number(row.FederalWithholding||0) + Number(row.StateWithholding||0);
+      }
+      
+      const fica = Number(row.MTD_Fica||0) || (basic * 0.0765); // 7.65% FICA if not set
+      const other = Number(row.MTD_Other||0) || Number(row.Deductions||0);
+      const absentDays = 0;
+      const absentDed = 0;
+      const advDed = 0;
+      const net = basic - tax - fica - other - absentDed - advDed;
+      return {
+        EmployeeId: row.EmployeeId,
+        EmployeeName: row.EmployeeName,
+        Period: period,
+        BasicSalary: basic,
+        Tax: tax,
+        Fica: fica,
+        AbsentDays: absentDays,
+        AbsentDeduction: absentDed,
+        AdvanceDeduction: advDed,
+        OtherDeduction: other,
+        NetPay: net > 0 ? net : 0
+      };
+    });
+    return res.json({ success:true, data: rows });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// HR Payroll generate: create AP invoices per employee net pay
+app.post('/api/hr/payroll/generate', requireAuth, async (req, res)=>{
+  try{
+    const body = req.body||{};
+    const period = (body.period||'').toString();
+    if(!period) return res.status(400).json({ success:false, error:'period required' });
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureHrTables(connector); await ensureAccountingTables(connector); await ensureApArTables(connector);
+    const rq=connector.pool.request().input('tid', req.auth.tid||0);
+    const sqlTxt = `SELECT cu.CompanyUserId AS EmployeeId, u.FullName AS EmployeeName,
+                           ISNULL(p.Active, 1) AS Active,
+                           pd.Salary, pd.HourlyRate, pd.PayType, pd.PayFrequency,
+                           t.MTD_Gross, t.MTD_State, t.MTD_Federal, t.MTD_Fica, t.MTD_Other,
+                           pd.FederalWithholding, pd.StateWithholding, pd.Deductions
+                    FROM dbo.CompanyUsers cu
+                    JOIN dbo.Users u ON u.UserId = cu.UserId
+                    LEFT JOIN dbo.HrEmployeeProfile p ON p.EmployeeId = cu.CompanyUserId AND p.TenantId = cu.TenantId
+                    LEFT JOIN dbo.HrEmployeePayDetails pd ON pd.EmployeeId = cu.CompanyUserId AND pd.TenantId = cu.TenantId
+                    LEFT JOIN dbo.HrEmployeeTotals t ON t.EmployeeId = cu.CompanyUserId AND t.TenantId = cu.TenantId
+                    WHERE cu.TenantId=@tid
+                    ORDER BY u.FullName`;
+    const r=await rq.query(sqlTxt);
+    const rows = (r.recordset||[]).map(row=>{
+      // Calculate basic salary based on pay type and frequency
+      let basic = Number(row.MTD_Gross||0);
+      
+      // If no MTD_Gross but we have salary info, calculate it
+      if (!basic && row.Salary) {
+        basic = Number(row.Salary||0);
+        // Adjust based on pay frequency if needed
+        const freq = (row.PayFrequency||'').toLowerCase();
+        if (freq === 'semi-monthly') basic = basic / 2;
+        else if (freq === 'bi-weekly') basic = basic / 26 * 12;
+        else if (freq === 'weekly') basic = basic / 52 * 12;
+      }
+      
+      // Calculate deductions
+      let tax = Number(row.MTD_State||0) + Number(row.MTD_Federal||0);
+      if (!tax) {
+        tax = Number(row.FederalWithholding||0) + Number(row.StateWithholding||0);
+      }
+      
+      const fica = Number(row.MTD_Fica||0) || (basic * 0.0765);
+      const other = Number(row.MTD_Other||0) || Number(row.Deductions||0);
+      const absentDays = 0;
+      const absentDed = 0;
+      const advDed = 0;
+      const net = basic - tax - fica - other - absentDed - advDed;
+      return {
+        EmployeeId: row.EmployeeId,
+        EmployeeName: row.EmployeeName,
+        Period: period,
+        BasicSalary: basic,
+        Tax: tax,
+        Fica: fica,
+        AbsentDays: absentDays,
+        AbsentDeduction: absentDed,
+        AdvanceDeduction: advDed,
+        OtherDeduction: other,
+        NetPay: net > 0 ? net : 0
+      };
+    });
+    // Compute due date as last day of the selected month, if possible
+    let dueDate = null;
+    try{
+      const parts = period.split('-');
+      const yy = parseInt(parts[0]||'');
+      const mm = parseInt(parts[1]||'');
+      if(yy && mm){
+        dueDate = new Date(yy, mm, 0); // JS: day 0 of next month index = last day of current month
+      }
+    }catch(e){}
+    let created = 0;
+    for(const row of rows){
+      const amt = Number(row.NetPay||0);
+      if(!amt) continue;
+      const orderId = `PAY-${period}-${row.EmployeeId}`;
+      const productName = `Salary ${period}`;
+      const supplierName = row.EmployeeName || 'Employee';
+      const ins = connector.pool.request();
+      ins.input('tid', req.auth.tid||0)
+        .input('OrderId', orderId)
+        .input('ProductName', productName)
+        .input('DueDate', dueDate)
+        .input('SupplierName', supplierName)
+        .input('Amount', amt)
+        .input('DocUrl', null)
+        .input('Notes', 'Payroll generated from HR module')
+        .input('uid', req.auth.uid||null);
+      await ins.query("INSERT INTO dbo.APInvoices(TenantId,OrderId,ProductName,DueDate,SupplierName,Amount,DocUrl,Notes,CreatedBy) VALUES(@tid,@OrderId,@ProductName,@DueDate,@SupplierName,@Amount,@DocUrl,@Notes,@uid)");
+      created++;
+    }
+    await connector.disconnect();
+    return res.json({ success:true, count: created });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// DEV/TEST helper: seed a flat Month-To-Date Gross salary for every employee
+// so that Payroll Preview/Generate can be tested without manually entering
+// totals. This is not exposed in the UI and can be removed in production.
+app.post('/api/hr/payroll/seed-salary', requireAuth, async (req, res)=>{
+  try{
+    const body = req.body || {};
+    const salary = body.amount != null ? Number(body.amount) : 20000;
+    if(!salary || isNaN(salary) || salary <= 0){
+      return res.status(400).json({ success:false, error:'amount must be a positive number' });
+    }
+    const connector = new AzureSQLConnector();
+    await connector.connect();
+    await ensureHrTables(connector);
+    const tid = req.auth.tid || 0;
+    // Load all employees for this tenant
+    const r = await connector.pool.request().input('tid', tid)
+      .query('SELECT CompanyUserId FROM dbo.CompanyUsers WHERE TenantId=@tid');
+    const employees = r.recordset || [];
+    let updated = 0;
+    for(const row of employees){
+      const empId = row.CompanyUserId;
+      if(!empId) continue;
+      const rq = connector.pool.request();
+      rq.input('tid', tid)
+        .input('EmployeeId', empId)
+        .input('MTD_Gross', salary);
+      await rq.query(`MERGE dbo.HrEmployeeTotals AS t
+        USING (SELECT @tid AS TenantId, @EmployeeId AS EmployeeId) s
+        ON t.TenantId=s.TenantId AND t.EmployeeId=s.EmployeeId
+        WHEN MATCHED THEN UPDATE SET MTD_Gross=@MTD_Gross, UpdatedAt=GETDATE()
+        WHEN NOT MATCHED THEN INSERT(TenantId,EmployeeId,MTD_Gross)
+          VALUES(@tid,@EmployeeId,@MTD_Gross);`);
+      updated++;
+    }
+    await connector.disconnect();
+    return res.json({ success:true, amount: salary, employees: updated });
   }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
 });
 
@@ -2665,12 +3755,16 @@ app.post('/api/crm/email', requireAuth, express.json({ limit:'2mb' }), async (re
     const body = (p.body||'').toString();
     const attachments = Array.isArray(p.attachments)? p.attachments: [];
     const attachmentsJson = attachments.length? JSON.stringify(attachments): null;
+
+    // Always store the email in the local Emails table so the mailbox UI works,
+    // and, when the folder is "Sent" and SMTP is configured, also send it out
+    // via the same nodemailer transporter that is used for auth emails.
     const connector=new AzureSQLConnector(); await connector.connect(); await ensureEmailTables(connector);
     const rq = connector.pool.request()
       .input('tid', req.auth.tid||0)
       .input('uid', req.auth.uid||null)
       .input('folder', folder)
-      .input('from', null)
+      .input('from', process.env.SMTP_FROM || 'noreply@complytex.com')
       .input('to', toAddresses||null)
       .input('cc', ccAddresses)
       .input('sub', subject||null)
@@ -2682,7 +3776,47 @@ app.post('/api/crm/email', requireAuth, express.json({ limit:'2mb' }), async (re
                  SELECT SCOPE_IDENTITY() AS Id`;
     const r = await rq.query(sql);
     await connector.disconnect();
-    return res.json({ success:true, id: r.recordset[0].Id });
+
+    const dbId = r.recordset[0].Id;
+
+    // If this is a real sent email and SMTP is available, send it now.
+    if (folder === 'Sent' && transporter && toAddresses) {
+      try {
+        // Build nodemailer attachments from uploaded files (stored under /public)
+        let nmAttachments = undefined;
+        if (attachments && attachments.length) {
+          const path = require('path');
+          nmAttachments = attachments.map(a => {
+            const url = (a && a.url) || '';
+            const rel = url.startsWith('/') ? url : ('/' + url);
+            return {
+              filename: a.name || path.basename(rel),
+              path: path.join(__dirname, '..', 'public', rel.replace(/^\/+/, ''))
+            };
+          });
+        }
+
+        const plainText = body
+          ? body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+          : '';
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || 'noreply@complytex.com',
+          to: toAddresses,
+          cc: ccAddresses || undefined,
+          subject: subject || '',
+          text: plainText || subject || '',
+          html: body || undefined,
+          attachments: nmAttachments
+        });
+      } catch (err) {
+        console.error('❌ Failed to send CRM email via SMTP:', err.message);
+        // Surface a clear error so the user knows the email was not delivered.
+        return res.status(500).json({ success:false, error:'Email was saved to Sent Items but SMTP delivery failed: '+err.message, id: dbId });
+      }
+    }
+
+    return res.json({ success:true, id: dbId });
   }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
 });
 
@@ -3294,6 +4428,16 @@ initSafetyPool()
     setupSafetyRoutes(app, pool);
     // Safety Agent (document ingestion with approval)
     try { require('./safety-agent-api').setupSafetyAgentRoutes(app, pool, requireAuth); } catch (e) { console.warn('SafetyAgent not loaded:', e.message); }
+    // Water Management Routes
+    try { 
+      const { setupWaterManagementRoutes } = require('./routes/water-management');
+      setupWaterManagementRoutes(app, pool);
+    } catch (e) { console.warn('Water Management API not loaded:', e.message); }
+    // Waste Management Routes
+    try { 
+      const { setupWasteManagementRoutes } = require('./routes/waste-management');
+      setupWasteManagementRoutes(app, pool);
+    } catch (e) { console.warn('Waste Management API not loaded:', e.message); }
     return autoSeedDemoIfNeeded();
   })
   .then(() => {

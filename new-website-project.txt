@@ -1,0 +1,98 @@
+New Website Project for SaaS Agent
+=================================
+
+1. Purpose
+----------
+Create a separate, public-facing website for the existing "SaaS Agent" application. The new site will:
+- Explain what the SaaS Agent does (Azure SQL–backed compliance / operations assistant).
+- Provide marketing and onboarding content (features, pricing, FAQs, contact, demos).
+- Offer a clear call-to-action to sign up / log in to the existing application.
+- Optionally show limited, read-only information pulled from the existing backend (e.g., system status).
+
+This website will be a separate project/repository from the current `saas-agent` backend/web-server code.
+
+2. High-Level Requirements
+--------------------------
+- Host a marketing/landing experience for the SaaS Agent product.
+- Keep it independent of the backend runtime (can be deployed as static files or through a simple Node host).
+- Make it easy to update copy (text), screenshots, and links.
+- Be responsive and mobile-friendly.
+- SEO friendly (basic meta tags, open graph tags, human-readable URLs).
+- Provide links into the existing app (e.g., "Go to App", "Login", "Register").
+
+3. Proposed Tech Stack (can be adjusted later)
+----------------------------------------------
+- Frontend-only project (no direct DB access).
+- Any of the following is acceptable and can be finalized later:
+  - Next.js + React, or
+  - React SPA (e.g., Vite + React), or
+  - Simple static HTML/CSS/JavaScript.
+- Styling: Tailwind CSS or a lightweight component library (Bootstrap/Chakra/etc.) for fast layout.
+
+4. Project Structure (suggested)
+--------------------------------
+Root folder example: `saas-agent-website/`
+
+- `public/` – static assets (logos, screenshots, favicon).
+- `src/` – page components and layout.
+- `src/pages/` or `src/routes/` – individual pages depending on framework.
+- `src/components/` – shared UI components (navbar, footer, cards, pricing tables).
+- `src/styles/` – global styles or Tailwind config.
+- `package.json` – build scripts and dependencies (if using a JS framework).
+
+5. Core Pages
+-------------
+- Home
+  - Clear value proposition for SaaS Agent.
+  - Hero section with headline, subheadline, and primary CTA (e.g., "Start Free Trial" or "Go to App").
+  - Short explanation of how the Azure SQL integration and agents help automate compliance/operations.
+
+- Features
+  - Describe key capabilities (multi-tenant support, Azure SQL monitoring, user management, roles/permissions, multi-agent automation, etc.).
+  - Use simple, non-technical descriptions for business users.
+
+- Pricing
+  - Plans overview (e.g., Starter, Business, Enterprise) with placeholders for final prices.
+  - Explain what is included in each plan (users/tenants, modules, support level).
+  - Button or link that directs to the billing / sign-up flow of the main app.
+
+- About
+  - Background on the product and purpose.
+  - Trust-building sections (security, use of Azure SQL, data privacy notes).
+
+- Contact / Support
+  - Contact form that sends email to a configured address or calls a simple API endpoint.
+  - Links to support resources and documentation (or to the existing app's support area).
+
+- Login / Sign Up Links
+  - Buttons that link to the existing application routes, e.g. `/login` and `/register` on the current SaaS Agent web server.
+
+6. Integration with Existing Application
+----------------------------------------
+- No direct database access from the new website.
+- Interactions with the existing system should be via HTTP links or (optional) lightweight JSON APIs exposed by the current `saas-agent` web server, such as:
+  - System status endpoint (e.g., `/api/agent/status`) to show basic uptime/version info.
+  - Sign-in/sign-up routes (`/login`, `/register`) opening in same or new tab.
+- The new site should not require any secrets or database credentials.
+
+7. Non-Goals
+------------
+- Do not re-implement the full application UI or business logic inside this website project.
+- Do not connect directly to Azure SQL from the website.
+- Do not include internal admin tools; this is a public-facing/marketing site, not an internal dashboard.
+
+8. Deployment Expectations
+--------------------------
+- The site should be buildable into static assets (HTML/CSS/JS) so it can be hosted on:
+  - A static host (e.g., Azure Static Web Apps, GitHub Pages, or similar), or
+  - A simple Node/Express or Nginx host.
+- Basic environment configuration:
+  - Base URL of existing SaaS application (e.g., `https://app.example.com`) so links go to the right place.
+
+9. Next Steps
+-------------
+- Choose framework (Next.js / React SPA / static HTML) and finalize project scaffold.
+- Design initial visual layout (branding, colors, logo, typography).
+- Implement core pages and navigation.
+- Wire links to existing SaaS Agent login/register and any public API endpoints.
+- Prepare content (copywriting) for each section and add real screenshots.

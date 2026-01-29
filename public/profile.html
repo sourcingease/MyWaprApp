@@ -11,6 +11,7 @@
     /* Theme pulled from Safety Dashboard */
     .sidebar-toggle{position:fixed;left:10px;top:10px;width:40px;height:40px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;z-index:1001;box-shadow:0 2px 8px rgba(0,0,0,.1)}
     .sidebar-toggle:hover{background:#f8fafc;border-color:#0ea5e9;color:#0ea5e9}
+    .sidebar-toggle-right{left:auto;right:10px}
 .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:16px 24px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-bottom:3px solid #0ea5e9}
     .header-left{display:flex;align-items:center;gap:16px}
     .logo-small{max-height:40px;width:auto}
@@ -50,6 +51,16 @@
     .biz-tab:hover{ background:#fff }
     .biz-tab.active{ background:#fff; color:#0f172a; border-color:#94a3b8 }
 
+    /* Assign Role layout */
+    .assign-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:flex-start}
+    .assign-list{border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;max-height:260px;overflow:auto}
+    .assign-item{padding:8px 10px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:6px;cursor:pointer;font-size:13px}
+    .assign-item:last-child{border-bottom:none}
+    .assign-item:hover{background:#e0f2fe}
+    .assign-item.selected{background:#0ea5e9;color:#fff}
+    .assign-item.selected .assign-chip{background:rgba(15,23,42,0.16);color:#e5f3ff}
+    .assign-chip{font-size:11px;padding:2px 6px;border-radius:999px;background:rgba(15,23,42,0.06);color:#475569;white-space:nowrap}
+
     /* Hide left tabs grid; keep left panel for agent */
     .safety-pane .action-buttons{ display:none !important; }
     .dashboard-card.safety-pane{ padding:16px !important; }
@@ -83,6 +94,7 @@
 </head>
 <body>
   <button class="sidebar-toggle" onclick="toggleProfileSidebar()">☰</button>
+  <button class="sidebar-toggle sidebar-toggle-right" onclick="toggleProfileRightPane()">⮞</button>
   <div class="dashboard-header">
     <div class="header-left">
       <img src="/logo.png" alt="ComplytEX" class="logo-small">
@@ -119,12 +131,38 @@
       <div id="profilePane" style="display:none"></div>
 
       <div id="companyPane">
-        <div class="row">
-          <div class="full"><label>Head Office Address 1 *</label><input id="cpAddress1"></div>
-          <div class="full"><label>Address 2</label><input id="cpAddress2"></div>
-          <div><label>City</label><input id="cpCity"></div>
-          <div><label>State / Province</label><input id="cpState"></div>
-          <div><label>Postal Code</label><input id="cpPostal"></div>
+        <!-- Head Office location row: responsive 4-column grid on desktop, stacks on small screens -->
+        <div class="row" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+          <div><label>Country</label>
+            <select id="cpCountry" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option value="">Select Country</option>
+            </select>
+          </div>
+          <div><label>State / Province</label>
+            <select id="cpState" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option value="">Select State/Province</option>
+            </select>
+          </div>
+          <div><label>City</label>
+            <select id="cpCity" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option value="">Select City</option>
+            </select>
+          </div>
+          <div><label>Postal Code</label><input id="cpPostal" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></div>
+        </div>
+        <!-- Head Office address row -->
+        <div class="row" style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px">
+          <div class="full"><label>Head Office Address 1 *</label><input id="cpAddress1" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></div>
+          <div class="full"><label>Address 2</label><input id="cpAddress2" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></div>
+        </div>
+        <!-- New uploads for Head Office map & structure -->
+        <div class="row full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+          <div class="full"><label>Head Office Map / Location Plan</label>
+            <input id="cpMapFile" type="file" accept="image/*,application/pdf" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+          </div>
+          <div class="full"><label>Head Office Structure / Layout</label>
+            <input id="cpStructureFile" type="file" accept="image/*,application/pdf" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+          </div>
         </div>
         <div class="muted" style="margin:6px 0 10px">This address will show in your Invoices</div>
         <div class="row">
@@ -186,11 +224,27 @@
       <!-- Factory/Land Pane -->
       <div id="factoryPane" style="display:none">
         <div class="row">
+          <div><label>Country</label>
+            <select id="flCountry" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option value="">Select Country</option>
+            </select>
+          </div>
+          <div><label>State / Province</label>
+            <select id="flState" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option value="">Select State/Province</option>
+            </select>
+          </div>
+          <div><label>City</label>
+            <select id="flCity" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+              <option value="">Select City</option>
+            </select>
+          </div>
+          <div><label>Postal Code</label><input id="flPostal"></div>
           <div class="full"><label>Factory Address 1</label><input id="flAddress1"></div>
           <div class="full"><label>Factory Address 2</label><input id="flAddress2"></div>
-          <div><label>City</label><input id="flCity"></div>
-          <div><label>State / Province</label><input id="flState"></div>
-          <div><label>Postal Code</label><input id="flPostal"></div>
+          <!-- New uploads for factory / land -->
+          <div class="full"><label>Factory Map / Picture</label><input id="flMapFile" type="file" accept="image/*,application/pdf"></div>
+          <div class="full"><label>Structure of Factory / Land</label><input id="flStructureFile" type="file" accept="image/*,application/pdf"></div>
           <div><label>Land Area</label><input id="flArea" type="number" step="0.01"></div>
           <div><label>Area Unit</label>
             <select id="flAreaUnit" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
@@ -206,6 +260,50 @@
       </div>
 
       <!-- Setup Pane removed per request: default to Add Space when Setup is clicked -->
+
+      <!-- Assign Role Pane -->
+      <div id="assignRolePane" style="display:none">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+          <div style="font-weight:600;font-size:14px">Assign Role to User</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input id="arNewRoleName" placeholder="New role name" style="padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;min-width:160px">
+            <button class="btn" id="arAddRoleBtn" type="button">Add Role</button>
+          </div>
+        </div>
+        <div class="assign-grid">
+          <div>
+            <div style="font-weight:600;margin-bottom:4px">Employees</div>
+            <input id="arEmpSearch" placeholder="Search employees..." style="padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;width:100%">
+            <div id="arEmpList" class="assign-list" style="margin-top:6px"></div>
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:4px">Roles</div>
+            <input id="arRoleSearch" placeholder="Search roles..." style="padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;width:100%">
+            <div id="arRoleList" class="assign-list" style="margin-top:6px"></div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;justify-content:flex-start">
+          <button class="btn primary" id="arAssignBtn" type="button">Assign Selected</button>
+          <div class="muted" id="arStatus" style="flex:1;text-align:left"></div>
+        </div>
+        <div style="margin-top:16px">
+          <div style="font-weight:600;margin-bottom:4px">Current Assignments</div>
+          <div class="data-table-container">
+            <table class="data-table" id="arAssignmentsTable" style="width:100%">
+              <thead>
+                <tr>
+                  <th style="text-align:left">Employee</th>
+                  <th style="text-align:left">Role</th>
+                  <th style="width:120px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="arAssignmentsBody">
+                <tr><td colspan="3" style="text-align:center;padding:12px;color:#94a3b8">No assignments yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       <!-- Spaces Pane -->
       <div id="spacesPane" style="display:none">
@@ -335,6 +433,21 @@
               <div><label>Ventilation</label><input id="spVentilation"></div>
               <div><label># Doors</label><input id="spDoors" type="number" value="0"></div>
               <div><label># Windows</label><input id="spWindows" type="number" value="0"></div>
+              <!-- Load capacity row -->
+              <div class="full" style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+                <div><label>Load space can bear</label><input id="spLoadCapacity" type="number" step="0.01" placeholder="e.g. 2.5"></div>
+                <div><label>&nbsp;</label>
+                  <select id="spLoadCapacityUnit" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                    <option>kN/m²</option>
+                    <option>kg/m²</option>
+                    <option>tonnes</option>
+                  </select>
+                </div>
+              </div>
+              <!-- Uploads for space visuals -->
+              <div class="full"><label>Picture of Space</label><input id="spPictureFile" type="file" accept="image/*"></div>
+              <div class="full"><label>Structure Picture</label><input id="spStructurePicFile" type="file" accept="image/*"></div>
+              <div class="full"><label>Structure Drawing (image/PDF)</label><input id="spStructureDrawingFile" type="file" accept="image/*,application/pdf"></div>
               <div class="full"><label>Emergency Exit plan (image)</label><input id="spExitFile" type="file" accept="image/*"></div>
             </div>
             <div class="actions"><button class="btn" id="spCancel" type="button">Cancel</button><button class="btn primary" id="spSave" type="button">Save</button></div>
@@ -389,6 +502,10 @@
               <div><label>Purchase Date</label><input id="asDate" type="date"></div>
               <div><label>Purchase Price</label><input id="asPrice" type="number" step="0.01" value="0"></div>
               <div><label>Supplier</label><input id="asSupplier"></div>
+              <!-- New fields -->
+              <div><label>Weight</label><input id="asWeight" type="number" step="0.01" placeholder="0.00"></div>
+              <div class="full"><label>Upload Invoice</label><input id="asInvoiceFile" type="file" accept=".pdf,.jpg,.jpeg,.png"></div>
+              <div class="full"><label>Asset Picture</label><input id="asImageFile" type="file" accept="image/*"></div>
               <div class="full"><label>Notes</label><input id="asNotes"></div>
             </div>
             <div class="actions"><button class="btn" id="asCancel" type="button">Cancel</button><button class="btn primary" id="asSave" type="button">Save</button></div>
@@ -423,15 +540,40 @@
                   <option>Fulfillment</option>
                 </select>
               </div>
+              <!-- New row: physical size of warehouse -->
+              <div class="full" style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+                <div><label>Size of Warehouse</label><input id="whmSize" placeholder="e.g. 20,000"></div>
+                <div><label>Size Unit</label>
+                  <select id="whmSizeUnit" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                    <option>Square Feet</option>
+                    <option>Square Meter</option>
+                    <option>Acre</option>
+                    <option>Hectare</option>
+                  </select>
+                </div>
+              </div>
               <div class="full"><label>Address 1</label><input id="whmAddress1"></div>
               <div class="full"><label>Address 2</label><input id="whmAddress2"></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px" class="full">
-                <div><label>City</label><input id="whmCity"></div>
-                <div><label>State</label><input id="whmState"></div>
-                <div><label>Postal Code</label><input id="whmPostal"></div>
+              <!-- New row: uploads for map/picture and structure -->
+              <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label>Warehouse Map / Picture</label><input id="whmMapFile" type="file" accept="image/*,application/pdf"></div>
+                <div><label>Structure of Warehouse</label><input id="whmStructureFile" type="file" accept="image/*,application/pdf"></div>
               </div>
-              <div><label>Country</label>
-                <select id="whmCountry" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></select>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px" class="full">
+                <div><label>Country</label>
+                  <select id="whmCountry" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></select>
+                </div>
+                <div><label>State</label>
+                  <select id="whmState" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                    <option value="">Select State/Province</option>
+                  </select>
+                </div>
+                <div><label>City</label>
+                  <select id="whmCity" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                    <option value="">Select City</option>
+                  </select>
+                </div>
+                <div><label>Postal Code</label><input id="whmPostal"></div>
               </div>
             </div>
             <div class="actions" style="justify-content:flex-end;gap:8px">
@@ -468,13 +610,91 @@
         const grid = document.querySelector('.dashboard-content');
         const working = grid?.querySelector('.dashboard-card.working-pane');
         if(!grid || !working) return;
+
+        // Detect if Business Setup is embedded (e.g. inside Safety dashboard)
+        let isEmbedded = false;
+        try{
+          const params = new URLSearchParams(location.search);
+          if (params.get('embedded') === '1') isEmbedded = true;
+        }catch(_){ }
+
         let bar = document.querySelector('#topSetupBar');
-        if(!bar){ bar = document.createElement('div'); bar.className='top-setup-tabs'; bar.id='topSetupBar'; const hdr = document.querySelector('.dashboard-header'); hdr?.insertAdjacentElement('afterend', bar); }
+        if(!bar){
+          bar = document.createElement('div');
+          bar.className='top-setup-tabs';
+          bar.id='topSetupBar';
+          const hdr = document.querySelector('.dashboard-header');
+          hdr?.insertAdjacentElement('afterend', bar);
+        }
+
         function addBtn(ico,lbl,fn){ const item=document.createElement('button'); item.className='sm-tab'; const box=document.createElement('div'); box.className='sm-icon-box'; const i=document.createElement('div'); i.className='sm-ico'; i.textContent=ico; box.appendChild(i); item.appendChild(box); const s=document.createElement('div'); s.className='sm-lbl'; s.textContent=lbl; item.appendChild(s); item.onclick=fn; bar.appendChild(item); }
-        function showTopBarProfile(){ bar.innerHTML=''; addBtn('🏢','Profile', ()=>{ try{ leftShowProfile(); renderProfileBizTabs(); showTab('company'); }catch(e){} }); addBtn('⚙️','Setup', ()=>{ try{ leftShowSetup(); showTab('setup'); showTopBarSetup(); }catch(e){} }); }
-        function showTopBarSetup(){ bar.innerHTML=''; addBtn('⬅️','Back', ()=>{ showTopBarProfile(); }); addBtn('🏢','Add Space', ()=>showTab('spaces')); addBtn('👥','Assign Role', ()=>alert('Coming soon')); addBtn('🏷️','Product Type', ()=>alert('Coming soon')); addBtn('📦','Add Assets', ()=>showTab('assets')); addBtn('🧑‍💼','Add User', ()=>alert('Coming soon')); addBtn('🧾','Add Customer', ()=>alert('Coming soon')); addBtn('🏅','Certification', ()=>showTab('certs')); addBtn('🏭','Supplier/Mfr', ()=>alert('Coming soon')); addBtn('🗓️','Planning', ()=>alert('Coming soon')); addBtn('📦','Packaging', ()=>alert('Coming soon')); addBtn('🌱','Sustainability', ()=>alert('Coming soon')); addBtn('🤝','Add Union', ()=>showTab('unions')); }
-        window.showTopBarProfile = showTopBarProfile; window.showTopBarSetup = showTopBarSetup;
-        showTopBarProfile();
+        function showTopBarProfile(){
+          bar.innerHTML='';
+          addBtn('🏢','Profile', ()=>{ try{ leftShowProfile(); renderProfileBizTabs(); showTab('company'); }catch(e){} });
+          addBtn('⚙️','Setup',   ()=>{ try{ leftShowSetup(); showTab('setup'); showTopBarSetup(); }catch(e){} });
+        }
+        function showTopBarSetup(){
+          bar.innerHTML='';
+          addBtn('⬅️','Back',          ()=>{ showTopBarProfile(); });
+          addBtn('🏢','Add Space',      ()=>showTab('spaces'));
+          addBtn('👥','Assign Role',    ()=>showTab('assign-role'));
+          addBtn('📦','Add Assets',     ()=>showTab('assets'));
+          addBtn('🏅','Certification',  ()=>showTab('certs'));
+          addBtn('🤝','Add Union',      ()=>showTab('unions'));
+          // New: direct quick links to Accounting: Banks and Chart of Accounts
+          addBtn('🏦','Bank', ()=>{
+            try{
+              const bankUrl = '/accounting/banks.html';
+              // When embedded, open Banks directly in the center working pane so
+              // Setup iconic tabs remain visible. Do not use mlOpenInWorkingArea
+              // here because that swaps in generic accounting button tabs.
+              if (isEmbedded) {
+                const pane = document.querySelector('.working-pane');
+                if (pane) {
+                  pane.style.display='block';
+                  pane.style.alignItems='stretch';
+                  pane.style.justifyContent='flex-start';
+                  pane.style.padding='0';
+                  pane.innerHTML = '<iframe src="'+bankUrl+'?embedded=1" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe>';
+                  return;
+                }
+              }
+              // Standalone: navigate normally.
+              location.href = bankUrl;
+            }catch(e){}
+          });
+          addBtn('📊','Chart of Account', ()=>{
+            try{
+              const coaUrl = '/accounting/chart-of-accounts.html';
+              // When Business Setup is embedded (e.g. inside Safety dashboard),
+              // open Chart of Accounts directly in the center working pane so
+              // the Setup iconic tabs stay visible. Avoid mlOpenInWorkingArea,
+              // which replaces the bar with generic accounting button tabs.
+              if (isEmbedded) {
+                const pane = document.querySelector('.working-pane');
+                if (pane) {
+                  pane.style.display='block';
+                  pane.style.alignItems='stretch';
+                  pane.style.justifyContent='flex-start';
+                  pane.style.padding='0';
+                  pane.innerHTML = '<iframe src="'+coaUrl+'?embedded=1" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe>';
+                  return;
+                }
+              }
+              // Standalone: navigate normally.
+              location.href = coaUrl;
+            }catch(e){}
+          });
+        }
+        window.showTopBarProfile = showTopBarProfile;
+        window.showTopBarSetup   = showTopBarSetup;
+        // If embedded, start directly in Setup mode (outer shell already
+        // provides Profile/Setup switch). Otherwise default to Profile mode.
+        if (isEmbedded) {
+          showTopBarSetup();
+        } else {
+          showTopBarProfile();
+        }
         window.forceTopBarProfile = ()=>{ try{ showTopBarProfile(); }catch(e){} };
       }catch(e){}
     })();
@@ -577,9 +797,9 @@
         // When Business Setup is embedded inside Safety dashboard, hide its own left tabs/agent card
         const left=document.querySelector('.dashboard-card.safety-pane');
         if(left) left.style.display='none';
-        // Also hide the local sidebar toggle (hamburger) inside the embedded frame
-        const toggleBtn=document.querySelector('.sidebar-toggle');
-        if(toggleBtn) toggleBtn.style.display='none';
+        // Also hide any local sidebar toggles (hamburger buttons) inside the embedded frame
+        const toggleBtns=document.querySelectorAll('.sidebar-toggle');
+        toggleBtns.forEach(btn=>btn.style.display='none');
         // Collapse layout to a single column so the working pane uses full width
         const grid=document.querySelector('.dashboard-content');
         if(grid) grid.style.gridTemplateColumns='1fr';
@@ -590,7 +810,49 @@
         try{ showAccountingTabs(); }catch(e){}
       }
     })();
-    function toggleProfileSidebar(){ const pane=document.querySelector('.safety-pane'); if(!pane) return; pane.style.display = (pane.style.display==='none') ? '' : 'block'; }
+
+    function adjustProfileLayout(){
+      const grid=document.querySelector('.dashboard-content');
+      if(!grid) return;
+      const left=document.querySelector('.dashboard-card.safety-pane');
+      const right=document.querySelector('.dashboard-card.proc-pane');
+      const working=document.querySelector('.dashboard-card.working-pane');
+      const leftVisible = !!(left && left.style.display !== 'none');
+      const rightVisible = !!(right && right.style.display !== 'none');
+      // Reset explicit grid-column overrides
+      if(left) left.style.gridColumn='';
+      if(right) right.style.gridColumn='';
+      if(working) working.style.gridColumn='';
+      if(leftVisible && rightVisible){
+        grid.style.gridTemplateColumns='1fr 4fr 1fr';
+        if(left) left.style.gridColumn='1';
+        if(working) working.style.gridColumn='2';
+        if(right) right.style.gridColumn='3';
+      } else if(leftVisible && !rightVisible){
+        grid.style.gridTemplateColumns='1fr 4fr';
+        if(left) left.style.gridColumn='1';
+        if(working) working.style.gridColumn='2';
+      } else if(!leftVisible && rightVisible){
+        grid.style.gridTemplateColumns='4fr 1fr';
+        if(working) working.style.gridColumn='1';
+        if(right) right.style.gridColumn='2';
+      } else {
+        grid.style.gridTemplateColumns='1fr';
+        if(working) working.style.gridColumn='1';
+      }
+    }
+    function toggleProfileSidebar(){
+      const pane=document.querySelector('.dashboard-card.safety-pane');
+      if(!pane) return;
+      pane.style.display = (pane.style.display==='none') ? '' : 'none';
+      adjustProfileLayout();
+    }
+    function toggleProfileRightPane(){
+      const pane=document.querySelector('.dashboard-card.proc-pane');
+      if(!pane) return;
+      pane.style.display = (pane.style.display==='none') ? '' : 'none';
+      adjustProfileLayout();
+    }
 
     // Left panel: capture default and support sub-tabs for Company Profile, Setup (icons live in left)
     let __leftDefaultHTML=null; let __leftHeaderDefault='Business Setup Tabs';
@@ -604,16 +866,15 @@
     function leftShowSetup(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Setup'; grid.innerHTML = `
         <button class=\"action-btn\" id=\"left_back_setup\"><div class=\"action-icon\">⬅️</div><div class=\"action-label\">Back</div></button>
         <button class=\"action-btn\" id=\"left_add_space\"><div class=\"action-icon\">🏢</div><div class=\"action-label\">Add Space</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">👥</div><div class=\"action-label\">Assign Role to User</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">🏷️</div><div class=\"action-label\">Add Product Type</div></button>
+        <button class=\"action-btn\" id=\"left_assign_role\"><div class=\"action-icon\">👥</div><div class=\"action-label\">Assign Role to User</div></button>
         <button class=\"action-btn\" id=\"left_add_assets\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Add Assets</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">🧑‍💼</div><div class=\"action-label\">Add User</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">🧾</div><div class=\"action-label\">Add your Customer</div></button>
-        <button class=\"action-btn\" id=\"left_add_cert\"><div class=\"action-icon\">🏅</div><div class=\"action-label\">Add Certification</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">🏭</div><div class=\"action-label\">Add Supplier / Mfr</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">🗓️</div><div class=\"action-label\">Planning Setup</div></button>
-        <button class=\"action-btn\"><div class=\"action-icon\">📦</div><div class=\"action-label\">Packaging Setup</div></button>
-        <button class=\"action-btn\" style=\"grid-column:1 / -1\"><div class=\"action-icon\">🌱</div><div class=\"action-label\">Set Sustainability Goal</div></button>`; const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); setWorkHeading('Add Space'); loadSpaces(); }; const bk=document.getElementById('left_back_setup'); if(bk) bk.onclick=()=>{ leftShowMain(); showTab('company'); }; const ga=document.getElementById('left_add_assets'); if(ga) ga.onclick=()=>{ showTab('assets'); loadAssets(); }; const gc=document.getElementById('left_add_cert'); if(gc) gc.onclick=()=>{ showTab('certs'); loadCerts(); }; }catch(e){} }
+        <button class=\"action-btn\" id=\"left_add_cert\"><div class=\"action-icon\">🏅</div><div class=\"action-label\">Add Certification</div></button>`;
+      const go=document.getElementById('left_add_space'); if(go) go.onclick=()=>{ showTab('spaces'); setWorkHeading('Add Space'); loadSpaces(); };
+      const bk=document.getElementById('left_back_setup'); if(bk) bk.onclick=()=>{ leftShowMain(); showTab('company'); };
+      const ga=document.getElementById('left_add_assets'); if(ga) ga.onclick=()=>{ showTab('assets'); loadAssets(); };
+      const gc=document.getElementById('left_add_cert'); if(gc) gc.onclick=()=>{ showTab('certs'); loadCerts(); };
+      const ar=document.getElementById('left_assign_role'); if(ar) ar.onclick=()=>{ showTab('assign-role'); setWorkHeading('Assign Role to User'); };
+    }catch(e){} }
     function leftShowProfile(){ try{ const grid=document.querySelector('.safety-pane .action-buttons'); const hdr=document.querySelector('.safety-pane .card-header'); if(!grid||!hdr) return; hdr.textContent='Company Profile'; grid.innerHTML = `
         <button class="action-btn" id="left_back"><div class="action-icon">⬅️</div><div class="action-label">Back</div></button>
         <button class="action-btn" id="left_head"><div class="action-icon">🏢</div><div class="action-label">Head Office</div></button>
@@ -651,9 +912,10 @@
       const k=document.getElementById('certsPane');
       const f=document.getElementById('factoryPane');
       const u=document.getElementById('unionsPane');
+      const r=document.getElementById('assignRolePane');
       // Adjust second-row tabs based on mode (in setup, hide second row; actions are in top bar)
       // Keep Setup icons in top bar for all setup-related panes
-      if(['setup','spaces','assets','certs'].includes(which)){
+      if(['setup','spaces','assets','certs','unions','assign-role'].includes(which)){
         const tabs=document.getElementById('bizTabs'); if(tabs) { tabs.className='biz-tabs'; tabs.innerHTML=''; }
         if(window.showTopBarSetup) window.showTopBarSetup();
       } else {
@@ -661,7 +923,7 @@
         if(window.showTopBarProfile) window.showTopBarProfile();
       }
       // Hide all panes
-      if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none'; if(a) a.style.display='none'; if(k) k.style.display='none'; if(f) f.style.display='none'; if(u) u.style.display='none';
+      if(p) p.style.display='none'; if(c) c.style.display='none'; if(w) w.style.display='none'; if(s) s.style.display='none'; if(x) x.style.display='none'; if(a) a.style.display='none'; if(k) k.style.display='none'; if(f) f.style.display='none'; if(u) u.style.display='none'; if(r) r.style.display='none';
       if(which==='company'){ setWorkHeading('Business Setup'); if(c) c.style.display=''; setActiveBizTab('head'); }
       else if(which==='warehouses'){ setWorkHeading('Warehouses'); if(w) w.style.display=''; setActiveBizTab('warehouse'); try{ loadWarehouses(); }catch(e){} }
       else if(which==='factory'){ setWorkHeading('Factory / Land'); if(f) f.style.display=''; setActiveBizTab('factory'); }
@@ -669,8 +931,220 @@
       else if(which==='assets'){ setWorkHeading('Assets'); if(a) a.style.display=''; try{ loadAssets(); }catch(e){} }
       else if(which==='certs'){ setWorkHeading('Certifications'); if(k) k.style.display=''; try{ loadCerts(); }catch(e){} }
       else if(which==='unions'){ setWorkHeading('Unions'); if(u) u.style.display=''; try{ loadUnions(); }catch(e){} }
+      else if(which==='assign-role'){ setWorkHeading('Assign Role to User'); if(r) r.style.display=''; try{ ensureAssignRoleInit(); }catch(e){} }
       else { setWorkHeading('Business Setup'); if(c) c.style.display=''; setActiveBizTab('head'); }
     }
+
+    // Assign Role JS (local, client-side)
+    let _arInit = false;
+    let _arEmployees = [];
+    let _arRoles = [];
+    let _arAssignments = [];
+    let _arSelectedEmployeeId = null;
+    let _arSelectedRoleId = null;
+
+    async function loadAssignRoleEmployees(){
+      try{
+        const r = await fetch('/api/hr/employees', { credentials:'include' });
+        const j = await r.json();
+        const rows = (j && j.data) || [];
+        _arEmployees = rows
+          .map(function(x){
+            const id = x.CompanyUserId || x.employeeId || x.EmployeeId || x.Id;
+            if(id===undefined || id===null) return null;
+            const name = x.FullName || x.Name || ((x.FirstName||'') + ' ' + (x.LastName||'')).trim() || ('Employee ' + id);
+            return { id: String(id), name: name };
+          })
+          .filter(Boolean);
+        renderAssignRoleLists();
+      }catch(e){
+        console.error('Failed to load HR employees for Assign Role', e);
+      }
+    }
+
+    function ensureAssignRoleInit(){
+      if(!_arInit){
+        _arInit = true;
+        try{
+          const raw = localStorage.getItem('assignRoleState');
+          if(raw){
+            const s = JSON.parse(raw);
+            _arRoles = Array.isArray(s.roles)? s.roles: [];
+            _arAssignments = Array.isArray(s.assignments)? s.assignments: [];
+          }
+        }catch(e){}
+        if(!_arRoles.length){
+          _arRoles = [
+            { id:'ROLE_ADMIN', name:'Admin' },
+            { id:'ROLE_MANAGER', name:'Manager' },
+            { id:'ROLE_VIEWER', name:'Viewer' }
+          ];
+        }
+        const empList = document.getElementById('arEmpList');
+        if(empList){
+          empList.onclick = function(ev){
+            const row = ev.target.closest('[data-emp-id]');
+            if(!row) return;
+            _arSelectedEmployeeId = row.getAttribute('data-emp-id');
+            renderAssignRoleLists();
+            updateAssignRoleStatus();
+          };
+        }
+        const roleList = document.getElementById('arRoleList');
+        if(roleList){
+          roleList.onclick = function(ev){
+            const row = ev.target.closest('[data-role-id]');
+            if(!row) return;
+            _arSelectedRoleId = row.getAttribute('data-role-id');
+            renderAssignRoleLists();
+            updateAssignRoleStatus();
+          };
+        }
+        const empSearch = document.getElementById('arEmpSearch');
+        if(empSearch) empSearch.oninput = renderAssignRoleLists;
+        const roleSearch = document.getElementById('arRoleSearch');
+        if(roleSearch) roleSearch.oninput = renderAssignRoleLists;
+        const addRoleBtn = document.getElementById('arAddRoleBtn');
+        if(addRoleBtn) addRoleBtn.onclick = function(){
+          const inp = document.getElementById('arNewRoleName');
+          if(!inp) return;
+          const name = inp.value.trim();
+          if(!name){ alert('Enter role name'); return; }
+          const exists = _arRoles.some(r=> (r.name||'').toLowerCase() === name.toLowerCase());
+          if(exists){ alert('Role already exists'); return; }
+          const id = 'ROLE_' + name.toUpperCase().replace(/[^A-Z0-9]+/g,'_');
+          _arRoles.push({ id, name });
+          inp.value='';
+          saveAssignRoleState();
+          renderAssignRoleLists();
+        };
+        const assignBtn = document.getElementById('arAssignBtn');
+        if(assignBtn) assignBtn.onclick = onAssignRoleClick;
+        const tbody = document.getElementById('arAssignmentsBody');
+        if(tbody){
+          tbody.onclick = function(ev){
+            const btn = ev.target.closest('button[data-act]');
+            if(!btn) return;
+            const act = btn.getAttribute('data-act');
+            const id = btn.getAttribute('data-id');
+            if(!id) return;
+            if(act==='unassign'){
+              _arAssignments = _arAssignments.filter(a=> String(a.id)!==String(id));
+              saveAssignRoleState();
+              renderAssignRoleAssignments();
+              renderAssignRoleLists();
+            } else if(act==='edit'){
+              const row = _arAssignments.find(a=> String(a.id)===String(id));
+              if(!row) return;
+              _arSelectedEmployeeId = String(row.employeeId);
+              _arSelectedRoleId = row.roleId;
+              renderAssignRoleLists();
+              updateAssignRoleStatus();
+              const pane=document.getElementById('assignRolePane'); if(pane) pane.scrollIntoView({behavior:'smooth',block:'start'});
+            }
+          };
+        }
+      }
+      // Always refresh employees from HR when opening Assign Role
+      loadAssignRoleEmployees();
+      renderAssignRoleLists();
+      renderAssignRoleAssignments();
+      updateAssignRoleStatus();
+    }
+
+    function saveAssignRoleState(){
+      try{
+        localStorage.setItem('assignRoleState', JSON.stringify({
+          roles:_arRoles,
+          assignments:_arAssignments
+        }));
+      }catch(e){}
+    }
+
+    function renderAssignRoleLists(){
+      const empList = document.getElementById('arEmpList');
+      const roleList = document.getElementById('arRoleList');
+      if(!empList || !roleList) return;
+      const qEmp = (document.getElementById('arEmpSearch')?.value || '').toLowerCase();
+      const qRole = (document.getElementById('arRoleSearch')?.value || '').toLowerCase();
+      const empRows = _arEmployees.filter(e=>{
+        const h = (e.name||'').toLowerCase();
+        return !qEmp || h.includes(qEmp);
+      });
+      const roleRows = _arRoles.filter(r=>{
+        const h = (r.name||'').toLowerCase();
+        return !qRole || h.includes(qRole);
+      });
+      empList.innerHTML = empRows.length? empRows.map(e=>{
+        const asg = _arAssignments.find(a=> a.employeeId===e.id);
+        const roleName = asg? (_arRoles.find(r=> r.id===asg.roleId)?.name || 'Assigned') : '';
+        const selected = e.id===_arSelectedEmployeeId;
+        return `<div class="assign-item${selected?' selected':''}" data-emp-id="${e.id}"><div>${e.name}</div>${roleName?`<div class="assign-chip">${roleName}</div>`:''}</div>`;
+      }).join('') : '<div class="muted" style="padding:8px;text-align:center">No employees</div>';
+      roleList.innerHTML = roleRows.length? roleRows.map(r=>{
+        const selected = r.id===_arSelectedRoleId;
+        const count = _arAssignments.filter(a=> a.roleId===r.id).length;
+        return `<div class="assign-item${selected?' selected':''}" data-role-id="${r.id}"><div>${r.name}</div>${count?`<div class="assign-chip">${count} assigned</div>`:''}</div>`;
+      }).join('') : '<div class="muted" style="padding:8px;text-align:center">No roles</div>';
+    }
+
+    function renderAssignRoleAssignments(){
+      const tbody = document.getElementById('arAssignmentsBody');
+      if(!tbody) return;
+      if(!_arAssignments.length){
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:12px;color:#94a3b8">No assignments yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = _arAssignments.map(a=>{
+        const emp = _arEmployees.find(e=> e.id===a.employeeId);
+        const role = _arRoles.find(r=> r.id===a.roleId);
+        return `<tr>
+          <td>${emp?emp.name:''}</td>
+          <td>${role?role.name:''}</td>
+          <td><button class='btn' data-act='edit' data-id='${a.id}'>Edit</button> <button class='btn' data-act='unassign' data-id='${a.id}'>Unassign</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function updateAssignRoleStatus(){
+      const box = document.getElementById('arStatus');
+      if(!box) return;
+      const emp = _arEmployees.find(e=> e.id===_arSelectedEmployeeId);
+      const role = _arRoles.find(r=> r.id===_arSelectedRoleId);
+      if(emp && role){
+        const existing = _arAssignments.find(a=> a.employeeId===emp.id);
+        if(existing){
+          const curRole = _arRoles.find(r=> r.id===existing.roleId);
+          box.textContent = `Will change role for ${emp.name} from ${curRole?curRole.name:'(none)'} to ${role.name}.`;
+        } else {
+          box.textContent = `Will assign ${role.name} to ${emp.name}.`;
+        }
+      } else if(emp){
+        box.textContent = `Select a role for ${emp.name}.`;
+      } else if(role){
+        box.textContent = `Select an employee for role ${role.name}.`;
+      } else {
+        box.textContent = '';
+      }
+    }
+
+    function onAssignRoleClick(){
+      const emp = _arEmployees.find(e=> e.id===_arSelectedEmployeeId);
+      const role = _arRoles.find(r=> r.id===_arSelectedRoleId);
+      if(!emp || !role){ alert('Select an employee and a role'); return; }
+      let existing = _arAssignments.find(a=> a.employeeId===emp.id);
+      if(existing){
+        if(!confirm(`${emp.name} already has a role. Replace it with ${role.name}?`)) return;
+        existing.roleId = role.id;
+      } else {
+        _arAssignments.push({ id: Date.now().toString(), employeeId: emp.id, roleId: role.id });
+      }
+      saveAssignRoleState();
+      renderAssignRoleAssignments();
+      renderAssignRoleLists();
+      updateAssignRoleStatus();
+    }
+
     // Spaces JS
     let _spaces=[], _spSortField='Name', _spSortDir='asc';
     function renderSpaces(){
@@ -691,7 +1165,54 @@
       const btn=document.getElementById('spNewBtn'); if(btn) btn.onclick=()=>{ document.getElementById('spModal').classList.add('open'); setTimeout(()=>document.getElementById('spName')?.focus(),0); };
       const back=document.getElementById('spBackBtn'); if(back) back.onclick=()=>{ leftShowSetup(); showTab('setup'); };
       const close=()=>document.getElementById('spModal').classList.remove('open'); const c1=document.getElementById('spClose'); if(c1) c1.onclick=close; const c2=document.getElementById('spCancel'); if(c2) c2.onclick=close; document.getElementById('spModal').addEventListener('click',(e)=>{ if(e.target.id==='spModal') close(); });
-      const save=document.getElementById('spSave'); if(save) save.onclick=async ()=>{ const payload={ name:spName.value.trim(), type:spType.value.trim(), purpose:spPurpose.value.trim(), width:parseFloat(spWidth.value||''), length:parseFloat(spLength.value||''), height:parseFloat(spHeight.value||''), unit:spUnit.value, floor:parseInt(spFloor.value||'0'), capacity:spCapacity.value.trim(), ventilation:spVentilation.value.trim(), doors:parseInt(spDoors.value||'0'), windows:parseInt(spWindows.value||'0') }; if(!payload.name){ alert('Name required'); return; } const r=await fetch('/api/company/spaces',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); const j=await r.json(); if(j.success){ const file=document.getElementById('spExitFile').files?.[0]; if(file && j.id){ const reader=new FileReader(); reader.onload=async ()=>{ await fetch('/api/company/spaces/'+j.id+'/exit-plan',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({dataUrl: reader.result})}); loadSpaces(); }; reader.readAsDataURL(file); } else { loadSpaces(); } document.getElementById('spModal').classList.remove('open'); } else { const tbody=document.getElementById('spacesTBody'); if(tbody) tbody.innerHTML=`<tr><td colspan='12' style='text-align:center;padding:12px;color:#ef4444'>${j.error||'Failed to save'}</td></tr>`; }
+      const save=document.getElementById('spSave'); if(save) save.onclick=async ()=>{
+        const payload={
+          name:spName.value.trim(),
+          type:spType.value.trim(),
+          purpose:spPurpose.value.trim(),
+          width:parseFloat(spWidth.value||''),
+          length:parseFloat(spLength.value||''),
+          height:parseFloat(spHeight.value||''),
+          unit:spUnit.value,
+          floor:parseInt(spFloor.value||'0'),
+          capacity:spCapacity.value.trim(),
+          ventilation:spVentilation.value.trim(),
+          doors:parseInt(spDoors.value||'0'),
+          windows:parseInt(spWindows.value||'0'),
+          loadCapacity:parseFloat(spLoadCapacity.value||''),
+          loadCapacityUnit:spLoadCapacityUnit.value
+        };
+        if(!payload.name){ alert('Name required'); return; }
+        const r=await fetch('/api/company/spaces',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+        const j=await r.json();
+        if(j.success){
+          const exitFile=document.getElementById('spExitFile').files?.[0];
+          const picFile=document.getElementById('spPictureFile').files?.[0];
+          const structPicFile=document.getElementById('spStructurePicFile').files?.[0];
+          const structDrawingFile=document.getElementById('spStructureDrawingFile').files?.[0];
+          async function sendFile(file,url){
+            return new Promise((resolve)=>{
+              const reader=new FileReader();
+              reader.onload=async()=>{
+                try{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({dataUrl: reader.result})}); }catch(e){}
+                resolve();
+              };
+              reader.readAsDataURL(file);
+            });
+          }
+          if(j.id){
+            const base=`/api/company/spaces/${j.id}`;
+            if(exitFile) await sendFile(exitFile, base+'/exit-plan');
+            if(picFile) await sendFile(picFile, base+'/picture');
+            if(structPicFile) await sendFile(structPicFile, base+'/structure-image');
+            if(structDrawingFile) await sendFile(structDrawingFile, base+'/structure-drawing');
+          }
+          loadSpaces();
+          document.getElementById('spModal').classList.remove('open');
+        } else {
+          const tbody=document.getElementById('spacesTBody');
+          if(tbody) tbody.innerHTML=`<tr><td colspan='12' style='text-align:center;padding:12px;color:#ef4444'>${j.error||'Failed to save'}</td></tr>`;
+        }
       };
     }
     window.deleteSpace = async (id)=>{ if(!confirm('Delete this space?')) return; await fetch('/api/company/spaces/'+id,{method:'DELETE',credentials:'include'}); loadSpaces(); };
@@ -806,11 +1327,145 @@
       }; reader.readAsDataURL(f);
     }; })();
 
+    // Simple in-memory location map for cascading Country 	 State 	 City for Head Office.
+    // Matches the structure used on the HR Add Employee form.
+    const COMPANY_LOCATION_DATA = {
+      'Pakistan': {
+        'Punjab': ['Lahore','Faisalabad','Multan'],
+        'Sindh': ['Karachi','Hyderabad'],
+        'Khyber Pakhtunkhwa': ['Peshawar'],
+        'Balochistan': ['Quetta']
+      },
+      'Bangladesh': {
+        'Dhaka': ['Dhaka'],
+        'Chattogram': ['Chattogram']
+      },
+      'United States': {
+        'California': ['Los Angeles','San Francisco'],
+        'New York': ['New York'],
+        'Texas': ['Houston','Dallas']
+      }
+    };
+
+    function populateFactoryStates(country, valueToSelect){
+      const stateSel = document.getElementById('flState');
+      const citySel = document.getElementById('flCity');
+      if(!stateSel || !citySel) return;
+      stateSel.innerHTML = '<option value="">Select State/Province</option>';
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = COMPANY_LOCATION_DATA[country] || null;
+      if(!states){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; stateSel.appendChild(opt);
+          stateSel.value = valueToSelect;
+        }
+        return;
+      }
+      Object.keys(states).forEach(s=>{
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s; stateSel.appendChild(opt);
+      });
+      if(valueToSelect){ stateSel.value = valueToSelect; }
+    }
+
+    function populateFactoryCities(country, state, valueToSelect){
+      const citySel = document.getElementById('flCity');
+      if(!citySel) return;
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = COMPANY_LOCATION_DATA[country] || null;
+      const cities = states && states[state] || null;
+      if(!cities){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; citySel.appendChild(opt);
+          citySel.value = valueToSelect;
+        }
+        return;
+      }
+      cities.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; citySel.appendChild(opt);
+      });
+      if(valueToSelect){ citySel.value = valueToSelect; }
+    }
+
+    function populateCompanyStates(country, valueToSelect){
+      const stateSel = document.getElementById('cpState');
+      const citySel = document.getElementById('cpCity');
+      if(!stateSel || !citySel) return;
+      stateSel.innerHTML = '<option value="">Select State/Province</option>';
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = COMPANY_LOCATION_DATA[country] || null;
+      if(!states){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; stateSel.appendChild(opt);
+          stateSel.value = valueToSelect;
+        }
+        return;
+      }
+      Object.keys(states).forEach(s=>{
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s; stateSel.appendChild(opt);
+      });
+      if(valueToSelect){ stateSel.value = valueToSelect; }
+    }
+
+    function populateCompanyCities(country, state, valueToSelect){
+      const citySel = document.getElementById('cpCity');
+      if(!citySel) return;
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = COMPANY_LOCATION_DATA[country] || null;
+      const cities = states && states[state] || null;
+      if(!cities){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; citySel.appendChild(opt);
+          citySel.value = valueToSelect;
+        }
+        return;
+      }
+      cities.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; citySel.appendChild(opt);
+      });
+      if(valueToSelect){ citySel.value = valueToSelect; }
+    }
+
+    async function loadCompanyCountries(){
+      try{
+        const r = await fetch('/api/crm/countries', { credentials:'include' });
+        const j = await r.json();
+        if(!j.success) return;
+        const countries = j.data || [];
+        ['cpCountry','flCountry'].forEach(function(id){
+          const sel = document.getElementById(id);
+          if(!sel) return;
+          const current = sel.value || '';
+          sel.innerHTML = '<option value="">Select Country</option>' +
+            countries.map(c=>`<option value="${c}">${c}</option>`).join('');
+          if(current && countries.includes(current)){
+            sel.value = current;
+          }
+        });
+      }catch(e){ /* ignore */ }
+    }
+
     // Company profile
     async function loadCompany(){
       const r = await fetch('/api/company/profile', { credentials:'include' }); const j = await r.json(); if(!j.success) return;
       const d = j.data || {};
-      cpAddress1.value=d.Address1||''; cpAddress2.value=d.Address2||''; cpCity.value=d.City||''; cpState.value=d.State||''; cpPostal.value=d.PostalCode||'';
+      const country = d.Country || '';
+      const state = d.State || '';
+      const city = d.City || '';
+      const countrySel = document.getElementById('cpCountry');
+      if(countrySel){
+        if(country){ countrySel.value = country; }
+        populateCompanyStates(country, state);
+        populateCompanyCities(country, state, city);
+      }
+      cpAddress1.value=d.Address1||''; cpAddress2.value=d.Address2||''; cpPostal.value=d.PostalCode||'';
       cpEmployees.value=d.Employees||''; cpCapacityType.value=d.CapacityType||''; cpCapacityQty.value=d.CapacityQty||''; cpMinOrder.value=d.MinOrderQty||''; cpSalesType.value=d.SalesProfitType||''; cpSalesValue.value=d.SalesProfitValue||''; cpMinWage.value=d.MinWage||''; cpMinAge.value=d.MinAge||''; cpRetAge.value=d.RetirementAge||''; cpDealGarments.checked = !!d.DealInGarments; cpDealHome.checked=!!d.DealInHomeTextile;
       // Show saved logo (if any)
       const logoImg = document.getElementById('cpLogoPreview');
@@ -832,7 +1487,24 @@
     window.deleteLine = async (id)=>{ await fetch('/api/company/product-lines/'+id, { method:'DELETE', credentials:'include' }); const rl = await fetch('/api/company/product-lines', { credentials:'include' }); renderLines((await rl.json()).data||[]); };
     document.getElementById('saveCompany').onclick = async ()=>{
       const payload = {
-        address1: cpAddress1.value.trim(), address2: cpAddress2.value.trim(), city: cpCity.value.trim(), state: cpState.value.trim(), postalCode: cpPostal.value.trim(), employees: parseInt(cpEmployees.value||''), capacityType: cpCapacityType.value.trim(), capacityQty: parseInt(cpCapacityQty.value||''), minOrderQty: parseInt(cpMinOrder.value||''), salesProfitType: cpSalesType.value.trim(), salesProfitValue: parseFloat(cpSalesValue.value||''), minWage: parseFloat(cpMinWage.value||''), minAge: parseInt(cpMinAge.value||''), retirementAge: parseInt(cpRetAge.value||''), dealInGarments: cpDealGarments.checked, dealInHomeTextile: cpDealHome.checked };
+        address1: cpAddress1.value.trim(),
+        address2: cpAddress2.value.trim(),
+        country: (document.getElementById('cpCountry')?.value || '').trim(),
+        city: (document.getElementById('cpCity')?.value || '').trim(),
+        state: (document.getElementById('cpState')?.value || '').trim(),
+        postalCode: cpPostal.value.trim(),
+        employees: parseInt(cpEmployees.value||''),
+        capacityType: cpCapacityType.value.trim(),
+        capacityQty: parseInt(cpCapacityQty.value||''),
+        minOrderQty: parseInt(cpMinOrder.value||''),
+        salesProfitType: cpSalesType.value.trim(),
+        salesProfitValue: parseFloat(cpSalesValue.value||''),
+        minWage: parseFloat(cpMinWage.value||''),
+        minAge: parseInt(cpMinAge.value||''),
+        retirementAge: parseInt(cpRetAge.value||''),
+        dealInGarments: cpDealGarments.checked,
+        dealInHomeTextile: cpDealHome.checked
+      };
       await fetch('/api/company/profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' }); alert('Company profile saved');
     };
     document.getElementById('cpLogo').onchange = async (ev)=>{
@@ -869,18 +1541,165 @@
     // Warehouses UI
     async function loadWarehouses(){ const r=await fetch('/api/company/warehouses',{credentials:'include'}); const j=await r.json(); if(!j.success) { document.getElementById('whList').innerHTML='<div class="muted">No warehouses yet</div>'; return; } renderWhList(j.data||[]); }
     function renderWhList(rows){ const box=document.getElementById('whList'); if(!box) return; if(rows.length===0){ box.innerHTML='<div class="muted">No warehouses yet</div>'; return; } box.innerHTML = rows.map(w=>`<div class=\"dashboard-card\" style=\"padding:12px;margin-bottom:8px\"><div style=\"display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap\"><div style=\"font-weight:700\">${w.Name}</div><div class=\"muted\">${w.WarehouseType||''}</div><div><button class=\"btn\" onclick=\"deleteWarehouse(${w.Id})\">Delete</button></div></div><div class=\"muted\">${[w.Address1,w.Address2,w.City,w.State,w.PostalCode,w.Country].filter(Boolean).join(', ')}</div></div>`).join(''); }
+
+    function populateWarehouseStates(country, valueToSelect){
+      const stateSel = document.getElementById('whmState');
+      const citySel = document.getElementById('whmCity');
+      if(!stateSel || !citySel) return;
+      stateSel.innerHTML = '<option value="">Select State/Province</option>';
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = COMPANY_LOCATION_DATA[country] || null;
+      if(!states){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; stateSel.appendChild(opt);
+          stateSel.value = valueToSelect;
+        }
+        return;
+      }
+      Object.keys(states).forEach(s=>{
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s; stateSel.appendChild(opt);
+      });
+      if(valueToSelect){ stateSel.value = valueToSelect; }
+    }
+
+    function populateWarehouseCities(country, state, valueToSelect){
+      const citySel = document.getElementById('whmCity');
+      if(!citySel) return;
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = COMPANY_LOCATION_DATA[country] || null;
+      const cities = states && states[state] || null;
+      if(!cities){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; citySel.appendChild(opt);
+          citySel.value = valueToSelect;
+        }
+        return;
+      }
+      cities.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; citySel.appendChild(opt);
+      });
+      if(valueToSelect){ citySel.value = valueToSelect; }
+    }
     // New warehouse modal handlers
     const whModal=document.getElementById('whModal');
     function fillCountries(){ const sel=document.getElementById('whmCountry'); if(!sel) return; const list=['Bangladesh','China','India','Pakistan','United States','United Kingdom','Germany','France','Spain','Canada','Mexico','Australia','UAE','Saudi Arabia']; sel.innerHTML = '<option value="">Select</option>' + list.map(c=>`<option>${c}</option>`).join(''); }
-    document.getElementById('whNewBtn').onclick=()=>{ fillCountries(); whModal.classList.add('open'); setTimeout(()=>document.getElementById('whmName')?.focus(),0); };
+    document.getElementById('whNewBtn').onclick=()=>{ fillCountries(); populateWarehouseStates('', null); populateWarehouseCities('', '', null); whModal.classList.add('open'); setTimeout(()=>document.getElementById('whmName')?.focus(),0); };
     document.getElementById('whClose').onclick=()=> whModal.classList.remove('open');
     document.getElementById('whCancelBtn').onclick=()=> whModal.classList.remove('open');
-    document.getElementById('whResetBtn').onclick=()=>{ ['whmName','whmAddress1','whmAddress2','whmCity','whmState','whmPostal'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); };
+    document.getElementById('whResetBtn').onclick=()=>{
+      ['whmName','whmAddress1','whmAddress2','whmPostal','whmSize'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      const cSel = document.getElementById('whmCountry'); if(cSel) cSel.value='';
+      const sizeUnitSel = document.getElementById('whmSizeUnit'); if(sizeUnitSel) sizeUnitSel.selectedIndex = 0;
+      const mapFile = document.getElementById('whmMapFile'); if(mapFile) mapFile.value = '';
+      const structFile = document.getElementById('whmStructureFile'); if(structFile) structFile.value = '';
+      populateWarehouseStates('', null);
+      populateWarehouseCities('', '', null);
+    };
     whModal.addEventListener('click',(e)=>{ if(e.target.id==='whModal') whModal.classList.remove('open'); });
-    document.getElementById('whSaveBtn').onclick = async ()=>{ const payload={ name:whmName.value.trim(), addressType:whmAddressType.value, warehouseType:whmType.value, address1:whmAddress1.value.trim(), address2:whmAddress2.value.trim(), city:whmCity.value.trim(), state:whmState.value.trim(), postalCode:whmPostal.value.trim(), country:document.getElementById('whmCountry').value.trim() }; if(!payload.name){ alert('Name required'); return; } const btn=document.getElementById('whSaveBtn'); btn.disabled=true; try{ const r=await fetch('/api/company/warehouses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),credentials:'include'}); const j=await r.json(); if(j.success){ whModal.classList.remove('open'); loadWarehouses(); } else alert(j.error||'Failed'); } catch(e){ alert('Failed to save'); } finally { btn.disabled=false; } };
+    const whCountryEl = document.getElementById('whmCountry');
+    const whStateEl = document.getElementById('whmState');
+    if(whCountryEl){
+      whCountryEl.addEventListener('change', function(e){
+        const c = e.target.value || '';
+        populateWarehouseStates(c, null);
+        populateWarehouseCities(c, '', null);
+      });
+    }
+    if(whStateEl){
+      whStateEl.addEventListener('change', function(e){
+        const c = (document.getElementById('whmCountry')||{}).value || '';
+        const s = e.target.value || '';
+        populateWarehouseCities(c, s, null);
+      });
+    }
+    document.getElementById('whSaveBtn').onclick = async ()=>{
+      const payload={
+        name:whmName.value.trim(),
+        addressType:whmAddressType.value,
+        warehouseType:whmType.value,
+        address1:whmAddress1.value.trim(),
+        address2:whmAddress2.value.trim(),
+        city:whmCity.value.trim(),
+        state:whmState.value.trim(),
+        postalCode:whmPostal.value.trim(),
+        country:document.getElementById('whmCountry').value.trim(),
+        size: (document.getElementById('whmSize')?.value || '').trim(),
+        sizeUnit: (document.getElementById('whmSizeUnit')?.value || '').trim()
+      };
+      if(!payload.name){ alert('Name required'); return; }
+      const btn=document.getElementById('whSaveBtn');
+      btn.disabled=true;
+      try{
+        const r=await fetch('/api/company/warehouses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),credentials:'include'});
+        const j=await r.json();
+        if(j.success){
+          const id = j.id;
+          const mapFile = document.getElementById('whmMapFile')?.files?.[0];
+          const structFile = document.getElementById('whmStructureFile')?.files?.[0];
+          async function sendFile(f, url){
+            return new Promise((resolve)=>{
+              const reader=new FileReader();
+              reader.onload=async()=>{
+                try{ await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({dataUrl: reader.result})}); }catch(e){}
+                resolve();
+              };
+              reader.readAsDataURL(f);
+            });
+          }
+          if(id){
+            if(mapFile) await sendFile(mapFile, `/api/company/warehouses/${id}/map`);
+            if(structFile) await sendFile(structFile, `/api/company/warehouses/${id}/structure`);
+          }
+          whModal.classList.remove('open');
+          loadWarehouses();
+        } else alert(j.error||'Failed');
+      } catch(e){
+        alert('Failed to save');
+      } finally { btn.disabled=false; }
+    };
     window.deleteWarehouse = async (id)=>{ if(!confirm('Delete this warehouse?')) return; await fetch('/api/company/warehouses/'+id,{method:'DELETE',credentials:'include'}); loadWarehouses(); };
 
     loadProfile();
+    loadCompanyCountries();
+    // Wire cascading Country -> State -> City for Head Office
+    (function(){
+      const countryEl = document.getElementById('cpCountry');
+      const stateEl = document.getElementById('cpState');
+      const flCountryEl = document.getElementById('flCountry');
+      const flStateEl = document.getElementById('flState');
+      if(countryEl){
+        countryEl.addEventListener('change', function(e){
+          const c = e.target.value || '';
+          populateCompanyStates(c, null);
+          populateCompanyCities(c, '', null);
+        });
+      }
+      if(stateEl){
+        stateEl.addEventListener('change', function(e){
+          const c = (document.getElementById('cpCountry')||{}).value || '';
+          const s = e.target.value || '';
+          populateCompanyCities(c, s, null);
+        });
+      }
+      if(flCountryEl){
+        flCountryEl.addEventListener('change', function(e){
+          const c = e.target.value || '';
+          populateFactoryStates(c, null);
+          populateFactoryCities(c, '', null);
+        });
+      }
+      if(flStateEl){
+        flStateEl.addEventListener('change', function(e){
+          const c = (document.getElementById('flCountry')||{}).value || '';
+          const s = e.target.value || '';
+          populateFactoryCities(c, s, null);
+        });
+      }
+    })();
     loadCompany();
     loadWarehouses();
     // Initialize profile tabs by default in second row and top bar state

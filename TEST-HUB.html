@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComplytEX Testing Hub</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .card-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .card-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: opacity 0.3s;
+        }
+        .card-button:hover {
+            opacity: 0.9;
+        }
+        .section-title {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .quick-links {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .quick-links h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .link-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .link-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .link-item a:hover {
+            text-decoration: underline;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status-ready { background: #d1fae5; color: #065f46; }
+        .status-server { background: #fef3c7; color: #92400e; }
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 ComplytEX Testing Hub</h1>
+            <p>Your Complete Testing Command Center</p>
+        </div>
+
+        <h2 class="section-title">🚀 Quick Start Testing</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="card-icon">🌐</div>
+                <div class="card-title">Visual Test Dashboard</div>
+                <div class="card-description">
+                    Interactive testing interface with real-time results, visual indicators, and detailed reporting. Best for comprehensive testing with instant feedback.
+                </div>
+                <a href="./tests/test-dashboard.html" class="card-button" target="_blank">
+                    Launch Test Dashboard →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">📝</div>
+                <div class="card-title">Manual Testing Guide</div>
+                <div class="card-description">
+                    Step-by-step testing procedures for every module. Includes SQL verification queries, expected results, and bug reporting templates.
+                </div>
+                <a href="#" onclick="alert('Open file: COMPREHENSIVE_TESTING_GUIDE.md'); return false;" class="card-button">
+                    View Testing Guide →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">⚡</div>
+                <div class="card-title">Quick Reference</div>
+                <div class="card-description">
+                    Quick start guide with common workflows, troubleshooting tips, and SQL queries. Perfect for fast reference during testing.
+                </div>
+                <a href="#" onclick="alert('Open file: TESTING_SUMMARY.md'); return false;" class="card-button">
+                    Open Quick Ref →
+                </a>
+            </div>
+        </div>
+
+        <h2 class="section-title">🎯 Test by Module</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="card-icon">👥</div>
+                <div class="card-title">HR & Payroll</div>
+                <div class="card-description">
+                    Test employee management, payroll processing, job postings, and applicant tracking.
+                </div>
+                <a href="http://localhost:3000/hr/index.html" class="card-button" target="_blank">
+                    Open HR Module →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">💰</div>
+                <div class="card-title">Accounting</div>
+                <div class="card-description">
+                    Test AP/AR invoices, bank management, payments, ledger, and financial reports.
+                </div>
+                <a href="http://localhost:3000/accounting/payables.html" class="card-button" target="_blank">
+                    Open Accounting →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">🦺</div>
+                <div class="card-title">Safety & Compliance</div>
+                <div class="card-description">
+                    Test fire safety, electrical safety, safety audits, and certification issuance.
+                </div>
+                <a href="http://localhost:3000/safety-audits.html" class="card-button" target="_blank">
+                    Open Safety →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">📞</div>
+                <div class="card-title">CRM</div>
+                <div class="card-description">
+                    Test contact management, customer interactions, and relationship tracking.
+                </div>
+                <a href="http://localhost:3000/crm/index.html" class="card-button" target="_blank">
+                    Open CRM →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">🏭</div>
+                <div class="card-title">Production</div>
+                <div class="card-description">
+                    Test production orders, work orders, material usage, and production tracking.
+                </div>
+                <a href="http://localhost:3000/production.html" class="card-button" target="_blank">
+                    Open Production →
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Dashboard</div>
+                <div class="card-description">
+                    Test main dashboard, widgets, statistics, and summary reports.
+                </div>
+                <a href="http://localhost:3000/dashboard.html" class="card-button" target="_blank">
+                    Open Dashboard →
+                </a>
+            </div>
+        </div>
+
+        <div class="quick-links">
+            <h3>🔗 Quick Links & Resources</h3>
+            <div class="links-grid">
+                <div class="link-item">
+                    <a href="http://localhost:3000" target="_blank">
+                        🏠 Application Home
+                        <span class="status-badge status-server">Server</span>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="http://localhost:3000/login.html" target="_blank">
+                        🔐 Login Page
+                        <span class="status-badge status-server">Server</span>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="./tests/test-dashboard.html" target="_blank">
+                        🧪 Test Dashboard
+                        <span class="status-badge status-ready">Ready</span>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="http://localhost:3000/public/test-fire-form.html" target="_blank">
+                        🔥 Fire Safety Test
+                        <span class="status-badge status-server">Server</span>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="http://localhost:3000/waste-management.html" target="_blank">
+                        ♻️ Waste Management
+                        <span class="status-badge status-server">Server</span>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#" onclick="alert('Run: node tests/end-to-end-test.js'); return false;">
+                        🤖 Node.js Tests
+                        <span class="status-badge status-ready">CLI</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-links" style="margin-top: 25px;">
+            <h3>📚 Documentation Files</h3>
+            <div class="links-grid">
+                <div class="link-item">
+                    <a href="#" onclick="alert('Open: TESTING_SUMMARY.md'); return false;">
+                        📄 Testing Summary
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#" onclick="alert('Open: COMPREHENSIVE_TESTING_GUIDE.md'); return false;">
+                        📖 Complete Testing Guide
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#" onclick="alert('Open: README.md'); return false;">
+                        📘 Application README
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#" onclick="alert('Open: COMPLETE_SETUP_GUIDE.md'); return false;">
+                        ⚙️ Setup Guide
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-links" style="margin-top: 25px;">
+            <h3>🎯 Critical Workflows to Test</h3>
+            <div class="links-grid">
+                <div class="link-item">
+                    <a href="#workflow1" style="display: block;">
+                        <div>
+                            <strong>1️⃣ Employee → Payroll → Payment</strong><br>
+                            <small style="color: #666;">Create employee, generate payroll, process payment</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#workflow2" style="display: block;">
+                        <div>
+                            <strong>2️⃣ Safety Audit → Certificate</strong><br>
+                            <small style="color: #666;">Complete audit, generate report, issue certificate</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#workflow3" style="display: block;">
+                        <div>
+                            <strong>3️⃣ Contact → Invoice → Payment</strong><br>
+                            <small style="color: #666;">Create contact, generate invoice, receive payment</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="link-item">
+                    <a href="#workflow4" style="display: block;">
+                        <div>
+                            <strong>4️⃣ Production → Material → Tracking</strong><br>
+                            <small style="color: #666;">Create order, allocate materials, track progress</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>ComplytEX Testing Hub v1.0 | Last Updated: January 28, 2026</p>
+            <p style="margin-top: 10px;">
+                <strong>Default Login:</strong> safety@demo.example / Welcome123!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Check if server is running
+        fetch('http://localhost:3000/api/auth/session')
+            .then(r => r.json())
+            .then(data => {
+                console.log('✅ Server is running');
+            })
+            .catch(err => {
+                alert('⚠️ Server may not be running. Please start server with: npm run web');
+            });
+    </script>
+</body>
+</html>

@@ -812,7 +812,20 @@ function setupSafetyRoutes(app, pool) {
   
   app.get('/api/safety/gas', async (req, res) => {
     try {
-      const result = await pool.request().query('SELECT * FROM SafetyGasSafety ORDER BY CreatedDate DESC');
+      const result = await pool.request().query(`
+        IF OBJECT_ID('dbo.SafetyGasSafety','U') IS NULL
+        BEGIN
+          CREATE TABLE dbo.SafetyGasSafety(
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            TenantId INT NOT NULL,
+            FormData NVARCHAR(MAX) NOT NULL,
+            CreatedBy NVARCHAR(255) NULL,
+            CreatedDate DATETIME2 DEFAULT GETDATE(),
+            UpdatedDate DATETIME2 NULL
+          );
+        END;
+        SELECT * FROM SafetyGasSafety ORDER BY CreatedDate DESC;
+      `);
       res.json({ success: true, data: result.recordset });
     } catch (err) {
       console.error('Error fetching gas safety records:', err);
@@ -831,6 +844,17 @@ function setupSafetyRoutes(app, pool) {
         .input('formData', sql.NVarChar, formData)
         .input('createdBy', sql.NVarChar, createdBy)
         .query(`
+          IF OBJECT_ID('dbo.SafetyGasSafety','U') IS NULL
+          BEGIN
+            CREATE TABLE dbo.SafetyGasSafety(
+              Id INT IDENTITY(1,1) PRIMARY KEY,
+              TenantId INT NOT NULL,
+              FormData NVARCHAR(MAX) NOT NULL,
+              CreatedBy NVARCHAR(255) NULL,
+              CreatedDate DATETIME2 DEFAULT GETDATE(),
+              UpdatedDate DATETIME2 NULL
+            );
+          END;
           IF EXISTS (SELECT 1 FROM SafetyGasSafety WHERE TenantId = @tenantId)
           BEGIN
             UPDATE SafetyGasSafety SET FormData = @formData, UpdatedDate = GETDATE() WHERE TenantId = @tenantId;

@@ -8,49 +8,192 @@
   <link rel="stylesheet" href="/app.css" />
   <style>
     body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
-    .shell{max-width:1000px;margin:0 auto;padding:16px}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .shell{max-width:1200px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px;margin-bottom:16px}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
     th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600}
+    .badge-pending{background:#fef3c7;color:#92400e}
+    .badge-approved{background:#dbeafe;color:#1e40af}
+    .badge-paid{background:#d1fae5;color:#065f46}
+    .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5);overflow:auto}
+    .modal-content{background:#fff;margin:3% auto;padding:20px;border-radius:12px;max-width:600px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);max-height:85vh;overflow-y:auto}
+    .modal.show{display:block}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media (max-width: 720px){ .row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
-  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Payables</div></div><div class="header-right"></div></div>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Accounts Payable</div></div><div class="header-right"></div></div>
   <div class="shell">
     <div class="card">
-      <div class="row">
-        <div class="form-group"><label class="form-label">Party</label><input id="pParty" class="form-input" placeholder="Supplier / Employee"/></div>
-        <div class="form-group"><label class="form-label">Reference</label><input id="pRef" class="form-input" placeholder="BILL-001 / Salary"/></div>
-        <div class="form-group"><label class="form-label">Amount</label><input id="pAmt" class="form-input" type="number" step="0.01"/></div>
-        <div class="form-group"><label class="form-label">Bank</label><select id="pBank" class="form-select"></select></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="ct" onclick="loadAP('Pending')" id="btnPending">Pending</button>
+        <button class="ct" onclick="loadAP('Approved')">Approved</button>
+        <button class="ct" onclick="loadAP('Paid')">Paid</button>
+        <button class="ct" onclick="loadAP(null)">All</button>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="ct primary" onclick="add()">Pay</button></div>
-    </div>
-
-    <div class="card" style="margin-top:12px">
-      <div style="font-weight:700;margin-bottom:8px">Payment History</div>
       <table>
-        <thead><tr><th>Date</th><th>Party</th><th>Ref</th><th>Bank</th><th>Amount</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="5">No data</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Order ID</th><th>Supplier</th><th>Product/Notes</th><th>Due Date</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="8">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
+
+  <!-- Pay Modal -->
+  <div id="payModal" class="modal">
+    <div class="modal-content">
+      <h3 style="margin-top:0">Pay Invoice</h3>
+      <div id="payDetails" style="margin-bottom:12px;padding:12px;background:#f8fafc;border-radius:8px"></div>
+      <div class="form-group"><label class="form-label">Bank *</label><select id="payBank" class="form-select"></select></div>
+      <div class="form-group"><label class="form-label">Amount *</label><input id="payAmount" class="form-input" type="number" step="0.01"/></div>
+      <div class="form-group"><label class="form-label">Reference/Slip Number</label><input id="paySlip" class="form-input" placeholder="CHQ-001"/></div>
+      <div class="form-group"><label class="form-label">Document/Receipt URL</label><input id="payDoc" class="form-input" placeholder="https://..."/></div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea id="payNotes" class="form-textarea" rows="3"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="ct primary" onclick="processPay()">Pay Now</button>
+        <button class="ct" onclick="closePayModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/master-layout.js"></script>
   <script>
     async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
-    async function ensureBanks(){ try{ const r=await fetchJson('/api/accounting/banks'); const list=(r.data||[]); const sel=document.getElementById('pBank'); sel.innerHTML = list.length? list.map(x=>`<option value='${x.BankId}'>${x.Name} • ${x.AccountNumber||''}</option>`).join(''):'<option disabled>No bank found</option>'; }catch(e){ console.error(e); }}
-    async function add(){ const party=(pParty.value||'').trim(); const ref=(pRef.value||'').trim(); const amt=parseFloat(pAmt.value||0)||0; const bankId=parseInt(pBank.value||''); if(!amt||!bankId){ alert('Amount and bank are required'); return; }
-      try{ await fetchJson('/api/accounting/ledger', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'DR', amount:amt, bankId, reference:ref, party }) }); pParty.value=pRef.value=pAmt.value=''; await load(); }catch(e){ console.error(e); alert('Failed to record'); }
+    
+    let currentInvoice = null;
+    let banks = [];
+
+    async function loadBanks(){
+      try{
+        const r = await fetchJson('/api/accounting/banks');
+        banks = r.data || [];
+        const sel = document.getElementById('payBank');
+        sel.innerHTML = banks.length ? banks.map(b=>`<option value="${b.BankId}">${b.Name} • ${b.AccountNumber||''}</option>`).join('') : '<option disabled>No banks found</option>';
+      }catch(e){ console.error(e); }
     }
-    async function load(){ await ensureBanks(); const [banksResp, listResp]=await Promise.all([ fetchJson('/api/accounting/banks'), fetchJson('/api/accounting/ledger?type=DR&limit=200') ]);
-      const bmap=new Map((banksResp.data||[]).map(x=>[x.BankId, x])); const rows=document.getElementById('rows'); const list=(listResp.data||[]);
-      rows.innerHTML = list.length? list.map(x=>`<tr><td>${new Date(x.EntryDate).toLocaleString()}</td><td>${escapeHtml(x.Party||'')}</td><td>${escapeHtml(x.Reference||'')}</td><td>${escapeHtml((bmap.get(x.BankId)||{}).Name||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="5">No data</td></tr>'; }
-    if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none'; }
-    load();
+
+    async function loadAP(status){
+      try{
+        const url = status ? `/api/accounting/ap?status=${status}` : '/api/accounting/ap';
+        const r = await fetchJson(url);
+        const list = r.data || [];
+        const rows = document.getElementById('rows');
+        
+        if(!list.length){
+          rows.innerHTML = '<tr><td colspan="8">No invoices found</td></tr>';
+          return;
+        }
+
+        rows.innerHTML = list.map(inv => {
+          const statusBadge = inv.Status === 'Pending' ? 'badge-pending' : inv.Status === 'Approved' ? 'badge-approved' : 'badge-paid';
+          const dueDate = inv.DueDate ? new Date(inv.DueDate).toLocaleDateString() : '-';
+          const createdDate = new Date(inv.CreatedAt).toLocaleDateString();
+          const actionBtn = inv.Status === 'Pending' || inv.Status === 'Approved' ? 
+            `<button class="ct primary" onclick="openPayModal(${inv.Id})">Pay</button>` : 
+            '<span style="color:#059669">✓ Paid</span>';
+          
+          return `<tr>
+            <td>${createdDate}</td>
+            <td>${escapeHtml(inv.OrderId||'-')}</td>
+            <td>${escapeHtml(inv.SupplierName||'-')}</td>
+            <td>${escapeHtml(inv.ProductName||inv.Notes||'-')}</td>
+            <td>${dueDate}</td>
+            <td>$${Number(inv.Amount||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td><span class="badge ${statusBadge}">${inv.Status||'Pending'}</span></td>
+            <td>${actionBtn}</td>
+          </tr>`;
+        }).join('');
+
+        // Highlight active filter
+        document.querySelectorAll('.shell button.ct').forEach(btn => btn.classList.remove('primary'));
+        const activeBtn = status ? document.querySelector(`button[onclick="loadAP('${status}')"]`) : document.querySelector(`button[onclick="loadAP(null)"]`);
+        if(activeBtn) activeBtn.classList.add('primary');
+      }catch(e){
+        console.error(e);
+        document.getElementById('rows').innerHTML = '<tr><td colspan="8">Error loading invoices</td></tr>';
+      }
+    }
+
+    async function openPayModal(invoiceId){
+      try{
+        const r = await fetchJson('/api/accounting/ap');
+        const invoice = (r.data || []).find(inv => inv.Id === invoiceId);
+        if(!invoice){ alert('Invoice not found'); return; }
+        
+        currentInvoice = invoice;
+        document.getElementById('payAmount').value = invoice.Amount || 0;
+        document.getElementById('paySlip').value = '';
+        document.getElementById('payDoc').value = invoice.DocUrl || '';
+        document.getElementById('payNotes').value = invoice.Notes || '';
+        
+        document.getElementById('payDetails').innerHTML = `
+          <div><strong>Supplier:</strong> ${escapeHtml(invoice.SupplierName||'-')}</div>
+          <div><strong>Order ID:</strong> ${escapeHtml(invoice.OrderId||'-')}</div>
+          <div><strong>Product:</strong> ${escapeHtml(invoice.ProductName||'-')}</div>
+          <div><strong>Amount:</strong> $${Number(invoice.Amount||0).toFixed(2)}</div>
+        `;
+        
+        document.getElementById('payModal').classList.add('show');
+      }catch(e){
+        console.error(e);
+        alert('Failed to load invoice details');
+      }
+    }
+
+    function closePayModal(){
+      document.getElementById('payModal').classList.remove('show');
+      currentInvoice = null;
+    }
+
+    async function processPay(){
+      if(!currentInvoice){ alert('No invoice selected'); return; }
+      
+      const bankId = parseInt(document.getElementById('payBank').value);
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      const slipNumber = document.getElementById('paySlip').value.trim();
+      const docUrl = document.getElementById('payDoc').value.trim();
+      
+      if(!bankId){ alert('Please select a bank'); return; }
+      if(!amount || amount <= 0){ alert('Please enter a valid amount'); return; }
+      
+      try{
+        await fetchJson(`/api/accounting/ap/${currentInvoice.Id}/pay`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            bankId,
+            amount,
+            slipNumber,
+            docUrl,
+            reference: currentInvoice.OrderId || `AP#${currentInvoice.Id}`
+          })
+        });
+        
+        alert('Payment processed successfully!');
+        closePayModal();
+        loadAP('Pending'); // Reload the list
+      }catch(e){
+        console.error(e);
+        alert('Failed to process payment: ' + e.message);
+      }
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event){
+      const modal = document.getElementById('payModal');
+      if(event.target === modal) closePayModal();
+    };
+
+    if(new URL(location.href).searchParams.get('embedded')==='1'){ 
+      const h=document.querySelector('.dashboard-header'); 
+      if(h) h.style.display='none'; 
+    }
+    
+    loadBanks();
+    loadAP('Pending');
   </script>
 </body>
 </html>

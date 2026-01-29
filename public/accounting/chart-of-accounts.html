@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chart of Accounts</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
+    .shell{max-width:1000px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
+    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .muted{color:#64748b;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Chart of Accounts</div></div><div class="header-right"></div></div>
+  <div class="shell">
+    <div class="card">
+      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Chart of Accounts</div>
+      <div class="row">
+        <div class="form-group">
+          <label class="form-label">Account Type *</label>
+          <select id="acctType" class="form-select">
+            <option value="">Select Type</option>
+            <option>Asset</option>
+            <option>Liability</option>
+            <option>Equity</option>
+            <option>Revenue</option>
+            <option>Expense</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Account Number</label>
+          <input id="acctNumber" class="form-input" placeholder="e.g. 1000" />
+        </div>
+        <div class="form-group" style="grid-column:1 / -1">
+          <label class="form-label">Account Name *</label>
+          <input id="acctName" class="form-input" placeholder="e.g. Cash in Bank" />
+        </div>
+        <div class="form-group" style="grid-column:1 / -1">
+          <label class="form-label">Notes</label>
+          <input id="acctNotes" class="form-input" placeholder="Optional description" />
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="ct" type="button" onclick="resetForm()">Clear</button>
+        <button class="ct primary" type="button" onclick="saveAccount()">Save</button>
+      </div>
+      <div id="msg" class="status-message" style="display:none;margin-top:6px"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div style="font-weight:700;margin-bottom:6px">Existing Accounts</div>
+      <div class="muted" style="margin-bottom:6px">Use this table to review or remove accounts you have created.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Number</th>
+            <th>Name</th>
+            <th>Notes</th>
+            <th style="width:70px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="acctRows"><tr><td colspan="5">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/js/master-layout.js"></script>
+  <script>
+    function embedded(){ return new URL(location.href).searchParams.get('embedded')==='1'; }
+    if(embedded()){
+      const h=document.querySelector('.dashboard-header'); if(h) h.style.display='none';
+      const sh=document.querySelector('.shell'); if(sh){ sh.style.maxWidth='100%'; sh.style.margin='0'; }
+    }
+
+    async function fetchJson(url, options){
+      const res = await fetch(url,{ credentials:'include', ...(options||{}) });
+      if(!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    function showStatus(ok,text){
+      const el = document.getElementById('msg');
+      el.className = 'status-message ' + (ok ? 'success' : 'error');
+      el.textContent = text;
+      el.style.display = 'block';
+    }
+
+    function resetForm(){
+      acctType.value='';
+      acctNumber.value='';
+      acctName.value='';
+      acctNotes.value='';
+      acctType.focus();
+    }
+
+    async function loadAccounts(){
+      try{
+        const r = await fetchJson('/api/accounting/accounts');
+        const rows = r.data || [];
+        const tbody = document.getElementById('acctRows');
+        if(!rows.length){
+          tbody.innerHTML = '<tr><td colspan="5">No accounts defined</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(a=>`
+          <tr>
+            <td>${a.AccountType||''}</td>
+            <td>${a.AccountNumber||''}</td>
+            <td>${a.AccountName||''}</td>
+            <td>${a.Notes||''}</td>
+            <td><button class="ct" style="padding:2px 6px;font-size:11px" onclick="deleteAccount(${a.Id})">Delete</button></td>
+          </tr>`).join('');
+      }catch(e){
+        console.error(e);
+        showStatus(false,'Failed to load accounts');
+      }
+    }
+
+    async function saveAccount(){
+      const type = (acctType.value||'').trim();
+      const name = (acctName.value||'').trim();
+      const number = (acctNumber.value||'').trim();
+      const notes = (acctNotes.value||'').trim();
+      if(!type || !name){
+        alert('Account Type and Account Name are required');
+        return;
+      }
+      try{
+        await fetchJson('/api/accounting/accounts',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ accountType:type, accountName:name, accountNumber:number, notes })
+        });
+        showStatus(true,'Account saved');
+        resetForm();
+        loadAccounts();
+      }catch(e){
+        console.error(e);
+        showStatus(false,'Failed to save account');
+      }
+    }
+
+    async function deleteAccount(id){
+      if(!confirm('Delete this account?')) return;
+      try{
+        await fetchJson('/api/accounting/accounts/'+id,{ method:'DELETE' });
+        loadAccounts();
+      }catch(e){
+        console.error(e);
+        showStatus(false,'Failed to delete account');
+      }
+    }
+
+    loadAccounts();
+  </script>
+</body>
+</html>

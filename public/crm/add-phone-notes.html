@@ -21,7 +21,7 @@
     <div class="card">
       <div style="font-weight:800;margin-bottom:8px">Phone Call Notes</div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-group"><label class="form-label">Customer Name</label><input id="Customer" class="form-input" placeholder="Company or contact"/></div>
+        <div class="form-group"><label class="form-label">Customer Name</label><select id="Customer" class="form-select"><option value="">Select customer</option></select></div>
         <div class="form-group"><label class="form-label">Contact Person</label><input id="ContactPerson" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Phone</label><input id="Phone" class="form-input" placeholder="Number dialed"/></div>
         <div class="form-group"><label class="form-label">Call Type</label><select id="CallType" class="form-select"><option value="">Select</option><option>Incoming</option><option>Outgoing</option><option>Missed</option></select></div>
@@ -56,6 +56,17 @@
     async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
     const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
     const QN_KEY='crm_quick_notes_v1';
+
+    async function loadCustomers(){
+      try{
+        const r = await j('/api/crm/companies');
+        const list = r.data || [];
+        const sel = document.getElementById('Customer');
+        if(!sel) return;
+        sel.innerHTML = '<option value="">Select customer</option>' +
+          list.map(c=>`<option value="${esc(c.CompanyName||'')}">${esc(c.CompanyName||'')}</option>`).join('');
+      }catch(e){ console.error(e); }
+    }
     function loadQuickNotes(){
       let arr=[]; try{ arr=JSON.parse(localStorage.getItem(QN_KEY)||'[]')||[]; }catch{}
       const box=document.getElementById('quickNotes');
@@ -88,6 +99,7 @@
       }catch(e){ console.error(e); show(false,'Failed to save'); }
     }
     loadQuickNotes();
+    loadCustomers();
   </script>
 </body>
 </html>

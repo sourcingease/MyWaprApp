@@ -1,0 +1,192 @@
+{
+  "passed": 4,
+  "failed": 27,
+  "tests": [
+    {
+      "name": "User Login",
+      "passed": false,
+      "details": "Invalid credentials",
+      "timestamp": "2026-01-28T16:31:17.886Z"
+    },
+    {
+      "name": "Session Validation",
+      "passed": false,
+      "details": "No session",
+      "timestamp": "2026-01-28T16:31:19.529Z"
+    },
+    {
+      "name": "Create Contact",
+      "passed": false,
+      "details": "unauthorized",
+      "timestamp": "2026-01-28T16:31:21.092Z"
+    },
+    {
+      "name": "List Contacts",
+      "passed": false,
+      "details": "Found 0 contacts",
+      "timestamp": "2026-01-28T16:31:22.644Z"
+    },
+    {
+      "name": "List Employees",
+      "passed": false,
+      "details": "Found 0 employees",
+      "timestamp": "2026-01-28T16:31:24.209Z"
+    },
+    {
+      "name": "Create Employee",
+      "passed": false,
+      "details": "unauthorized",
+      "timestamp": "2026-01-28T16:31:25.808Z"
+    },
+    {
+      "name": "List Job Postings",
+      "passed": false,
+      "details": "Found 0 job postings",
+      "timestamp": "2026-01-28T16:31:27.384Z"
+    },
+    {
+      "name": "Create Job Posting",
+      "passed": false,
+      "details": "unauthorized",
+      "timestamp": "2026-01-28T16:31:29.066Z"
+    },
+    {
+      "name": "List Applicants",
+      "passed": false,
+      "details": "Found 0 applicants",
+      "timestamp": "2026-01-28T16:31:30.636Z"
+    },
+    {
+      "name": "Payroll Preview",
+      "passed": false,
+      "details": "0 employees in payroll",
+      "timestamp": "2026-01-28T16:31:32.283Z"
+    },
+    {
+      "name": "List Banks",
+      "passed": false,
+      "details": "Found 0 banks",
+      "timestamp": "2026-01-28T16:31:34.147Z"
+    },
+    {
+      "name": "List AP Invoices",
+      "passed": false,
+      "details": "Found 0 payable invoices",
+      "timestamp": "2026-01-28T16:31:35.811Z"
+    },
+    {
+      "name": "List Pending AP",
+      "passed": false,
+      "details": "0 pending payments",
+      "timestamp": "2026-01-28T16:31:37.340Z"
+    },
+    {
+      "name": "List Paid AP",
+      "passed": false,
+      "details": "0 paid invoices",
+      "timestamp": "2026-01-28T16:31:38.947Z"
+    },
+    {
+      "name": "List AR Invoices",
+      "passed": false,
+      "details": "Found 0 receivable invoices",
+      "timestamp": "2026-01-28T16:31:40.491Z"
+    },
+    {
+      "name": "Bank Ledger",
+      "passed": false,
+      "details": "Found 0 transactions",
+      "timestamp": "2026-01-28T16:31:42.080Z"
+    },
+    {
+      "name": "Create Bank",
+      "passed": false,
+      "details": "unauthorized",
+      "timestamp": "2026-01-28T16:31:43.931Z"
+    },
+    {
+      "name": "Save Fire Safety Data",
+      "passed": false,
+      "details": "",
+      "timestamp": "2026-01-28T16:31:45.966Z"
+    },
+    {
+      "name": "Load Fire Safety Data",
+      "passed": false,
+      "details": "No data found",
+      "timestamp": "2026-01-28T16:31:47.508Z"
+    },
+    {
+      "name": "Save Electrical Safety Data",
+      "passed": false,
+      "details": "",
+      "timestamp": "2026-01-28T16:31:49.211Z"
+    },
+    {
+      "name": "List Safety Audits",
+      "passed": true,
+      "details": "Found 38 audits",
+      "timestamp": "2026-01-28T16:31:51.115Z"
+    },
+    {
+      "name": "Safety Training Records",
+      "passed": true,
+      "details": "Found 0 training records",
+      "timestamp": "2026-01-28T16:31:52.771Z"
+    },
+    {
+      "name": "Dashboard Statistics",
+      "passed": true,
+      "details": "Stats endpoint not available",
+      "timestamp": "2026-01-28T16:31:54.344Z"
+    },
+    {
+      "name": "Company Profile",
+      "passed": false,
+      "details": "No profile",
+      "timestamp": "2026-01-28T16:31:55.936Z"
+    },
+    {
+      "name": "Waste Management Data",
+      "passed": false,
+      "details": "Found 0 waste records",
+      "timestamp": "2026-01-28T16:31:57.471Z"
+    },
+    {
+      "name": "Waste Disposal Records",
+      "passed": false,
+      "details": "Found 0 disposal records",
+      "timestamp": "2026-01-28T16:31:58.994Z"
+    },
+    {
+      "name": "Water Management Data",
+      "passed": false,
+      "details": "Found 0 water records",
+      "timestamp": "2026-01-28T16:32:00.809Z"
+    },
+    {
+      "name": "Integration: Employees Exist",
+      "passed": false,
+      "details": "0 employees for payroll",
+      "timestamp": "2026-01-28T16:32:02.375Z"
+    },
+    {
+      "name": "Integration: Generate Payroll",
+      "passed": false,
+      "details": "Created 0 AP invoices",
+      "timestamp": "2026-01-28T16:32:04.169Z"
+    },
+    {
+      "name": "Integration: AP Invoices Created",
+      "passed": false,
+      "details": "0 pending AP invoices",
+      "timestamp": "2026-01-28T16:32:05.712Z"
+    },
+    {
+      "name": "Integration: Safety Audits Available",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-01-28T16:32:07.477Z"
+    }
+  ]
+}

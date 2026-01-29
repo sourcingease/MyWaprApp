@@ -13,6 +13,11 @@
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
     th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.65);display:none;align-items:center;justify-content:center;z-index:1000}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;max-width:640px;width:100%;max-height:80vh;overflow:auto}
+    .modal .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700}
+    .modal .bd{padding:12px}
   </style>
 </head>
 <body>
@@ -24,9 +29,11 @@
     <div class="card">
       <div class="form-group" style="margin-bottom:10px">
         <label class="form-label">Select Segment</label>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="segSelect" class="form-select" style="max-width:260px"></select>
           <a class="ct" href="/crm/segments-new.html?embedded=1">Add New</a>
+          <button class="ct" type="button" id="btnEditSeg" onclick="openSegCompaniesModal()" disabled>Manage Companies</button>
+          <button class="ct" type="button" id="btnDeleteSeg" onclick="deleteSegment()" disabled>Delete Segment</button>
         </div>
       </div>
       <div style="margin-top:6px">
@@ -37,11 +44,32 @@
       </div>
     </div>
   </div>
+
+  <!-- Manage companies in segment modal -->
+  <div class="overlay" id="segModal">
+    <div class="modal">
+      <div class="hd">Manage Segment Companies<button class="ct" type="button" onclick="closeSegCompaniesModal()">Close</button></div>
+      <div class="bd">
+        <div class="muted" style="margin-bottom:8px">Check companies that should be included in this segment.</div>
+        <div id="segCompaniesBox" style="border:1px solid #e2e8f0;border-radius:10px;max-height:260px;overflow:auto;padding:8px;background:#f8fafc;font-size:13px">Loading...</div>
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="ct primary" type="button" onclick="saveSegCompanies()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/master-layout.js"></script>
   <script>
     if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
     async function fetchJson(url, options){ const res=await fetch(url,{ credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
     function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c)); }
+    let currentMembers=[];
+
+    function getCurrentSegmentId(){
+      return parseInt(document.getElementById('segSelect').value||'')||0;
+    }
+
     async function loadSegments(){
       try{
         const r=await fetchJson('/api/crm/segments');
@@ -52,16 +80,77 @@
           .concat(list.map(s=>`<option value='${s.Id}'>${escapeHtml(s.Name||'')}</option>`)).join('');
       }catch(e){ console.error(e); alert('Failed to load segments'); }
     }
+
     async function loadMembers(){
-      const id=parseInt(document.getElementById('segSelect').value||'');
+      const id=getCurrentSegmentId();
       const rows=document.getElementById('rows');
-      if(!id){ rows.innerHTML='<tr><td colspan="4">Select a segment to view its companies.</td></tr>'; return; }
+      const btnEdit=document.getElementById('btnEditSeg');
+      const btnDelete=document.getElementById('btnDeleteSeg');
+      if(btnEdit) btnEdit.disabled = !id;
+      if(btnDelete) btnDelete.disabled = !id;
+      if(!id){ rows.innerHTML='<tr><td colspan="4">Select a segment to view its companies.</td></tr>'; currentMembers=[]; return; }
       try{
         const r=await fetchJson('/api/crm/segments/'+id+'/companies');
         const list=r.data||[];
+        currentMembers = list;
         rows.innerHTML = list.length? list.map(c=>`<tr><td>${escapeHtml(c.CompanyName)}</td><td>${escapeHtml(c.City||'')}</td><td>${escapeHtml(c.Country||'')}</td><td>${escapeHtml(c.Status||'')}</td></tr>`).join(''):'<tr><td colspan="4">No companies in this segment yet.</td></tr>';
       }catch(e){ console.error(e); alert('Failed to load companies'); }
     }
+
+    async function openSegCompaniesModal(){
+      const id=getCurrentSegmentId();
+      if(!id){ alert('Select a segment first.'); return; }
+      try{
+        // Ensure we have the latest membership and all companies list
+        const [membersRes, companiesRes] = await Promise.all([
+          fetchJson('/api/crm/segments/'+id+'/companies'),
+          fetchJson('/api/crm/companies')
+        ]);
+        const members = (membersRes.data||[]).map(c=>c.Id);
+        const allCompanies = companiesRes.data||[];
+        const box=document.getElementById('segCompaniesBox');
+        if(!allCompanies.length){ box.textContent='No companies found.'; }
+        else{
+          const set = new Set(members);
+          box.innerHTML = allCompanies.map(c=>`<label style='display:block;margin:4px 0;font-size:13px'><input type='checkbox' value='${c.Id}' ${set.has(c.Id)?'checked':''}/> ${escapeHtml(c.CompanyName)} <span class='muted'>${escapeHtml(c.City||'')}, ${escapeHtml(c.Country||'')}</span></label>`).join('');
+        }
+        document.getElementById('segModal').classList.add('open');
+      }catch(e){ console.error(e); alert('Failed to load companies for segment'); }
+    }
+
+    function closeSegCompaniesModal(){
+      const m=document.getElementById('segModal');
+      if(m) m.classList.remove('open');
+    }
+
+    async function saveSegCompanies(){
+      const id=getCurrentSegmentId();
+      if(!id){ return; }
+      const checks=[...document.querySelectorAll('#segCompaniesBox input[type=checkbox]')]
+        .filter(x=>x.checked)
+        .map(x=>parseInt(x.value));
+      try{
+        await fetchJson('/api/crm/segments/'+id+'/companies',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ companyIds: checks }) });
+        closeSegCompaniesModal();
+        await loadMembers();
+      }catch(e){ console.error(e); alert('Failed to save segment companies'); }
+    }
+
+    async function deleteSegment(){
+      const id=getCurrentSegmentId();
+      if(!id) return;
+      if(!confirm('Delete this segment and remove all its company links?')) return;
+      try{
+        await fetch('/api/crm/segments/'+id,{ method:'DELETE', credentials:'include' });
+        document.getElementById('rows').innerHTML='<tr><td colspan="4">No data</td></tr>';
+        await loadSegments();
+        const btnEdit=document.getElementById('btnEditSeg');
+        const btnDelete=document.getElementById('btnDeleteSeg');
+        if(btnEdit) btnEdit.disabled=true;
+        if(btnDelete) btnDelete.disabled=true;
+      }catch(e){ console.error(e); alert('Failed to delete segment'); }
+    }
+
     document.addEventListener('DOMContentLoaded',()=>{
       loadSegments();
       document.getElementById('segSelect').addEventListener('change', loadMembers);

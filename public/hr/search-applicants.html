@@ -28,19 +28,43 @@
     <div class="header-right"></div>
   </div>
   <div class="shell">
-    <div class="card">
+    <!-- 1. New Application / Apply for Job (top) -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:6px">New Application (Apply for Job)</div>
       <div class="grid" style="margin-bottom:8px">
-        <div class="form-group"><label class="form-label">Job Title</label><input id="fJob" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">Name</label><input id="fName" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">Email</label><input id="fEmail" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">Phone</label><input id="fPhone" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">Address</label><input id="fAddress" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Job Title *</label><select id="aJob" class="form-select"><option value="">Select Job</option></select></div>
+        <div class="form-group"><label class="form-label">Full Name *</label><input id="aName" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Email *</label><input id="aEmail" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input id="aPhone" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Address</label><input id="aAddress" class="form-input"/></div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div class="grid" style="margin-bottom:8px;grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group"><label class="form-label">Attach CV</label><input id="aCv" type="file" class="form-input" accept=".pdf,.doc,.docx,.rtf,.txt"/></div>
+        <div class="form-group"><label class="form-label">Other Documents</label><input id="aOther" type="file" class="form-input" multiple/></div>
+        <div class="form-group"><label class="form-label">Notes (optional)</label><input id="aNotes" class="form-input"/></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="ct" onclick="clearApplicationForm()">Clear</button>
+        <button class="ct primary" onclick="applyForJob()">Apply for Job</button>
+      </div>
+    </div>
+
+    <!-- 2. Search Applicants (by job + candidate name) -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:6px">Search Applicants</div>
+      <div class="grid" style="margin-bottom:8px;grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group"><label class="form-label">Job Title</label><select id="fJob" class="form-select"><option value="">All Jobs</option></select></div>
+        <div class="form-group"><label class="form-label">Candidate Name</label><input id="fName" class="form-input"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
         <button class="ct" onclick="load()">Search</button>
         <button class="ct" onclick="clearFilters()">Clear</button>
         <a class="ct" href="/hr/index.html">Back</a>
       </div>
+    </div>
+
+    <!-- 3. Applicants table -->
+    <div class="card">
       <table>
         <thead><tr><th>Job Title</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="rows"><tr><td colspan="7">Loading...</td></tr></tbody>
@@ -70,16 +94,41 @@
     let ivId=null;
     function buildQuery(){
       const p=new URLSearchParams();
-      const m=id=>document.getElementById(id).value||'';
+      const m=id=>{ const el=document.getElementById(id); return el ? (el.value||'') : ''; };
       if(m('fJob')) p.set('jobTitle',m('fJob'));
       if(m('fName')) p.set('name',m('fName'));
-      if(m('fEmail')) p.set('email',m('fEmail'));
-      if(m('fPhone')) p.set('phone',m('fPhone'));
-      if(m('fAddress')) p.set('address',m('fAddress'));
       // Hide already processed candidates by default
       if(!p.has('status')) p.set('status','Applied');
       return p.toString();
     }
+    async function loadJobTitles(){
+      try{
+        const selSearch=document.getElementById('fJob');
+        const selApply=document.getElementById('aJob');
+        if(selSearch) selSearch.innerHTML='<option value="">All Jobs</option>';
+        if(selApply) selApply.innerHTML='<option value="">Select Job</option>';
+        const r = await j('/api/hr/postings');
+        const rows = (r.data||[]);
+        rows.forEach(function(p){
+          if(!p.Title) return;
+          // Search dropdown filters by job title text
+          if(selSearch){
+            const o1=document.createElement('option');
+            o1.value=p.Title; // used as jobTitle filter param
+            o1.textContent=p.Title;
+            selSearch.appendChild(o1);
+          }
+          // Apply dropdown needs posting ID so backend can back-fill JobTitle
+          if(selApply){
+            const o2=document.createElement('option');
+            o2.value=p.Id; // jobPostingId
+            o2.textContent=p.Title;
+            selApply.appendChild(o2);
+          }
+        });
+      }catch(e){ console.error('Failed to load job titles', e); }
+    }
+
     async function load(){
       try{
         const qs=buildQuery();
@@ -101,11 +150,76 @@
         </tr>`).join('');
       }catch(e){ console.error(e); alert('Failed to load applicants'); }
     }
-    function clearFilters(){ ['fJob','fName','fEmail','fPhone','fAddress'].forEach(id=>document.getElementById(id).value=''); load(); }
+    function clearFilters(){ ['fJob','fName'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); load(); }
     function viewApp(id){ alert('Detailed applicant profiles will be available in a future update.'); }
     function openIv(id){ ivId=id; document.getElementById('IvDate').value=''; document.getElementById('IvTime').value=''; document.getElementById('IvType').value=''; document.getElementById('IvName').value=''; document.getElementById('IvTitle').value=''; document.getElementById('IvReason').value=''; document.getElementById('ivModal').classList.add('open'); }
     function closeIv(){ document.getElementById('ivModal').classList.remove('open'); }
+
+    function clearApplicationForm(){
+      ['aJob','aName','aEmail','aPhone','aAddress','aNotes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      const cv=document.getElementById('aCv'); if(cv) cv.value='';
+      const oth=document.getElementById('aOther'); if(oth) oth.value='';
+    }
+
+    async function applyForJob(){
+      const jobEl=document.getElementById('aJob');
+      const nameEl=document.getElementById('aName');
+      const emailEl=document.getElementById('aEmail');
+      const phoneEl=document.getElementById('aPhone');
+      const addrEl=document.getElementById('aAddress');
+      const notesEl=document.getElementById('aNotes');
+      if(!jobEl || !nameEl || !emailEl){ alert('Job Title, Name and Email are required'); return; }
+      const postingId = parseInt(jobEl.value||'',10) || null;
+      const fullName=(nameEl.value||'').trim();
+      const email=(emailEl.value||'').trim();
+      if(!postingId || !fullName || !email){ alert('Job Title, Name and Email are required'); return; }
+      const basePayload={
+        jobPostingId: postingId,
+        fullName: fullName,
+        email: email,
+        phone: (phoneEl&&phoneEl.value)||null,
+        address: (addrEl&&addrEl.value)||null,
+        notes: (notesEl&&notesEl.value)||null
+      };
+      let newId=null;
+      try{
+        const created = await j('/api/hr/applicants',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(basePayload) });
+        const row = created && created.data ? created.data : created;
+        newId = row.Id || row.ApplicantId || row.id || null;
+      }catch(e){ console.error(e); alert('Failed to create applicant'); return; }
+      if(!newId){ alert('Could not determine new applicant id'); return; }
+      // Upload CV and other docs as data URLs
+      try{
+        const cvEl=document.getElementById('aCv');
+        const otherEl=document.getElementById('aOther');
+        const uploads=[];
+        const readerPromise=(file,urlPath)=>new Promise((resolve,reject)=>{
+          const fr=new FileReader();
+          fr.onload=function(){
+            j(urlPath,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ dataUrl: fr.result, fileName:file.name }) })
+              .then(()=>resolve()).catch(reject);
+          };
+          fr.onerror=reject;
+          fr.readAsDataURL(file);
+        });
+        if(cvEl && cvEl.files && cvEl.files[0]){
+          uploads.push(readerPromise(cvEl.files[0], '/api/hr/applicants/'+newId+'/cv'));
+        }
+        if(otherEl && otherEl.files && otherEl.files.length){
+          Array.from(otherEl.files).forEach(f=>{
+            uploads.push(readerPromise(f, '/api/hr/applicants/'+newId+'/attachment'));
+          });
+        }
+        if(uploads.length){ await Promise.all(uploads); }
+      }catch(e){ console.error(e); alert('Application created, but file upload failed'); }
+      alert('Application submitted successfully');
+      clearApplicationForm();
+      load();
+    }
+
     async function saveIv(){ if(!ivId) return; const payload={ interviewDate: IvDate.value||null, interviewTime: IvTime.value||null, interviewType: IvType.value||null, interviewerName: IvName.value||null, interviewerTitle: IvTitle.value||null, reason: IvReason.value||null }; try{ await j('/api/hr/applicants/'+ivId+'/shortlist',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); alert('Interview details Saved Successfully'); closeIv(); load(); }catch(e){ console.error(e); alert('Failed to save'); } }
+
+    loadJobTitles();
     load();
   </script>
 </body>

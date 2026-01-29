@@ -1,0 +1,753 @@
+ComplytEX (SaaS Agent)
+User Manual – Step-by-Step Guide with Screenshot Placeholders
+Version 1.1
+
+NOTE ABOUT IMAGES
+- This document includes clearly marked "Screenshot:" placeholders.
+- Open this file in Microsoft Word and replace each placeholder line by
+  inserting an actual screenshot from your running application.
+
+-------------------------------------------------------------------------------
+1. LOGIN & AUTHENTICATION
+-------------------------------------------------------------------------------
+
+1.1 Login Page (`/login.html`)
+
+Screenshot: [Insert full-page screenshot of Login screen here]
+
+PURPOSE
+- Sign in with your email and password, or use one of the demo accounts.
+
+HOW TO OPEN
+1. In your browser, go to your app URL (e.g. `http://localhost:3000`).
+2. Click the "Login" link in the top area of the Home page, or open
+   `/login.html` directly.
+
+FIELDS
+- Email – your login email.
+- Password – your login password.
+
+STEPS – SIGN IN WITH NORMAL ACCOUNT
+1. Type your **Email** into the Email box.
+2. Type your **Password** into the Password box.
+3. Click the **Sign In** button.
+4. Watch the status box below the button:
+   - If it turns green and shows "Signed in!", you will be redirected to the
+     Owner Dashboard or another page configured by the backend.
+   - If it turns red with an error message, correct the problem (e.g. wrong
+     password) and try again.
+
+STEPS – SIGN IN AS DEMO USER
+1. Scroll to the **Demo Accounts** section.
+2. Find the role you want (e.g. **Owner**, **HR Manager**, **Buyer**, etc.).
+3. Click the **Login as ...** button for that role.
+4. The Email and Password fields will be filled for you.
+5. The system will automatically attempt login; if not, click **Sign In**.
+
+TIP
+- After logging in as different demo users, you can see how the same modules
+  behave under different roles.
+
+
+-------------------------------------------------------------------------------
+2. HOME / DEMO DASHBOARD
+-------------------------------------------------------------------------------
+
+2.1 SaaS Agent Dashboard (`/index.html`)
+
+Screenshot: [Insert screenshot of Home / SaaS Agent Dashboard here]
+
+PURPOSE
+- Test that your Azure SQL database is reachable.
+- Demonstrate basic CRUD on a demo Contacts table.
+
+HOW TO OPEN
+1. Go to `/` or `/index.html` in your browser.
+
+SECTIONS
+- Top links: Login, Register, Owner Dashboard, Employees, Roles, Support,
+  Billing.
+- Database Connection card.
+- Contact Management card.
+- Contacts List card.
+
+STEPS – TEST DATABASE CONNECTION
+1. Locate the **Database Connection** card.
+2. Click the **Test Database Connection** button.
+3. Wait a few seconds.
+4. Confirm that a green success box appears with details:
+   - Database name
+   - Server name
+   - Number of tables
+   - Connection time
+5. If a red error box appears, verify your backend configuration and try again.
+
+STEPS – ADD A CONTACT
+1. Find the **Contact Management** card.
+2. In the **Contact name** field, type a name (e.g. `John Demo`).
+3. Click **Add Contact**.
+4. Watch the status area just below the form:
+   - A green success message should appear with the new total count of
+     contacts.
+5. To see the full list, click **Refresh List** in the same card.
+
+STEPS – EDIT A CONTACT
+1. Scroll to the **Contacts List** card.
+2. Click **Refresh List** if you don’t see any rows yet.
+3. Find the row of the contact you want to edit.
+4. Click the **Edit** button for that row.
+5. In the **Edit Contact** popup/modal:
+   - Change the name in the input field.
+   - Click **Save Changes**.
+6. After a short delay, the popup will close and the list will refresh.
+
+STEPS – DELETE A CONTACT
+1. In the Contacts List, find the contact you want to remove.
+2. Click the **Delete** button on that row.
+3. Confirm the browser confirmation dialog.
+4. The contact will be removed from the list.
+
+STEPS – CLEAR ALL CONTACTS
+1. Go to the **Contact Management** card.
+2. Click the **Clear All** button.
+3. Confirm the warning dialog. This action cannot be undone.
+4. The list in **Contacts List** card will become empty.
+
+
+-------------------------------------------------------------------------------
+3. OWNER DASHBOARD
+-------------------------------------------------------------------------------
+
+3.1 Owner Dashboard (`/dashboard.html`)
+
+Screenshot: [Insert screenshot of Owner Dashboard page here]
+
+PURPOSE
+- Show high-level metrics (Employees, Customers, Suppliers, Certifications)
+  and module list for a specific tenant.
+
+HOW TO OPEN
+1. Log in.
+2. Navigate to `/dashboard.html` or click **Owner Dashboard** from Home.
+
+FIELDS
+- Tenant ID – numeric tenant identifier.
+- Business Type – select from Manufacturer, Buyer, Supplier, etc.
+
+STEPS – LOAD A TENANT SUMMARY
+1. In the **Tenant ID** box, enter your tenant’s ID (for demo data, use the ID
+   provided with your sample DB).
+2. Optionally choose a **Business Type** from the dropdown.
+3. Click the **Load** button.
+4. Wait for the page to show:
+   - Tenant name and business type under the input row.
+   - Metrics on the cards (Employees, Customers, Suppliers, Certifications).
+   - A list of Modules in the grid below.
+
+HOW TO READ THE MODULES GRID
+- Each tile represents a major module (HR, CRM, Accounting, Safety, etc.).
+- Modules may be visually highlighted when the selected Business Type makes
+  them more important.
+
+NEXT STEPS
+- From the top links or main app shell, continue into detailed modules:
+  - Employees → manage users.
+  - Roles → configure permissions.
+  - Business Setup → configure company details.
+
+
+-------------------------------------------------------------------------------
+4. APPLICATION SHELL
+-------------------------------------------------------------------------------
+
+4.1 App Shell (`/app.html`)
+
+Screenshot: [Insert screenshot of App Shell with left module menu here]
+
+PURPOSE
+- Provide a single, modern shell with left-side navigation and main content
+  loaded into an iframe, so users can jump across modules easily.
+
+HOW TO OPEN
+1. After logging in, go to `/app.html`.
+
+STEPS – OPEN A MODULE FROM THE SHELL
+1. On the left, locate the **Modules** card.
+2. Click a module, for example **HR & Payroll**.
+3. Watch the main panel on the right:
+   - It will load the corresponding page (e.g. `/hr/index.html`).
+4. To switch modules, click another item (e.g. **Accounting**, **CRM**).
+
+TIP
+- The URL hash changes (for example `#/hr` or `#/crm`), so you can bookmark or
+  share direct links to a specific module within the shell.
+
+
+-------------------------------------------------------------------------------
+5. BUSINESS SETUP (PROFILE)
+-------------------------------------------------------------------------------
+
+5.1 Company Profile – Head Office (in `/profile.html`)
+
+Screenshot: [Insert screenshot of Business Setup / Head Office section here]
+
+PURPOSE
+- Store the main company details (address, capacity, wages, product lines,
+  logo) used by invoices and other modules.
+
+HOW TO OPEN
+1. In the App Shell, choose **Business Setup**.
+2. Ensure the Head Office/Company Profile tab is active.
+
+STEPS – FILL BASIC COMPANY INFORMATION
+1. Under "Head Office Address", fill:
+   - Address 1 (required)
+   - Address 2 (optional)
+   - City
+   - State/Province
+   - Postal Code
+2. Under "Total No. of Employees", enter the total count of staff.
+3. Enter capacity information:
+   - Capacity Type (e.g. "Pieces/day").
+   - Capacity Qty.
+   - Minimum Order Qty.
+4. Under "Sales Profit", enter:
+   - Sales Profit Type (e.g., "%" or "Fixed")
+   - Sales Profit Value (a number).
+5. Fill wage/age fields:
+   - Minimum Wage
+   - Minimum Age
+   - Retirement Age.
+6. Under "Product You Deal In", tick **Garments** and/or **Home Textile**.
+
+STEPS – UPLOAD COMPANY LOGO
+1. In the "Upload a Logo" area, click the file input.
+2. Select a PNG/JPEG logo file from your computer.
+3. Wait a moment;
+   - The file is uploaded to the backend.
+   - The preview area shows the stored logo.
+
+STEPS – MANAGE PRODUCT LINES
+1. In the "Product Line" section, type a line name in the input
+   (e.g. "T-Shirts").
+2. Click **Add**.
+3. The line will appear in the list below with a **Delete** button.
+4. To remove a line, click **Delete** on that row and confirm.
+
+STEPS – SAVE COMPANY PROFILE
+1. After entering all fields, click the **Save Company Profile** button.
+2. Wait for alert/confirmation message.
+3. Re-open the page to confirm values are loaded correctly.
+
+
+5.2 Warehouses (in `/profile.html`)
+
+Screenshot: [Insert screenshot of Warehouses list and New Warehouse modal]
+
+PURPOSE
+- Record one or more warehouse, store, shipping, or billing addresses.
+
+HOW TO OPEN
+1. In Business Setup, click the Warehouse tab or choose it via left buttons.
+
+STEPS – VIEW EXISTING WAREHOUSES
+1. Scroll to the **Warehouses** section.
+2. The list shows each warehouse with:
+   - Name
+   - Type (Retail/Wholesale/etc.)
+   - Full address
+   - Delete button.
+
+STEPS – ADD A NEW WAREHOUSE
+1. Click **New Warehouse**.
+2. In the popup form, enter:
+   - Warehouse Name.
+   - Address Type (Shipping, Warehouse, Store, Billing).
+   - Warehouse Type (Retail, Wholesale, Distribution, Store, Fulfillment).
+   - Address 1, Address 2.
+   - City, State, Postal Code.
+   - Country (select from dropdown).
+3. Click **Save**.
+4. Confirm that the modal closes and the new warehouse appears in the list.
+
+STEPS – DELETE A WAREHOUSE
+1. In the list, find the warehouse to remove.
+2. Click the **Delete** button.
+3. Confirm the deletion.
+
+
+5.3 Spaces (in `/profile.html`)
+
+Screenshot: [Insert screenshot of Spaces table and New Space modal]
+
+PURPOSE
+- Maintain dimensional and safety metadata for each separate physical space
+  (room, floor area, etc.).
+
+STEPS – FILTER AND EXPORT SPACES
+1. To search: type keywords in the **Search** box (e.g., "Cutting Floor").
+2. To export CSV: click **Export Excel**.
+3. To print/export as PDF: click **Export PDF** (opens a new window to print).
+
+STEPS – CREATE A NEW SPACE
+1. Click **New Space**.
+2. In the modal dialog, complete at least:
+   - Space name (e.g., "Cutting Floor 1").
+   - Type (e.g., "Production", "Warehouse").
+3. Optionally set:
+   - Purpose, width, length, height, unit, floor, capacity, ventilation,
+     number of doors and windows.
+4. (Optional) Choose an **Emergency Exit plan** image.
+5. Click **Save**.
+6. If an exit-plan image was selected, it will be uploaded in a second step.
+7. Close the modal; confirm the new space is visible in the table.
+
+STEPS – DELETE A SPACE
+1. In the spaces table, locate the row.
+2. Click **Delete**.
+3. Confirm the action.
+
+
+5.4 Assets, Certifications, Unions
+
+For each of these tabs in Business Setup, the workflow is similar:
+- Use **Search** to filter existing rows.
+- Use **New / Add New** button to open a modal.
+- Fill labeled fields.
+- Click **Save** to create a record.
+- Use **Delete** buttons in the table to remove records.
+- Export tables via **Export Excel/PDF** where available.
+
+Screenshots: [Insert one screenshot for Assets, one for Certifications,
+  and one for Unions lists and modals]
+
+
+5.5 Business Agent (embedded in `/profile.html`)
+
+Screenshot: [Insert screenshot of Business Agent panel]
+
+STEPS – USE BUSINESS AGENT
+1. Scroll to the **BUSINESS AGENT** panel in Business Setup.
+2. Optionally type instructions or context in the large text area.
+3. (Optional) Pick a file (e.g. existing safety or audit report) in the
+   upload control.
+4. Click **Submit**.
+5. Wait for a "Working..." indicator to disappear.
+6. Review the result panel:
+   - Extracted Facts
+   - Proposed Changes (which tables, what actions, what data).
+7. To apply changes:
+   - Click **Approve & Apply** (this may write data into your database).
+8. To discard:
+   - Click **Reject** and confirm.
+
+
+-------------------------------------------------------------------------------
+6. EMPLOYEES & ROLES
+-------------------------------------------------------------------------------
+
+6.1 Employees (`/employees.html`)
+
+Screenshot: [Insert screenshot of Employees page showing form and table]
+
+STEPS – LOAD EMPLOYEES FOR A TENANT
+1. Enter your **Tenant ID** at the top.
+2. Click **Load**.
+3. Confirm the table below shows employees or "Empty".
+
+STEPS – ADD A NEW EMPLOYEE
+1. In the **Add employee** section, fill:
+   - Email
+   - Full name
+   - Password (optional)
+   - Title (e.g., "HR Manager")
+   - Role name (optional – can be created later in Roles module).
+2. Click **Add**.
+3. If successful, the new employee appears in the table.
+
+STEPS – VIEW EMPLOYEE ROLES
+1. In the table, look at the **Roles** column to see assigned roles.
+2. Use the **Roles** page to modify role definitions.
+
+
+6.2 Roles (`/roles.html`)
+
+Screenshot: [Insert screenshot of Roles page: permissions list and roles table]
+
+STEPS – LOAD ROLES
+1. Enter your **Tenant ID**.
+2. Click **Load**.
+3. View existing roles in the **Existing roles** table.
+
+STEPS – CREATE A ROLE
+1. Under **Create role**, type a **Role name** (e.g., "Safety Officer").
+2. In the permission list:
+   - Tick each permission code that this role should have.
+3. Click **Create role**.
+4. Confirm it appears in the **Existing roles** table.
+
+STEPS – ASSIGN A ROLE TO A USER
+1. Get the **User ID** from the Employees page.
+2. Get the **Role ID** from the roles list (usually shown by the backend; if
+   not, use the order or check the DB).
+3. In the **Assign role to user** section, fill **User ID** and **Role ID**.
+4. Click **Assign**.
+5. Return to Employees to verify their roles.
+
+
+-------------------------------------------------------------------------------
+7. HR & PAYROLL
+-------------------------------------------------------------------------------
+
+7.1 HR Main (`/hr/index.html`) – Add New Employee
+
+Screenshot: [Insert screenshot of HR Add New Employee tab]
+
+STEPS – CREATE OR EDIT AN HR EMPLOYEE PROFILE
+1. Open `/hr/index.html` (via shell: HR & Payroll module).
+2. Ensure the **Add New Employee** tab is selected.
+3. If editing an existing employee:
+   - Scroll down to the Employees table.
+   - Click **Edit** on the desired row.
+   - Wait for the form to populate.
+4. Fill or update fields:
+   - Name, Email, Active, contact details, department, type, dates,
+     commission details, kin details, demographics, Notes, Job Description.
+5. Click **Save**.
+6. If it is a new employee, the system will create the employee first, then
+   save profile details.
+
+Screenshot: [Insert screenshot of HR Totals tab]
+
+STEPS – EDIT PAYROLL TOTALS
+1. Select an employee (Edit from table) so `currentEmpId` is set.
+2. Click the **Totals** tab.
+3. Wait for values to load.
+4. For each field (MTD/QTD/YTD Gross, State, FICA, etc.), enter decimals.
+5. Click **Save**.
+6. Re-open Totals later to confirm values are stored.
+
+
+7.2 Job Posting (`/hr/job-posting.html`)
+
+Screenshot: [Insert screenshot of Job Posting form]
+
+STEPS – CREATE OR EDIT A JOB POSTING
+1. Open Job Posting from HR quick links.
+2. Fill:
+   - Job Title (required)
+   - Department, Location, Employment Type
+   - Salary Range, Application Deadline, Description
+   - Required & Desired Qualifications
+   - Check any relevant statements (Diversity, EOE).
+3. Click **Save**.
+4. You will be redirected to job postings list. Edit can be initiated from
+   that list by passing an `id` in the URL.
+
+
+-------------------------------------------------------------------------------
+8. CRM
+-------------------------------------------------------------------------------
+
+8.1 CRM Landing (`/crm/index.html`)
+
+Screenshot: [Insert screenshot of CRM index page]
+
+STEPS – NAVIGATE TO CRM SUBMODULES
+1. From App Shell, choose **CRM**.
+2. On this hub page, click one of:
+   - **Open Contacts**
+   - **Open Leads**
+   - **Open Accounts**
+   - **Open Mailbox**
+   - **Open Chat**
+   - **Open Phone Notes**
+3. Use each detailed page to manage that entity type.
+
+
+8.2 Simple Add Contact (`/crm/add-contact.html`)
+
+Screenshot: [Insert screenshot of Add Contact (CRM) form]
+
+STEPS – ADD A CONTACT (DEMO)
+1. Open `/crm/add-contact.html` (or use link from CRM dashboard).
+2. Fill:
+   - Full Name
+   - Email (optional in current demo)
+   - Phone
+   - Company
+3. Click **Save Contact**.
+4. Watch the status message.
+
+
+-------------------------------------------------------------------------------
+9. ACCOUNTING
+-------------------------------------------------------------------------------
+
+9.1 Accounting Hub (`/accounting/index.html`)
+
+Screenshot: [Insert screenshot of Accounting index page]
+
+STEPS – USE ACCOUNTING HUB
+1. From App Shell, open **Accounting**.
+2. Review KPIs: Cash Balance, Open Payables, Open Receivables.
+3. Click one of the cards:
+   - **Open Petty Cash**
+   - **Open Payables**
+   - **Open Receivables**
+4. Follow the forms on each page to manage entries.
+
+
+9.2 Banks (`/accounting/banks.html`)
+
+Screenshot: [Insert screenshot of Banks page and form]
+
+STEPS – ADD A BANK ACCOUNT
+1. Open `/accounting/banks.html`.
+2. In the top form, fill:
+   - Bank Name
+   - Account Title
+   - Account Number
+   - Opening Balance
+3. Click **Add Bank**.
+4. Confirm the bank appears in the **Bank Accounts** table below.
+
+STEPS – VIEW BANK STATEMENT
+1. In the Bank Accounts table, find the row.
+2. Click the **Statement** link/button.
+3. The `bank-statement` page will open for that bank.
+
+
+-------------------------------------------------------------------------------
+10. SAFETY & COMPLIANCE
+-------------------------------------------------------------------------------
+
+10.1 Safety Audits (`/safety-audits.html`)
+
+Screenshot: [Insert screenshot overview of Safety Audits page]
+
+STEPS – PLAN A NEW AUDIT
+1. Open `/safety-audits.html`.
+2. Click **Plan New Audit**.
+3. In the modal, fill:
+   - Audit Name
+   - Audit Type / Related To
+   - Audit Company
+   - Audit Date
+4. Click **Save Audit**.
+5. Close the modal; the audit appears in the main audits list.
+
+STEPS – OPEN AN AUDIT AND FILL AUDIT SHEET
+1. In the audits list, locate the planned audit.
+2. Click **View**.
+3. Scroll down to the **Safety Audit Sheet** table.
+4. For each row:
+   - If there is NO issue:
+     - Leave **No Issue** checked.
+   - If there IS an issue:
+     - Uncheck **No Issue**.
+     - Fill **Issue Detail** and **Suggested Action**.
+     - Optionally specify **Informed To** and upload an attachment
+       (e.g. photo).
+5. After editing rows, click **Save Audit Sheet**.
+6. Wait for confirmation message.
+
+STEPS – RECORD CORRECTIVE ACTIONS
+1. Under **Open Issues & Corrective Actions**, locate the issue card.
+2. Fill:
+   - Corrective Action Taken
+   - Attachments (URLs or notes)
+   - Corrective Action By
+   - Corrective Action On (date)
+3. Click **Save Corrective Action**.
+
+STEPS – CREATE AND SEND AN RFQ
+1. On the same issue card, click **+ Create RFQ**.
+2. The RFQ form expands; fill:
+   - Item Name
+   - Qty and Unit
+   - Needed By
+   - Detail (what is required)
+   - Recipients (supplier emails)
+   - Shipping Terms, Payment Terms, Other Terms
+3. Click **Send RFQ**.
+4. Check the RFQ list under that issue to confirm creation.
+
+STEPS – REVIEW SUPPLIER QUOTES
+1. In the **Quote Dashboard** section, click **View Quotes** for a row.
+2. In the Quotes overlay, review:
+   - Supplier, Price, Shipping, Tax, Discount, Total, Arrival Date, Status.
+3. To approve one quote:
+   - Enter PO number in the **PO#** box.
+   - Click **Approve**.
+4. To mark delivered:
+   - Click **Mark Delivered** for that quote.
+
+STEPS – MANAGE INVOICES FROM QUOTES
+1. In the Quotes overlay, click **Invoice** for an approved quote.
+2. If an invoice exists:
+   - The system shows invoice number and total.
+3. If no invoice exists:
+   - Enter Invoice Number and Total when prompted.
+   - Confirm to create invoice.
+
+
+10.2 Safety Training (`/training.html`)
+
+Screenshot: [Insert screenshot of Safety Training page]
+
+STEPS – CREATE A TRAINING SESSION
+1. Open `/training.html`.
+2. In the top card, fill:
+   - Name (e.g. "Fire Drill 2025")
+   - Related To (e.g. "Fire Safety")
+   - Date
+   - Conducted By (trainer name)
+3. In **Description**, write a short summary of the training.
+4. In **Attendees** list, hold Ctrl (Cmd on Mac) and click names to select.
+5. Click **Save Training**.
+6. Use **Reset** to clear the form when done.
+
+STEPS – VIEW & FILTER TRAININGS
+1. In the second card, type a keyword in **Search** (e.g. "fire").
+2. The list updates with matching sessions.
+3. Click **Download CSV** to save current rows to a `.csv` file.
+
+STEPS – EDIT OR DELETE A SESSION
+1. In the list, click **Edit** for a row.
+2. The form at the top is pre-filled.
+3. Adjust fields and click **Save Training** again.
+4. To delete, click **Delete** and confirm.
+
+
+-------------------------------------------------------------------------------
+11. TASKS & CALENDAR
+-------------------------------------------------------------------------------
+
+11.1 Task Planner (`/calendar.html` or `/tasks/planning.html`)
+
+Screenshot: [Insert screenshot of Task Planner showing month and timeline]
+
+STEPS – SELECT A DAY
+1. In the left **calendar card**, click **Prev** or **Next** to choose month.
+2. Click a day number in the grid.
+3. The selected day appears in the top-right of the timeline card.
+
+STEPS – CREATE A TASK
+1. In the right **Tasks** card, locate the employee row and hour column.
+2. Click an empty slot at the desired hour.
+3. Task modal opens.
+4. Verify **Start** and **End** times (they are pre-filled from that slot).
+5. Enter **Task** title (required).
+6. Choose **Priority**.
+7. Optionally fill **Description**.
+8. Ensure **Assign To** shows the desired employee.
+9. (Optional) Change **Repeat** settings (Daily, Weekly, etc.).
+10. Click **OK**.
+11. The modal closes and the task pill appears in that row and hour.
+
+STEPS – REVIEW TASKS PER DAY
+1. Click different days on the month grid.
+2. For each date, the timeline shows tasks assigned to each user.
+
+
+-------------------------------------------------------------------------------
+12. SUPPORT, TRACKING, BILLING, REPORTS
+-------------------------------------------------------------------------------
+
+12.1 Support (`/support.html`)
+
+Screenshot: [Insert screenshot of Support page]
+
+STEPS – CREATE A SUPPORT TICKET
+1. Open `/support.html`.
+2. In **New Ticket** card, enter:
+   - Tenant ID (if applicable).
+   - Subject (short description).
+   - Message (full description of the issue).
+3. Click **Create ticket**.
+4. Scroll to **My Tickets** table to see the new ticket.
+
+
+12.2 Tracking (`/tracking.html`)
+
+Screenshot: [Insert screenshot of Tracking page]
+
+BASIC USAGE
+1. Type into the **Search** field to filter rows (by ID or Type).
+2. Use the **Status** dropdown to show Open or Closed items.
+3. Review ID, Type, Status, Updated columns.
+
+
+12.3 Billing (`/billing.html`)
+
+Screenshot: [Insert screenshot of Billing page]
+
+STEPS – START SUBSCRIPTION
+1. Open `/billing.html`.
+2. Enter **Tenant ID**.
+3. Click **Subscribe**.
+4. If your backend is configured, you will be redirected to a checkout page
+   (e.g., Stripe) in a new browser tab.
+5. If an error occurs, check the message shown below the button.
+
+
+12.4 Reports (`/report.html`)
+
+Screenshot: [Insert screenshot of Reports page]
+
+BASIC USAGE
+1. Open `/report.html`.
+2. Review the list of reports (e.g. Sales by Month, Employee Headcount).
+3. Click **Run** (currently a placeholder) to simulate running a report.
+4. In production, this can be wired to a real reporting engine or BI tool.
+
+
+-------------------------------------------------------------------------------
+13. ATTENDANCE & ROLE PORTALS (MASTERS)
+-------------------------------------------------------------------------------
+
+13.1 Attendance (`/attendance/admin.html`, `/attendance/scan.html`)
+
+Screenshot: [Insert screenshot of Attendance admin and scan screens]
+
+GENERAL PATTERN
+- **Admin** page:
+  - Use date and filter inputs to view attendance.
+  - Table lists users and their in/out status.
+- **Scan** page:
+  - Displayed on a kiosk or device.
+  - Scanning a badge/QR code marks attendance in the backend.
+
+
+13.2 Masters: Buyer, Supplier, Designer, Manufacturer, Safety Auditor,
+     Safety Office, Inspection
+
+Screenshot: [Insert one combined screenshot of a Master portal (e.g., Buyer)]
+
+PATTERN
+1. Open respective URLs, for example `/masters/buyer.html`.
+2. Read high-level description of the role portal.
+3. Use the **Quick links** to jump to Dashboard, Employees, Roles, Support,
+   Billing.
+4. You can extend these pages with role-specific widgets or reports.
+
+
+-------------------------------------------------------------------------------
+14. BEST PRACTICES
+-------------------------------------------------------------------------------
+
+- Log in first, then navigate through `/app.html` whenever possible.
+- Start configuration in this order for a new tenant:
+  1) Business Setup (profile, warehouses, spaces, assets, certifications).
+  2) Employees & Roles.
+  3) HR & Payroll profiles.
+  4) Safety Audits and Safety Training.
+  5) Accounting (Banks, Petty Cash, Payables/Receivables).
+  6) Support, Billing, and Reports.
+- Use screenshot placeholders in this document as a guide:
+  - Run the app in your browser.
+  - Take screenshots (PrintScreen or Snipping Tool).
+  - In Word, right-click the placeholder line → Insert Picture → From File.
+
+End of manual.

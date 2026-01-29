@@ -41,11 +41,11 @@
         <div class="form-group"><label class="form-label">Cell Phone</label><input id="CellPhone" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Whatsapp</label><input id="Whatsapp" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Website</label><input id="Website" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">Address</label><input id="Address" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">City</label><input id="City" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">State/Province</label><input id="State" class="form-input"/></div>
-        <div class="form-group"><label class="form-label">Zip Code</label><input id="Zip" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Country</label><select id="Country" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">State / Province</label><select id="State" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">City</label><select id="City" class="form-select"></select></div>
+        <div class="form-group"><label class="form-label">Address</label><input id="Address" class="form-input"/></div>
+        <div class="form-group"><label class="form-label">Zip Code</label><input id="Zip" class="form-input"/></div>
         <div class="form-group"><label class="form-label">NTN</label><input id="NTN" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Instagram</label><input id="Instagram" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Facebook</label><input id="Facebook" class="form-input"/></div>
@@ -86,15 +86,107 @@
     if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
     async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
     const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+
+    // Basic validators reused across CRM Add Contact form fields
+    function crmIsValidEmail(v){
+      if(!v) return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+    function crmIsValidPhone(v){
+      if(!v) return true;
+      return /^[0-9+()\-\s]+$/.test(v);
+    }
+    function crmNormalizeWebsite(v){
+      if(!v) return '';
+      let url = v.trim();
+      if(!url) return '';
+      if(!/^https?:\/\//i.test(url)){
+        url = 'https://' + url;
+      }
+      // Very loose URL validation: at least protocol + one dot
+      if(!/^https?:\/\/.+\..+/.test(url)){
+        return '__INVALID__';
+      }
+      return url;
+    }
+
     const url = new URL(location.href);
     const editId = parseInt(url.searchParams.get('id') || url.searchParams.get('companyId') || '0');
-    let catData=[]; let selectedCatIds[];
-    async function loadCountries(){ try{ const r=await j('/api/crm/countries'); const sel=document.getElementById('Country'); sel.innerHTML = r.data.map(c=>`<option>${esc(c)}</option>`).join(''); }catch(e){ console.error(e); }}
+    let catData=[]; let selectedCatIds=[];
+
+    // Simple in-memory location map for cascading Country → State → City.
+    // Extend this object with additional countries/states/cities as needed.
+    const LOCATION_DATA = {
+      'Pakistan': {
+        'Punjab': ['Lahore','Faisalabad','Multan'],
+        'Sindh': ['Karachi','Hyderabad'],
+        'Khyber Pakhtunkhwa': ['Peshawar'],
+        'Balochistan': ['Quetta']
+      },
+      'Bangladesh': {
+        'Dhaka': ['Dhaka'],
+        'Chattogram': ['Chattogram']
+      },
+      'United States': {
+        'California': ['Los Angeles','San Francisco'],
+        'New York': ['New York'],
+        'Texas': ['Houston','Dallas']
+      }
+    };
+
+    async function loadCountries(){
+      try{
+        const r = await j('/api/crm/countries');
+        const sel = document.getElementById('Country');
+        const countries = r.data || [];
+        sel.innerHTML = '<option value="">Select Country</option>' +
+          countries.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      }catch(e){ console.error(e); }
+    }
+
+    function populateStates(country,valueToSelect){
+      const stateSel = document.getElementById('State');
+      const citySel = document.getElementById('City');
+      stateSel.innerHTML = '<option value="">Select State / Province</option>';
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = LOCATION_DATA[country] || null;
+      if(!states) return;
+      Object.keys(states).forEach(s=>{
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s; stateSel.appendChild(opt);
+      });
+      if(valueToSelect){ stateSel.value = valueToSelect; }
+    }
+
+    function populateCities(country,state,valueToSelect){
+      const citySel = document.getElementById('City');
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = LOCATION_DATA[country] || null;
+      const cities = states && states[state] || null;
+      if(!cities) return;
+      cities.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; citySel.appendChild(opt);
+      });
+      if(valueToSelect){ citySel.value = valueToSelect; }
+    }
     async function loadCats(){ const role=document.getElementById('CompanyType').value; const r=await j('/api/crm/categories?role='+encodeURIComponent(role)); catData=r.data||[]; const box=document.getElementById('catList'); box.innerHTML = catData.map(x=>`<label style='display:block;margin:6px 0'><input type='checkbox' value='${x.Id}' ${selectedCatIds.includes(x.Id)?'checked':''}/> ${esc(x.Name)}</label>`).join(''); }
     function openCat(){ document.getElementById('catModal').classList.add('open'); loadCats(); }
     function closeCat(){ document.getElementById('catModal').classList.remove('open'); }
     function applyCats(){ const checks=[...document.querySelectorAll('#catList input[type=checkbox]')]; selectedCatIds=checks.filter(c=>c.checked).map(c=>parseInt(c.value)); document.getElementById('CategoryText').value = catData.filter(c=>selectedCatIds.includes(c.Id)).map(c=>c.Name).join(', '); closeCat(); }
     document.getElementById('CompanyType').addEventListener('change', ()=>{ selectedCatIds=[]; document.getElementById('CategoryText').value=''; });
+
+    // Cascading handlers for Country → State → City
+    document.getElementById('Country').addEventListener('change', (e)=>{
+      const country = e.target.value || '';
+      populateStates(country,null);
+      populateCities(country,'',null);
+    });
+    document.getElementById('State').addEventListener('change', (e)=>{
+      const country = document.getElementById('Country').value || '';
+      const state = e.target.value || '';
+      populateCities(country,state,null);
+    });
 
     function addBC(){
       const w=document.getElementById('bcWrap');
@@ -119,6 +211,33 @@
     function addPerson(values){ const c=document.getElementById('persons'); c.insertAdjacentHTML('beforeend', personItem(values)); }
 
     async function saveAll(){
+      const websiteRaw = Website.value||'';
+      const websiteNormalized = crmNormalizeWebsite(websiteRaw);
+      if(websiteRaw && websiteNormalized === '__INVALID__'){
+        alert('Please enter a valid Website URL (e.g. https://example.com or example.com).');
+        return;
+      }
+      const phoneTrimmed = (Phone.value||'').trim();
+      if(phoneTrimmed && !crmIsValidPhone(phoneTrimmed)){
+        alert('Please enter a valid Phone number (digits, space, +, -, parentheses).');
+        return;
+      }
+      // Validate person emails and phones
+      const personCards = [...document.querySelectorAll('#persons .card')];
+      for(const card of personCards){
+        const emailInput = card.querySelector('input[data-k="email"]');
+        const phoneInput = card.querySelector('input[data-k="phone"]');
+        const emailVal = emailInput && emailInput.value ? emailInput.value.trim() : '';
+        const phoneVal = phoneInput && phoneInput.value ? phoneInput.value.trim() : '';
+        if(emailVal && !crmIsValidEmail(emailVal)){
+          alert('Please enter a valid Email for each contact person.');
+          return;
+        }
+        if(phoneVal && !crmIsValidPhone(phoneVal)){
+          alert('Please enter a valid Phone number for each contact person (digits, space, +, -, parentheses).');
+          return;
+        }
+      }
       const payload = {
         companyName: CompanyName.value.trim(),
         companyDetails: CompanyDetails.value||null,
@@ -126,10 +245,10 @@
         sourceOfContact: SourceOfContact.value||null,
         product: Product.value||null,
         hsCode: HSCode.value||null,
-        phone: Phone.value||null,
+        phone: phoneTrimmed || null,
         cellPhone: CellPhone.value||null,
         whatsapp: Whatsapp.value||null,
-        website: Website.value||null,
+        website: websiteNormalized || null,
         address: Address.value||null,
         city: City.value||null,
         state: State.value||null,
@@ -174,10 +293,14 @@
         document.getElementById('Whatsapp').value = company.Whatsapp||'';
         document.getElementById('Website').value = company.Website||'';
         document.getElementById('Address').value = company.Address||'';
-        document.getElementById('City').value = company.City||'';
-        document.getElementById('State').value = company.State||'';
+        // Location: set Country first, then populate dependent State/City dropdowns
+        const country = company.Country || '';
+        const state = company.State || '';
+        const city = company.City || '';
+        if(country){ document.getElementById('Country').value = country; }
+        populateStates(country,state);
+        populateCities(country,state,city);
         document.getElementById('Zip').value = company.Zip||'';
-        document.getElementById('Country').value = company.Country||'';
         document.getElementById('NTN').value = company.NTN||'';
         document.getElementById('Instagram').value = company.Instagram||'';
         document.getElementById('Facebook').value = company.Facebook||'';

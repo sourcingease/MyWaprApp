@@ -17,6 +17,10 @@
     .nav{display:grid;gap:8px}
     .nav a{display:flex;align-items:center;gap:8px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-decoration:none;color:#0f172a}
     .nav a:hover{border-color:#0ea5e9}
+    .nav-item{cursor:pointer}
+    .nav-submenu{display:none;grid;gap:4px;margin-top:4px;margin-left:16px;padding-left:8px;border-left:2px solid #e2e8f0}
+    .nav-submenu.active{display:grid}
+    .nav-submenu a{padding:8px;font-size:14px}
     #appFrame{width:100%;border:0;border-radius:8px;background:#fff}
     footer{margin:8px 12px;padding:10px;color:#64748b;font-size:12px;text-align:center}
   </style>
@@ -40,6 +44,13 @@
         <a href="#/hr">👥 HR & Payroll</a>
         <a href="#/accounting">💰 Accounting</a>
         <a href="#/crm">🧩 CRM</a>
+        <div class="nav-item" onclick="toggleSubmenu(event)">
+          <a style="cursor:pointer;justify-content:space-between">🏭 Production <span>▼</span></a>
+          <div class="nav-submenu" id="production-submenu">
+            <a href="#/production?tab=water-buying" onclick="selectTab('water-buying')">💧 Water Buying</a>
+            <a href="#/production?tab=water-usage" onclick="selectTab('water-usage')">📊 Water Usage</a>
+          </div>
+        </div>
         <a href="#/support">💬 Support</a>
         <a href="#/ai">🤖 AI</a>
       </div>
@@ -53,6 +64,16 @@
 
   <script src="/js/master-layout.js"></script>
   <script>
+    function toggleSubmenu(event){
+      const submenu = event.currentTarget.querySelector('.nav-submenu');
+      submenu.classList.toggle('active');
+    }
+    
+    function selectTab(tab){
+      const submenu = document.getElementById('production-submenu');
+      submenu.classList.add('active');
+    }
+    
     function resizeFrame(){ const hdr=document.querySelector('.dashboard-header'); const h=window.innerHeight - (hdr?.offsetHeight||0) - 90; document.getElementById('appFrame').style.height = Math.max(400,h)+'px'; }
     window.addEventListener('resize', resizeFrame);
     function navigate(){
@@ -64,6 +85,7 @@
         '#/hr':'/hr/index.html',
         '#/accounting':'/accounting/dashboard.html?embedded=1',
         '#/crm':'/crm/index.html',
+        '#/production':'/production.html?embedded=1',
         '#/support':'/support.html?embedded=1',
         '#/ai':'/ai/analyst.html?embedded=1',
         '#/chat':'/crm/chat.html',
@@ -75,6 +97,12 @@
       const url = map[hash] || map['#/profile'];
       document.getElementById('appFrame').src = url;
       resizeFrame();
+      
+      // Open production submenu if production is selected
+      if(hash.includes('production')){
+        const submenu = document.getElementById('production-submenu');
+        if(submenu) submenu.classList.add('active');
+      }
     }
     window.addEventListener('hashchange', navigate);
     navigate();

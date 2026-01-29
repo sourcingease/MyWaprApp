@@ -301,7 +301,17 @@
     <label data-i18n="login.password">Password</label>
     <input id="password" type="password" placeholder="Enter your password" data-i18n-placeholder="login.password" value="" />
 
-    <button class="btn" onclick="login()" data-i18n="login.signIn">Sign In</button>
+    <button class="btn" id="loginBtn" onclick="login()" data-i18n="login.signIn">Sign In</button>
+
+    <div id="twofa-section" style="display:none;margin-top:12px;">
+      <div id="twofa-qr-wrapper" style="display:none;margin-bottom:12px;text-align:center;">
+        <p class="muted" style="margin-bottom:8px;">Scan this QR code with Google Authenticator (or any TOTP app), then enter the 6-digit code.</p>
+        <img id="twofa-qr-img" alt="Authenticator QR code" style="max-width:180px;border:1px solid #e5e7eb;border-radius:6px;padding:4px;background:#fff;" />
+      </div>
+      <label>Verification code</label>
+      <input id="twofa-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter the 6-digit code" />
+      <button class="btn" id="twofa-btn" type="button" style="margin-top:12px;" onclick="verifyCode()">Verify Code</button>
+    </div>
 
     <div id="status" class="status"></div>
 
@@ -316,15 +326,8 @@
   <script src="/js/i18n.js"></script>
   <script>
     const DEMOS = [
-      {label:'Owner', email:'owner@demo.example', password:'DemoPass123!'},
-      {label:'HR Manager', email:'hr@demo.example', password:'Welcome123!'},
-      {label:'Sales Manager', email:'sales@demo.example', password:'Welcome123!'},
-      {label:'Buyer', email:'buyer@demo.example', password:'Welcome123!'},
-      {label:'Supplier', email:'supplier@demo.example', password:'Welcome123!'},
-      {label:'Designer', email:'designer@demo.example', password:'Welcome123!'},
-      {label:'Safety Auditor', email:'auditor@demo.example', password:'Welcome123!'},
-      {label:'Safety Office', email:'safety@demo.example', password:'Welcome123!'},
-      {label:'Inspection', email:'inspection@demo.example', password:'Welcome123!'}
+      {label:'Safety Officer', email:'safety@demo.example', password:'Welcome123!'},
+      {label:'Safety Auditor', email:'auditor@demo.example', password:'Welcome123!'}
     ];
     const listEl = document.getElementById('demoList');
     listEl.innerHTML = DEMOS.map(d=>`<div class="demo-item"><button class="btn" onclick="quick('${d.email}','${d.password}')">Login as ${d.label}</button> <span class="muted">${d.email}</span></div>`).join('');
@@ -335,24 +338,97 @@
       login();
     }
 
+    let twoFactorPending = false;
+
     async function login(){
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const box = document.getElementById('status');
       box.style.display='block'; box.className='status'; box.textContent='';
+      const qrWrapper = document.getElementById('twofa-qr-wrapper');
+      const qrImg = document.getElementById('twofa-qr-img');
+      const twofaSection = document.getElementById('twofa-section');
       try{
         const res = await fetch('/api/auth/login',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password})});
         const data = await res.json();
         if(data.success){
+          const payload = data.data || {};
+          if (payload.twoFactorRequired) {
+            twoFactorPending = true;
+            const method = payload.method || 'totp';
+            box.classList.add('ok');
+            box.textContent = (payload.message || 'Verification code required.') + (method ? ` [${method}]` : '');
+
+            if(twofaSection){ twofaSection.style.display = 'block'; }
+            const pwd = document.getElementById('password');
+            if(pwd){ pwd.disabled = true; }
+            const btn = document.getElementById('loginBtn');
+            if(btn){ btn.disabled = true; }
+
+            // Show QR image whenever backend provides one (for initial TOTP setup)
+            if (qrWrapper && qrImg) {
+              if (payload.qrDataUrl) {
+                qrImg.src = payload.qrDataUrl;
+                qrWrapper.style.display = 'block';
+              } else {
+                qrWrapper.style.display = 'none';
+              }
+            }
+
+            // Clear any old code
+            const codeInput = document.getElementById('twofa-code');
+            if (codeInput) { codeInput.value = ''; codeInput.focus(); }
+
+            return;
+          }
+
           box.classList.add('ok');
           box.textContent = 'Signed in!';
-          const next = (data.data && data.data.redirect) ? data.data.redirect : '/dashboard';
+          const next = (payload && payload.redirect) ? payload.redirect : '/dashboard';
           setTimeout(()=>{ window.location.href = next; }, 400);
         }else{
+          twoFactorPending = false;
+          if(twofaSection){ twofaSection.style.display = 'none'; }
+          if(qrWrapper){ qrWrapper.style.display = 'none'; }
+          const pwd = document.getElementById('password');
+          if(pwd){ pwd.disabled = false; }
+          const btn = document.getElementById('loginBtn');
+          if(btn){ btn.disabled = false; }
           box.classList.add('err');
           box.textContent = data.error || 'Login failed';
         }
       }catch(e){
+        box.classList.add('err');
+        box.textContent = e.message;
+      }
+    }
+
+    async function verifyCode(){
+      const email = document.getElementById('email').value.trim();
+      const code = document.getElementById('twofa-code').value.trim();
+      const box = document.getElementById('status');
+      box.style.display='block'; box.className='status'; box.textContent='';
+      if(!email || !code){
+        box.classList.add('err');
+        box.textContent = 'Email and code are required';
+        return;
+      }
+      try{
+        const res = await fetch('/api/auth/verify-2fa',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, code})});
+        const data = await res.json();
+        if(data.success){
+          console.log('verify-2fa success', data);
+          box.classList.add('ok');
+          box.textContent = 'Signed in!';
+          const next = (data && data.data && data.data.redirect) ? data.data.redirect : '/dashboard';
+          // Use a direct navigation instead of a delayed redirect to avoid timing issues
+          window.location.assign(next);
+        }else{
+          box.classList.add('err');
+          box.textContent = data.error || 'Verification failed';
+        }
+      }catch(e){
+        console.error('verify-2fa error', e);
         box.classList.add('err');
         box.textContent = e.message;
       }

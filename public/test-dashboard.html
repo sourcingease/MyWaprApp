@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComplytEX End-to-End Test Suite</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 16px; }
+        
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 20px 30px;
+            background: #f8f9fa;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-passed .stat-value { color: #10b981; }
+        .stat-failed .stat-value { color: #ef4444; }
+        .stat-total .stat-value { color: #667eea; }
+        .stat-rate .stat-value { color: #f59e0b; font-size: 24px; }
+
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .section-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .section-header:hover { background: #e9ecef; }
+        .section-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .section-status {
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: #e9ecef;
+        }
+        .section-status.running { background: #fef3c7; color: #92400e; }
+        .section-status.passed { background: #d1fae5; color: #065f46; }
+        .section-status.failed { background: #fee2e2; color: #991b1b; }
+
+        .test-list {
+            padding: 20px;
+        }
+        .test-item {
+            padding: 12px;
+            border-left: 4px solid #e5e7eb;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background: #f9fafb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-item.running {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+            animation: pulse 2s infinite;
+        }
+        .test-item.passed {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .test-item.failed {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .test-name {
+            font-weight: 500;
+            flex: 1;
+        }
+        .test-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .test-detail {
+            font-size: 12px;
+            color: #6c757d;
+            margin-left: 28px;
+            margin-top: 5px;
+        }
+        .test-time {
+            font-size: 12px;
+            color: #6c757d;
+            margin-left: 10px;
+        }
+
+        .log-area {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .log-line {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-success { color: #10b981; }
+        .log-error { color: #ef4444; }
+        .log-warning { color: #f59e0b; }
+        .log-info { color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 ComplytEX End-to-End Test Suite</h1>
+            <p>Comprehensive testing of all modules and workflows</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="runAllTests()">▶ Run All Tests</button>
+            <button class="btn btn-success" onclick="runModule('auth')">🔐 Test Auth</button>
+            <button class="btn btn-success" onclick="runModule('crm')">📞 Test CRM</button>
+            <button class="btn btn-success" onclick="runModule('hr')">👥 Test HR</button>
+            <button class="btn btn-success" onclick="runModule('accounting')">💰 Test Accounting</button>
+            <button class="btn btn-success" onclick="runModule('safety')">🦺 Test Safety</button>
+            <button class="btn btn-danger" onclick="clearResults()">🗑️ Clear Results</button>
+            <button class="btn btn-secondary" onclick="exportResults()">📥 Export JSON</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card stat-total">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card stat-passed">
+                <div class="stat-value" id="statPassed">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card stat-failed">
+                <div class="stat-value" id="statFailed">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card stat-rate">
+                <div class="stat-value" id="statRate">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+        </div>
+
+        <div class="content" id="testContent">
+            <!-- Test sections will be dynamically added here -->
+        </div>
+
+        <div style="padding: 0 30px 30px;">
+            <h3 style="margin-bottom: 10px;">📋 Test Log</h3>
+            <div class="log-area" id="logArea"></div>
+        </div>
+    </div>
+
+    <script>
+        const testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0,
+            tests: []
+        };
+
+        const testSuites = {
+            auth: {
+                name: '🔐 Authentication & Session',
+                tests: [
+                    { name: 'User Login', fn: testLogin },
+                    { name: 'Session Validation', fn: testSession },
+                    { name: 'Logout', fn: testLogout }
+                ]
+            },
+            crm: {
+                name: '📞 CRM Module',
+                tests: [
+                    { name: 'List Contacts', fn: testListContacts },
+                    { name: 'Create Contact', fn: testCreateContact },
+                    { name: 'Update Contact', fn: testUpdateContact },
+                    { name: 'Delete Contact', fn: testDeleteContact }
+                ]
+            },
+            hr: {
+                name: '👥 HR Module',
+                tests: [
+                    { name: 'List Employees', fn: testListEmployees },
+                    { name: 'Create Employee', fn: testCreateEmployee },
+                    { name: 'List Job Postings', fn: testJobPostings },
+                    { name: 'Payroll Preview', fn: testPayrollPreview },
+                    { name: 'Generate Payroll', fn: testGeneratePayroll }
+                ]
+            },
+            accounting: {
+                name: '💰 Accounting Module',
+                tests: [
+                    { name: 'List Banks', fn: testListBanks },
+                    { name: 'List AP Invoices', fn: testListAP },
+                    { name: 'List AR Invoices', fn: testListAR },
+                    { name: 'Bank Ledger', fn: testBankLedger },
+                    { name: 'Payroll→AP Integration', fn: testPayrollToAP }
+                ]
+            },
+            safety: {
+                name: '🦺 Safety & Compliance',
+                tests: [
+                    { name: 'Fire Safety Form', fn: testFireSafety },
+                    { name: 'Electrical Safety', fn: testElectricalSafety },
+                    { name: 'List Safety Audits', fn: testSafetyAudits },
+                    { name: 'Create Audit', fn: testCreateAudit },
+                    { name: 'Audit Certification', fn: testAuditCertification }
+                ]
+            }
+        };
+
+        let authCookie = '';
+        let testContactId = null;
+        let testEmployeeId = null;
+
+        // Initialize UI
+        function initializeUI() {
+            const content = document.getElementById('testContent');
+            content.innerHTML = '';
+
+            for (const [key, suite] of Object.entries(testSuites)) {
+                const section = document.createElement('div');
+                section.className = 'test-section';
+                section.id = `section-${key}`;
+                section.innerHTML = `
+                    <div class="section-header" onclick="toggleSection('${key}')">
+                        <div>
+                            <span class="section-icon">${suite.name.split(' ')[0]}</span>
+                            <span>${suite.name.substring(suite.name.indexOf(' ') + 1)}</span>
+                        </div>
+                        <span class="section-status" id="status-${key}">Not Run</span>
+                    </div>
+                    <div class="test-list" id="tests-${key}" style="display: none;">
+                        ${suite.tests.map((test, i) => `
+                            <div class="test-item" id="test-${key}-${i}">
+                                <div>
+                                    <span class="test-icon">⏸️</span>
+                                    <span class="test-name">${test.name}</span>
+                                    <div class="test-detail" id="detail-${key}-${i}"></div>
+                                </div>
+                                <span class="test-time" id="time-${key}-${i}"></span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                content.appendChild(section);
+            }
+
+            log('🚀 Test suite initialized. Ready to run tests.', 'info');
+        }
+
+        function toggleSection(key) {
+            const tests = document.getElementById(`tests-${key}`);
+            tests.style.display = tests.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const line = document.createElement('div');
+            line.className = `log-line log-${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logArea.appendChild(line);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = testResults.total;
+            document.getElementById('statPassed').textContent = testResults.passed;
+            document.getElementById('statFailed').textContent = testResults.failed;
+            const rate = testResults.total > 0 ? ((testResults.passed / testResults.total) * 100).toFixed(1) : 0;
+            document.getElementById('statRate').textContent = rate + '%';
+        }
+
+        function updateTest(suiteKey, testIndex, status, detail = '', time = '') {
+            const testItem = document.getElementById(`test-${suiteKey}-${testIndex}`);
+            const detailEl = document.getElementById(`detail-${suiteKey}-${testIndex}`);
+            const timeEl = document.getElementById(`time-${suiteKey}-${testIndex}`);
+            
+            testItem.className = 'test-item ' + status;
+            
+            const icons = {
+                'running': '⏳',
+                'passed': '✅',
+                'failed': '❌'
+            };
+            testItem.querySelector('.test-icon').textContent = icons[status] || '⏸️';
+            
+            detailEl.textContent = detail;
+            timeEl.textContent = time;
+        }
+
+        function updateSectionStatus(suiteKey) {
+            const statusEl = document.getElementById(`status-${suiteKey}`);
+            const tests = testSuites[suiteKey].tests;
+            const results = tests.map((_, i) => {
+                const item = document.getElementById(`test-${suiteKey}-${i}`);
+                return item.className.includes('passed') ? 'passed' : 
+                       item.className.includes('failed') ? 'failed' : 'pending';
+            });
+            
+            if (results.every(r => r === 'passed')) {
+                statusEl.textContent = '✅ All Passed';
+                statusEl.className = 'section-status passed';
+            } else if (results.some(r => r === 'failed')) {
+                const failed = results.filter(r => r === 'failed').length;
+                statusEl.textContent = `❌ ${failed} Failed`;
+                statusEl.className = 'section-status failed';
+            } else if (results.some(r => r === 'pending')) {
+                statusEl.textContent = '⏳ Running...';
+                statusEl.className = 'section-status running';
+            }
+        }
+
+        async function runModule(suiteKey) {
+            log(`📦 Running ${testSuites[suiteKey].name}...`, 'info');
+            const suite = testSuites[suiteKey];
+            document.getElementById(`tests-${suiteKey}`).style.display = 'block';
+
+            for (let i = 0; i < suite.tests.length; i++) {
+                const test = suite.tests[i];
+                const startTime = Date.now();
+                
+                updateTest(suiteKey, i, 'running', 'Running...');
+                updateSectionStatus(suiteKey);
+                
+                try {
+                    const result = await test.fn();
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(2) + 's';
+                    
+                    if (result.success) {
+                        updateTest(suiteKey, i, 'passed', result.message, duration);
+                        testResults.passed++;
+                        log(`✅ ${test.name}: ${result.message}`, 'success');
+                    } else {
+                        updateTest(suiteKey, i, 'failed', result.message, duration);
+                        testResults.failed++;
+                        log(`❌ ${test.name}: ${result.message}`, 'error');
+                    }
+                } catch (error) {
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(2) + 's';
+                    updateTest(suiteKey, i, 'failed', error.message, duration);
+                    testResults.failed++;
+                    log(`❌ ${test.name}: ${error.message}`, 'error');
+                }
+                
+                testResults.total++;
+                updateStats();
+                updateSectionStatus(suiteKey);
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            log('🚀 Starting comprehensive end-to-end test suite...', 'info');
+            
+            for (const key of Object.keys(testSuites)) {
+                await runModule(key);
+            }
+            
+            log(`✨ All tests completed! ${testResults.passed}/${testResults.total} passed`, 
+                testResults.failed === 0 ? 'success' : 'warning');
+        }
+
+        function clearResults() {
+            testResults.passed = 0;
+            testResults.failed = 0;
+            testResults.total = 0;
+            testResults.tests = [];
+            updateStats();
+            
+            for (const [key, suite] of Object.entries(testSuites)) {
+                const statusEl = document.getElementById(`status-${key}`);
+                statusEl.textContent = 'Not Run';
+                statusEl.className = 'section-status';
+                
+                suite.tests.forEach((_, i) => {
+                    const testItem = document.getElementById(`test-${key}-${i}`);
+                    testItem.className = 'test-item';
+                    testItem.querySelector('.test-icon').textContent = '⏸️';
+                    document.getElementById(`detail-${key}-${i}`).textContent = '';
+                    document.getElementById(`time-${key}-${i}`).textContent = '';
+                });
+            }
+            
+            document.getElementById('logArea').innerHTML = '';
+            log('🔄 Results cleared. Ready for new test run.', 'info');
+        }
+
+        function exportResults() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                summary: {
+                    total: testResults.total,
+                    passed: testResults.passed,
+                    failed: testResults.failed,
+                    successRate: ((testResults.passed / testResults.total) * 100).toFixed(1) + '%'
+                },
+                tests: testResults.tests
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `complytex-test-results-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('📥 Test results exported to JSON file', 'success');
+        }
+
+        // Helper function for API calls
+        async function apiCall(path, options = {}) {
+            try {
+                const response = await fetch(`http://localhost:3000${path}`, {
+                    ...options,
+                    credentials: 'include',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                console.error('API Call Error:', error);
+                return { 
+                    status: 0, 
+                    data: { 
+                        success: false, 
+                        error: `Network error: ${error.message}. Make sure server is running on http://localhost:3000` 
+                    } 
+                };
+            }
+        }
+
+        // ============ TEST FUNCTIONS ============
+
+        async function testLogin() {
+            const result = await apiCall('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email: 'safety@demo.example', password: 'Welcome123!' })
+            });
+            
+            console.log('Login response:', result); // Debug log
+            
+            // Check if 2FA is required (check all possible property names)
+            const needs2FA = result.data && (
+                result.data.requires2fa || 
+                result.data.requiresOtp || 
+                result.data.twoFactorRequired ||
+                (result.data.data && result.data.data.twoFactorRequired)
+            );
+            
+            if (needs2FA) {
+                const code = prompt('🔐 Enter 2FA Code from Google Authenticator:');
+                if (!code) {
+                    return { success: false, message: '2FA code required but not provided' };
+                }
+                
+                // Verify 2FA code
+                const verify2faResult = await apiCall('/api/auth/verify-2fa', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: 'safety@demo.example', code: code })
+                });
+                
+                console.log('2FA verification response:', verify2faResult); // Debug log
+                
+                if (verify2faResult.data && verify2faResult.data.success) {
+                    return { success: true, message: `Logged in as ${verify2faResult.data.user?.email || 'safety@demo.example'} (2FA verified)` };
+                } else {
+                    return { success: false, message: verify2faResult.data?.error || '2FA verification failed' };
+                }
+            }
+            
+            if (result.data && result.data.success && result.data.user) {
+                return { success: true, message: `Logged in as ${result.data.user.email}` };
+            } else {
+                const errorMsg = result.data?.error || result.data?.message || JSON.stringify(result.data) || 'Login failed - unknown error';
+                return { success: false, message: errorMsg };
+            }
+        }
+
+        async function testSession() {
+            // Add a small delay to ensure cookie is set
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const result = await apiCall('/api/auth/session');
+            return result.data && result.data.user ? 
+                { success: true, message: `Session active for ${result.data.user.email}` } :
+                { success: false, message: result.data?.error || 'No active session' };
+        }
+
+        async function testLogout() {
+            const result = await apiCall('/api/auth/logout', { method: 'POST' });
+            return result.data.success ? 
+                { success: true, message: 'Logged out successfully' } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testListContacts() {
+            const result = await apiCall('/api/contacts');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} contacts` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testCreateContact() {
+            const result = await apiCall('/api/contacts', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: 'Test Contact ' + Date.now(),
+                    email: 'test' + Date.now() + '@example.com',
+                    phone: '555-1234'
+                })
+            });
+            
+            if (result.data.success && result.data.id) {
+                testContactId = result.data.id;
+                return { success: true, message: `Created contact ID: ${result.data.id}` };
+            }
+            return { success: false, message: result.data.error };
+        }
+
+        async function testUpdateContact() {
+            if (!testContactId) return { success: false, message: 'No contact ID available' };
+            
+            const result = await apiCall(`/api/contacts/${testContactId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ name: 'Updated Test Contact', notes: 'E2E Test' })
+            });
+            
+            return result.data.success ? 
+                { success: true, message: 'Contact updated' } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testDeleteContact() {
+            if (!testContactId) return { success: false, message: 'No contact ID available' };
+            
+            const result = await apiCall(`/api/contacts/${testContactId}`, { method: 'DELETE' });
+            return result.data.success ? 
+                { success: true, message: 'Contact deleted' } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testListEmployees() {
+            const result = await apiCall('/api/hr/employees');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} employees` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testCreateEmployee() {
+            const result = await apiCall('/api/hr/employees/full', {
+                method: 'POST',
+                body: JSON.stringify({
+                    profile: {
+                        fullName: 'Test Employee ' + Date.now(),
+                        email: 'emp' + Date.now() + '@example.com',
+                        active: true,
+                        department: 'Testing'
+                    },
+                    totals: { MTD_Gross: 5000, YTD_Gross: 60000 },
+                    payDetails: { Salary: 60000, PayFrequency: 'Monthly', PayType: 'Salary' }
+                })
+            });
+            
+            if (result.data.success && result.data.employeeId) {
+                testEmployeeId = result.data.employeeId;
+                return { success: true, message: `Created employee ID: ${result.data.employeeId}` };
+            }
+            return { success: false, message: result.data.error };
+        }
+
+        async function testJobPostings() {
+            const result = await apiCall('/api/hr/postings');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} job postings` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testPayrollPreview() {
+            const period = '2026-01';
+            const result = await apiCall(`/api/hr/payroll/preview?period=${period}`);
+            return result.data.success ? 
+                { success: true, message: `${result.data.data?.length || 0} employees in payroll` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testGeneratePayroll() {
+            const period = '2026-01';
+            const result = await apiCall('/api/hr/payroll/generate', {
+                method: 'POST',
+                body: JSON.stringify({ period })
+            });
+            return result.data.success ? 
+                { success: true, message: `Generated ${result.data.count || 0} AP invoices` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testListBanks() {
+            const result = await apiCall('/api/accounting/banks');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} banks` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testListAP() {
+            const result = await apiCall('/api/accounting/ap');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} AP invoices` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testListAR() {
+            const result = await apiCall('/api/accounting/ar');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} AR invoices` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testBankLedger() {
+            const result = await apiCall('/api/accounting/ledger');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} transactions` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testPayrollToAP() {
+            const result = await apiCall('/api/accounting/ap?status=Pending');
+            const payrollAP = result.data.data?.filter(ap => ap.OrderId?.startsWith('PAY-'));
+            return result.data.success ? 
+                { success: true, message: `Found ${payrollAP?.length || 0} payroll AP invoices` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testFireSafety() {
+            const result = await apiCall('/api/safety/fire-safety', {
+                method: 'POST',
+                body: JSON.stringify({
+                    SmokingProhibited: 'Yes',
+                    NoSmokingSigns: 'Yes',
+                    FireExtinguishers: 'Yes',
+                    Notes: 'E2E Test'
+                })
+            });
+            return result.data.success ? 
+                { success: true, message: 'Fire safety data saved' } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testElectricalSafety() {
+            const result = await apiCall('/api/safety/electrical-safety', {
+                method: 'POST',
+                body: JSON.stringify({
+                    ProperWiring: 'Yes',
+                    CircuitBreakers: 'Yes',
+                    Notes: 'E2E Test'
+                })
+            });
+            return result.data.success ? 
+                { success: true, message: 'Electrical safety data saved' } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testSafetyAudits() {
+            const result = await apiCall('/api/safety/audits');
+            return result.data.success ? 
+                { success: true, message: `Found ${result.data.data?.length || 0} audits` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testCreateAudit() {
+            const result = await apiCall('/api/safety/audits', {
+                method: 'POST',
+                body: JSON.stringify({
+                    AuditType: 'Fire Safety',
+                    Status: 'In Progress',
+                    Notes: 'E2E Test Audit'
+                })
+            });
+            return result.data.success ? 
+                { success: true, message: `Audit created ID: ${result.data.id || 'N/A'}` } :
+                { success: false, message: result.data.error };
+        }
+
+        async function testAuditCertification() {
+            const result = await apiCall('/api/safety/audits');
+            const completed = result.data.data?.filter(a => a.Status === 'Completed');
+            return result.data.success ? 
+                { success: true, message: `${completed?.length || 0} completed audits eligible for certification` } :
+                { success: false, message: result.data.error };
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initializeUI();
+        };
+    </script>
+</body>
+</html>

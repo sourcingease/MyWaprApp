@@ -91,6 +91,47 @@
       font-weight: 600;
     }
 
+    .nav-item-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-submenu {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      border-left: 3px solid #0ea5e9;
+    }
+
+    .nav-sublink {
+      display: flex;
+      align-items: center;
+      padding: 10px 20px 10px 40px;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 400;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-sublink:hover {
+      background: #e0f2fe;
+      color: #0ea5e9;
+      border-left-color: #0ea5e9;
+    }
+
+    .nav-submenu-toggle {
+      margin-left: auto;
+      font-size: 12px;
+      transition: transform 0.3s;
+    }
+
+    .nav-submenu-toggle.open {
+      transform: rotate(180deg);
+    }
+
     .nav-icon {
       font-size: 18px;
       margin-right: 12px;
@@ -973,16 +1014,32 @@
 </head>
 <body>
   <script>
+    // When embedded in another shell (?embedded=1), we KEEP the full dashboard
+    // layout (left Safety panel, center working area, right Procurement) so the
+    // user always sees the three-column template. Previously this script was
+    // hiding the header and right pane, which caused the layout to collapse.
     (function(){
       function hideIfEmbedded(){
-        const p=new URLSearchParams(location.search);
-        if(p.get('embedded')==='1'){
-          const hdr=document.querySelector('.dashboard-header'); if(hdr) hdr.remove();
-          const proc=document.querySelector('.proc-pane'); if(proc) proc.style.display='none';
-        }
+        try{
+          const p = new URLSearchParams(location.search);
+          if(p.get('embedded')==='1'){
+            // Intentionally left blank: no structural elements are removed.
+            // If you ever need embedded-specific tweaks, add only cosmetic
+            // changes here (e.g. margins), not DOM removals.
+          }
+        }catch(e){ /* ignore */ }
       }
       if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', hideIfEmbedded); else hideIfEmbedded();
     })();
+
+    // Toggle production submenu
+    function toggleNavSubmenu(link) {
+      const submenu = link.nextElementSibling;
+      const toggle = link.querySelector('.nav-submenu-toggle');
+      const isOpen = submenu.style.display === 'block';
+      submenu.style.display = isOpen ? 'none' : 'block';
+      if(toggle) toggle.classList.toggle('open');
+    }
   </script>
   <!-- i18n disabled -->
   <script src="/js/master-layout.js"></script>
@@ -1002,7 +1059,7 @@
       <nav>
         <ul class="nav-menu">
           <li class="nav-item">
-            <a href="#" class="nav-link active" onclick="switchTab('overview'); return false;">
+            <a href="#" class="nav-link active" onclick="goToDashboard(); return false;">
               <span class="nav-icon">🏠</span>
               <span>Dashboard</span>
             </a>
@@ -1023,6 +1080,12 @@
             <a href="#" class="nav-link" onclick="switchTab('usc-safe'); return false;">
               <span class="nav-icon">📋</span>
               <span>USC-Safe</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" onclick="switchTab('usc-safe2'); return false;">
+              <span class="nav-icon">📋</span>
+              <span>TestUsc-Safe</span>
             </a>
           </li>
           <li class="nav-item">
@@ -1079,6 +1142,96 @@
               <span>Emergency Power</span>
             </a>
           </li>
+
+          <!-- Quick Links group -->
+          <li class="nav-item">
+            <div class="nav-link" style="cursor:default; font-size:11px; text-transform:uppercase; color:#94a3b8; letter-spacing:0.06em;">Quick Links</div>
+          </li>
+          <li class="nav-item">
+            <a href="/safety-audits.html" class="nav-link">
+              <span class="nav-icon">📋</span>
+              <span>Safety Audits</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/training.html" class="nav-link">
+              <span class="nav-icon">🎓</span>
+              <span>Training</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/attendance/scan.html" class="nav-link">
+              <span class="nav-icon">🧾</span>
+              <span>Attendance Scan</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/attendance/admin.html" class="nav-link">
+              <span class="nav-icon">🧰</span>
+              <span>Attendance Admin</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/ai/analyst.html" class="nav-link">
+              <span class="nav-icon">🤖</span>
+              <span>AI Analyst</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/suppliers/rfq.html" class="nav-link">
+              <span class="nav-icon">🚚</span>
+              <span>Supplier RFQs</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/hr/index.html" class="nav-link">
+              <span class="nav-icon">👥</span>
+              <span>HR &amp; Payroll</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/accounting/index.html" class="nav-link">
+              <span class="nav-icon">💰</span>
+              <span>Accounting</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/billing.html" class="nav-link">
+              <span class="nav-icon">💳</span>
+              <span>Billing</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <div class="nav-item-group">
+              <a href="javascript:void(0)" class="nav-link" onclick="toggleNavSubmenu(this)">
+                <span class="nav-icon">🏭</span>
+                <span>Production</span>
+                <span class="nav-submenu-toggle">▼</span>
+              </a>
+              <ul class="nav-submenu" style="display:none;">
+                <li><a href="/production.html" class="nav-sublink">💧 Water Management</a></li>
+                <li><a href="/waste-management.html" class="nav-sublink">♻️ Waste Management</a></li>
+              </ul>
+            </div>
+          </li>
+          <li class="nav-item">
+            <a href="/support.html" class="nav-link">
+              <span class="nav-icon">💬</span>
+              <span>Chat/Support</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="mailto:?subject=Safety%20Office" class="nav-link">
+              <span class="nav-icon">✉️</span>
+              <span>Email</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/tasks/planning.html" class="nav-link">
+              <span class="nav-icon">🗓️</span>
+              <span>Task Planner</span>
+            </a>
+          </li>
         </ul>
       </nav>
     </aside>
@@ -1109,6 +1262,7 @@
         <button class="tab-item" data-tab="incidents">Incidents</button>
         <button class="tab-item" data-tab="grievances">Grievances</button>
         <button class="tab-item" data-tab="usc-safe">USC-Safe</button>
+        <button class="tab-item" data-tab="usc-safe-test">USC-Safe-Test</button>
         <button class="tab-item" data-tab="fire">Fire Safety</button>
         <button class="tab-item" data-tab="electrical">Electrical</button>
         <button class="tab-item" data-tab="structural">Structural</button>
@@ -1204,6 +1358,7 @@
         </div>
         <!-- Restored compact Safety Tabs for left panel; also used to build the top bar -->
         <div class="action-buttons" style="margin-top:12px;">
+          <a class="action-btn" href="#" onclick="switchTab('usc-safe-test'); return false;"><div class="action-icon">📑</div><div class="action-label">USC-Safe-Test</div></a>
           <a class="action-btn" href="#" onclick="switchTab('incidents'); return false;"><div class="action-icon">🚨</div><div class="action-label">Incidents</div></a>
           <a class="action-btn" href="#" onclick="switchTab('grievances'); return false;"><div class="action-icon">📋</div><div class="action-label">Grievances</div></a>
           <a class="action-btn" href="#" onclick="switchTab('usc-safe'); return false;"><div class="action-icon">📑</div><div class="action-label">USC-Safe</div></a>
@@ -1219,6 +1374,7 @@
           <a class="action-btn" href="#" onclick="showAuditList(); return false;"><div class="action-icon">🧾</div><div class="action-label">Audits</div></a>
           <a class="action-btn" href="/training.html"><div class="action-icon">🎓</div><div class="action-label">Training</div></a>
           <a class="action-btn" href="#" onclick="showSafetyAgent(); return false;"><div class="action-icon">🛡️</div><div class="action-label">Agent</div></a>
+          <a class="action-btn" href="#" onclick="switchTab('usc-safe2'); return false;"><div class="action-icon">📑</div><div class="action-label">USC-Safe2</div></a>
         </div>
       </div>
 
@@ -1228,6 +1384,75 @@
       </div>
 
       <script>
+        // Toast Notification System - Non-blocking notifications
+        window.showToast = function(message, type = 'info', duration = 3000) {
+          const toast = document.createElement('div');
+          toast.className = 'toast-notification';
+          
+          const icon = {
+            'success': '✅',
+            'error': '❌',
+            'warning': '⚠️',
+            'info': 'ℹ️'
+          }[type] || 'ℹ️';
+          
+          const bgColor = {
+            'success': '#10b981',
+            'error': '#ef4444',
+            'warning': '#f59e0b',
+            'info': '#3b82f6'
+          }[type] || '#3b82f6';
+          
+          toast.innerHTML = `<span style="font-size:18px;margin-right:8px">${icon}</span><span>${message}</span>`;
+          toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            background: ${bgColor};
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 99999;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease;
+            cursor: pointer;
+          `;
+          
+          document.body.appendChild(toast);
+          
+          toast.onclick = () => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+          };
+          
+          setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+          }, duration);
+        };
+
+        // Add CSS animations for toast
+        if (!document.getElementById('toast-styles')) {
+          const style = document.createElement('style');
+          style.id = 'toast-styles';
+          style.textContent = `
+            @keyframes slideInRight {
+              from { transform: translateX(400px); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+              from { transform: translateX(0); opacity: 1; }
+              to { transform: translateX(400px); opacity: 0; }
+            }
+          `;
+          document.head.appendChild(style);
+        }
 
         function showTasks(){
           try{
@@ -1609,7 +1834,7 @@
             const typeStr = typesSel.join(', ');
             const company = document.getElementById('paCompany').value.trim();
             const date = document.getElementById('paDate').value;
-            if(!name){ alert('Audit name required'); return; }
+            if(!name){ showToast('Audit name required', 'info'); return; }
             const payload = { tenantId: tenantId, auditName:name, auditType:typeStr||'FIRE', auditCompany:company||null, auditDate:date||null, createdBy:'SafetyOfficer' };
             const r = await fetch('/api/safety/audits',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
             const j = await r.json();
@@ -1707,10 +1932,79 @@
                   <div style="margin-top:8px"><div style="font-weight:700">Extracted Facts</div><ul>${facts||'<li>No facts</li>'}</ul></div>
                   <div style="margin-top:8px"><div style="font-weight:700">Proposed Changes</div><ul>${items||'<li>No changes</li>'}</ul></div>
                 </div>`;
-              document.getElementById('apv').onclick = async()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/approve`, { method:'POST', credentials:'include' }); alert('Approved and applied'); }catch(ex){ alert(ex.message);} };
-              document.getElementById('rej').onclick = async()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reason:'User rejected'}), credentials:'include' }); alert('Rejected'); }catch(ex){ alert(ex.message);} };
+              document.getElementById('apv').onclick = async()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/approve`, { method:'POST', credentials:'include' }); showToast('Approved and applied', 'success'); }catch(ex){ showToast(ex.message, 'error');} };
+              document.getElementById('rej').onclick = async()=>{ try{ await api(`/api/safety/agent/proposals/${data.proposalId}/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reason:'User rejected'}), credentials:'include' }); showToast('Rejected', 'info'); }catch(ex){ showToast(ex.message, 'error');} };
             }catch(ex){ res.innerHTML = `<div style="color:#ef4444">${esc(ex.message)}</div>`; }
           });
+        }
+
+        // CRM workspace embedded in the Safety dashboard. Shows a compact
+        // CRM toolbar (Add/Search Contact, Phone Notes, Segments) in the
+        // center working pane while keeping the left Safety Agents panel.
+        function showCrmWorkspace(){
+          const pane = document.querySelector('.working-pane');
+          if (!pane) return;
+
+          pane.style.display = 'block';
+          pane.style.alignItems = 'stretch';
+          pane.style.justifyContent = 'flex-start';
+          pane.style.padding = '0';
+
+          pane.innerHTML = `
+            <div style="padding:10px 14px 14px 14px;display:flex;flex-direction:column;height:calc(86vh);box-sizing:border-box">
+              <div id="crm-toolbar" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+                <button class="ct" data-crm-tab="add">Add Contact</button>
+                <button class="ct" data-crm-tab="search">Search Contact</button>
+                <button class="ct" data-crm-tab="add-notes">Add Phone Notes</button>
+                <button class="ct" data-crm-tab="search-notes">Search Phone Notes</button>
+                <button class="ct" data-crm-tab="segments">Create Segment</button>
+              </div>
+              <div style="flex:1;min-height:0">
+                <iframe id="crmFrame"
+                        src="/crm/add-contact-advanced.html?embedded=1"
+                        style="width:100%;height:100%;border:0;border-radius:8px;background:#fff"></iframe>
+              </div>
+            </div>`;
+
+          const frame = document.getElementById('crmFrame');
+          const buttons = Array.from(document.querySelectorAll('#crm-toolbar [data-crm-tab]'));
+          const urls = {
+            'add': '/crm/add-contact-advanced.html?embedded=1',
+            'search': '/crm/search-contacts.html?embedded=1',
+            'add-notes': '/crm/add-phone-notes.html?embedded=1',
+            'search-notes': '/crm/search-phone-notes.html?embedded=1',
+            'segments': '/crm/segments.html?embedded=1'
+          };
+
+          function setActive(activeBtn){
+            buttons.forEach(function(b){
+              b.style.background = '';
+              b.style.color = '';
+            });
+            if (activeBtn){
+              activeBtn.style.background = '#0ea5e9';
+              activeBtn.style.color = '#ffffff';
+            }
+          }
+
+          buttons.forEach(function(btn){
+            btn.addEventListener('click', function(ev){
+              ev.preventDefault();
+              const key = btn.getAttribute('data-crm-tab');
+              const url = urls[key];
+              if (url && frame) frame.src = url;
+              setActive(btn);
+            });
+          });
+
+          // Default tab: Add Contact
+          const def = buttons.find(function(b){ return b.getAttribute('data-crm-tab') === 'add'; });
+          setActive(def);
+        }
+
+        // Backwards-compat alias in case anything still calls showCrmAddContact.
+        function showCrmAddContact(){
+          showCrmWorkspace();
         }
 
         function toggleUserMenu(ev){
@@ -1731,7 +2025,7 @@
         });
 
         function signOut(){
-          const confirmSignOut = window.confirm('Do you want to sign out?');
+          const confirmSignOut = true; // Auto-confirm
           if(!confirmSignOut) return false;
           try{
             fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -1742,87 +2036,537 @@
         }
       </script>
       <script>
-        // Initialize multi-agent panel for Safety module
+        // Initialize multi-agent panel for Safety module and wire top tabs
         document.addEventListener('DOMContentLoaded', function(){
-          if (window.AgentUI) {
-            window.AgentUI.initModuleAgents({
-              containerSelector: '#safety-agents-panel',
-              moduleId: 'safety'
+          // Delay agent loading to ensure authentication is established
+          setTimeout(function() {
+            if (window.AgentUI && typeof window.AgentUI.initModuleAgents === 'function') {
+              try {
+                window.AgentUI.initModuleAgents({
+                  containerSelector: '#safety-agents-panel',
+                  moduleId: 'safety'
+                });
+              } catch (e) {
+                console.warn('AgentUI.initModuleAgents failed for Safety module', e);
+              }
+            }
+          }, 1000); // Wait 1 second for auth to be ready
+
+          // Build the top horizontal safety icon bar (Incidents, USC-Safe, etc.)
+          // including the new USC-Safe2 tab.
+          try {
+            if (typeof showSafetyTabs === 'function') {
+              showSafetyTabs();
+            }
+          } catch (e) {
+            console.warn('showSafetyTabs failed during init', e);
+          }
+
+          // As a safety net, if the USC-Safe tab still hasn't rendered, force it
+          // into the central working pane so the user never sees an empty
+          // "Working area" card on first load.
+          try {
+            if (typeof switchTab === 'function') {
+              switchTab('usc-safe');
+            }
+          } catch (e) {
+            console.warn('fallback switchTab(usc-safe) failed during init', e);
+          }
+
+          // When user clicks the text tabs row, route via switchTab so
+          // content appears in the center working pane.
+          try {
+            document.querySelectorAll('.tabs-container .tab-item[data-tab]').forEach(function(btn){
+              btn.addEventListener('click', function(ev){
+                ev.preventDefault();
+                var key = this.getAttribute('data-tab');
+                if (key && typeof switchTab === 'function') {
+                  switchTab(key);
+                }
+              });
             });
+          } catch (e) {
+            console.warn('Failed to bind text safety tabs', e);
           }
         });
       </script>
       <script>
         function switchTab(key){
           try{
-            const pane=document.querySelector('.working-pane'); if(!pane) return;
-            const id='tab-'+key; const section=document.getElementById(id);
-            pane.style.display='block'; pane.style.alignItems='stretch'; pane.style.justifyContent='flex-start'; pane.style.padding='0';
-            if(!section){ pane.innerHTML = '<div style="padding:16px;color:#64748b">Section not found: '+key+'</div>'; return; }
-            // Activate and move the section into the working pane
-            section.classList.add('active');
-            pane.innerHTML = '';
-            pane.appendChild(section);
-            // Scroll to top inside working area
+            const pane = document.querySelector('.working-pane');
+            if (!pane) return;
+
+            // Default to incidents if no key is provided (but callers normally pass a key)
+            if (!key) key = 'incidents';
+
+            // Allow simple aliases for tabs without duplicating templates
+            let lookupKey = key;
+            if (key === 'usc-safe2' || key === 'usc-safe-test') lookupKey = 'usc-safe';
+
+            // Some special keys are handled via helpers instead of templates
+            if (lookupKey === 'audits') {
+              if (typeof showAuditList === 'function') showAuditList();
+              return;
+            }
+            if (lookupKey === 'agent') {
+              if (typeof showSafetyAgent === 'function') showSafetyAgent();
+              return;
+            }
+            if (lookupKey === 'training') {
+              window.location.href = '/training.html';
+              return;
+            }
+
+            const id = 'tab-' + lookupKey;
+            const template = document.getElementById(id);
+
+            // Close sidebar on selection (for small screens)
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+
+            if (!template){
+              pane.innerHTML = '<div style="padding:16px;color:#64748b">Section not found: ' + key + '</div>';
+              return;
+            }
+
+            // Keep the three-column layout (left Safety, center working
+            // area, right Procurement). The hidden tab sections act as
+            // templates only; we copy their inner HTML into the center
+            // working pane instead of moving them in the DOM.
+            pane.style.display = 'block';
+            pane.style.alignItems = 'stretch';
+            pane.style.justifyContent = 'flex-start';
+            pane.style.padding = '0';
+            pane.innerHTML = template.innerHTML;
             pane.scrollTop = 0;
-          }catch(e){ console.warn('switchTab failed', e); }
+
+            // If we are on the Incident Reporting tab, pre-fill the
+            // Date & Time field with the current local date-time so
+            // browsers that require both parts (date + time) treat the
+            // field as valid and the time is clearly visible.
+            if (lookupKey === 'incidents') {
+              const dtInput = pane.querySelector('#incidentFormData input[name="incidentDateTime"]');
+              if (dtInput && !dtInput.value) {
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const localValue = [
+                  now.getFullYear(),
+                  pad(now.getMonth() + 1),
+                  pad(now.getDate())
+                ].join('-') + 'T' + [
+                  pad(now.getHours()),
+                  pad(now.getMinutes())
+                ].join(':');
+                dtInput.value = localValue;
+              }
+            }
+
+            // For checklist-style forms, ensure N/A is selected by default where
+            // nothing is checked yet. We need to do this after copying the
+            // template into the working pane so it applies to the live form.
+            if (typeof setDefaultRadioButtons === 'function') {
+              if (lookupKey === 'fire') {
+                setDefaultRadioButtons('fireFormData');
+              } else if (lookupKey === 'electrical') {
+                setDefaultRadioButtons('electricalFormData');
+              } else if (lookupKey === 'structural') {
+                setDefaultRadioButtons('structuralFormData');
+              } else if (lookupKey === 'gas') {
+                setDefaultRadioButtons('gasFormData');
+              } else if (lookupKey === 'boiler') {
+                // Boiler tab requirement: always default to LAST radio option for each line.
+                if (typeof setDefaultLastRadioButtons === 'function') {
+                  setDefaultLastRadioButtons('boilerFormData');
+                } else {
+                  setDefaultRadioButtons('boilerFormData');
+                }
+              } else if (lookupKey === 'health') {
+                setDefaultRadioButtons('healthFormData');
+              } else if (lookupKey === 'consultant') {
+                // Consultant requirement: all radios default to N/A (last option / N/A value)
+                setDefaultRadioButtons('consultantFormData');
+              } else if (lookupKey === 'dsa') {
+                // DSA checklist: default all Yes/No/N/A groups to N/A when empty
+                setDefaultRadioButtons('dsaFormData');
+              }
+            }
+
+          // After defaults, try to load the latest saved checklist
+          // directly into the working-pane form (not the hidden template) so
+          // saved Yes/No/N/A values are restored on refresh.
+          if (lookupKey === 'usc-safe' && window.SafetyAPI &&
+                typeof SafetyAPI.loadUSCSafe === 'function' &&
+                typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadUSCSafe();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#uscSafeFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore USC-Safe checklist from DB', e);
+                }
+              })();
+            } else if (lookupKey === 'fire' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadFireSafety === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadFireSafety();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#fireFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Fire checklist from DB', e);
+                }
+              })();
+            } else if (lookupKey === 'electrical' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadElectricalSafety === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadElectricalSafety();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#electricalFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Electrical checklist from DB', e);
+                }
+              })();
+            } else if (lookupKey === 'structural' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadStructuralSafety === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadStructuralSafety();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#structuralFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Structural checklist from DB', e);
+                }
+              })();
+            } else if (lookupKey === 'gas' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadGasSafety === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const data = await SafetyAPI.loadGasSafety();
+                  if (!data || Array.isArray(data)) return;
+                  const liveForm = pane.querySelector('#gasFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+
+                    // IMPORTANT: populateForm may clear radios for fields that are
+                    // missing/null in the saved payload. Always re-apply defaults
+                    // so NO radio-group remains unselected in the Gas tab.
+                    if (typeof setDefaultRadioButtons === 'function') {
+                      setDefaultRadioButtons('gasFormData');
+                      requestAnimationFrame(() => setDefaultRadioButtons('gasFormData'));
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Gas checklist from DB', e);
+                }
+              })();
+            } else if (lookupKey === 'boiler' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadBoilerSafety === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const data = await SafetyAPI.loadBoilerSafety();
+                  if (!data || Array.isArray(data)) return;
+                  const liveForm = pane.querySelector('#boilerFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+
+                    // Boiler rule: no radio-group should remain unselected.
+                    if (typeof setDefaultLastRadioButtons === 'function') {
+                      setDefaultLastRadioButtons('boilerFormData');
+                      requestAnimationFrame(() => setDefaultLastRadioButtons('boilerFormData'));
+                    } else if (typeof setDefaultRadioButtons === 'function') {
+                      setDefaultRadioButtons('boilerFormData');
+                      requestAnimationFrame(() => setDefaultRadioButtons('boilerFormData'));
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Boiler checklist from DB', e);
+                }
+              })();
+            } else if (lookupKey === 'health' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadHealthHazards === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadHealthHazards();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#healthFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Health checklist from DB', e);
+                }
+              })();
+            }
+
+            // Highlight matching sidebar nav item (Incidents, Grievances, USC-Safe, etc.)
+            document.querySelectorAll('.nav-link').forEach(function(link){
+              link.classList.remove('active');
+              const onclick = link.getAttribute('onclick') || '';
+              if (onclick.indexOf("'" + key + "'") !== -1) {
+                link.classList.add('active');
+              }
+            });
+
+            // Fire per-tab loaders where they exist
+            try {
+              if (lookupKey === 'incidents' && typeof loadIncidents === 'function') {
+                loadIncidents();
+              } else if (lookupKey === 'grievances') {
+                if (typeof loadGrievances === 'function') {
+                  loadGrievances();
+                }
+                if (typeof initGrievanceEmployeeLookup === 'function') {
+                  initGrievanceEmployeeLookup();
+                }
+              } else if (lookupKey === 'fire' && typeof loadFireSafetyData === 'function') {
+                loadFireSafetyData();
+              } else if (lookupKey === 'electrical' && typeof loadElectrical === 'function') {
+                loadElectrical();
+              } else if (lookupKey === 'structural' && typeof loadStructural === 'function') {
+                loadStructural();
+              } else if (lookupKey === 'health' && typeof loadHealth === 'function') {
+                loadHealth();
+              }
+            } catch (e) {
+              console.warn('Tab loader failed for', lookupKey, e);
+            }
+
+            // As a final safety net, for the Gas checklist make sure any radio
+            // groups that still have no selection default to N/A in the live
+            // working-pane form even after DB data is applied.
+            if (lookupKey === 'gas' && typeof setDefaultRadioButtons === 'function') {
+              setDefaultRadioButtons('gasFormData');
+            }
+          } catch (e) {
+            console.warn('switchTab failed', e);
+          }
+        }
+
+        // Build/refresh the top horizontal safety icon bar.
+
+        // Replace the global top-tabs row with Setup-specific tabs when the
+        // Setup module is active. This function reuses the same
+        // #safety-top-tabs container so it appears in exactly the same place
+        // under the header.
+        function showSetupTopTabs(){
+          try {
+            window.activeTopTabs = 'setup';
+            window.disableSafetyTopTabs = true;
+
+            const main = document.querySelector('.main-content');
+            const header = main ? main.querySelector('.dashboard-header') : null;
+            if (!main || !header) return;
+
+            let bar = document.getElementById('safety-top-tabs');
+            if (!bar) {
+              bar = document.createElement('div');
+              bar.id = 'safety-top-tabs';
+              bar.className = 'top-safety-tabs';
+              header.insertAdjacentElement('afterend', bar);
+            }
+
+            bar.style.display = '';
+            bar.innerHTML = '';
+
+            const items = [
+              ['profile', '🏢', 'Profile'],
+              ['setup',   '⚙️', 'Setup']
+            ];
+
+            items.forEach(function([key, emoji, label]){
+              const btn = document.createElement('button');
+              btn.className = 'sm-tab';
+              const iconBox = document.createElement('div');
+              iconBox.className = 'sm-icon-box';
+              const span = document.createElement('span');
+              span.className = 'sm-ico';
+              span.textContent = emoji;
+              iconBox.appendChild(span);
+              const lbl = document.createElement('div');
+              lbl.className = 'sm-lbl';
+              lbl.textContent = label;
+              btn.appendChild(iconBox);
+              btn.appendChild(lbl);
+
+              btn.addEventListener('click', function(ev){
+                ev.preventDefault();
+                try {
+                  window.activeTopTabs = 'setup';
+                  if (typeof window.openSetupSection === 'function') {
+                    window.openSetupSection(key);
+                  }
+                } catch (e) {
+                  console.warn('setup top tab click failed', e);
+                }
+              });
+
+              bar.appendChild(btn);
+            });
+          } catch (e) {
+            console.warn('showSetupTopTabs failed', e);
+          }
+        }
+
+        // Helper used by Setup top tabs to switch sections inside the embedded
+        // Business Setup iframe.
+        window.openSetupSection = function(which){
+          try {
+            const frame = document.getElementById('ml-embed-frame') || document.getElementById('appFrame');
+            const win = frame && frame.contentWindow;
+            if (!win) return;
+
+            if (which === 'profile') {
+              if (typeof win.forceTopBarProfile === 'function') {
+                win.forceTopBarProfile();
+              }
+              if (typeof win.leftShowProfile === 'function') {
+                win.leftShowProfile();
+              }
+              if (typeof win.showTab === 'function') {
+                win.showTab('company');
+              }
+            } else if (which === 'setup') {
+              if (typeof win.showTopBarSetup === 'function') {
+                win.showTopBarSetup();
+              }
+              if (typeof win.leftShowSetup === 'function') {
+                win.leftShowSetup();
+              }
+              if (typeof win.showTab === 'function') {
+                win.showTab('setup');
+              }
+            }
+          } catch (e) {
+            console.warn('openSetupSection failed', e);
+          }
+        };
+
+        function showSafetyTabs(){
+            const main = document.querySelector('.main-content');
+            const header = main ? main.querySelector('.dashboard-header') : null;
+            if (!main || !header) return;
+
+            let bar = document.getElementById('safety-top-tabs');
+            if (!bar) {
+              bar = document.createElement('div');
+              bar.id = 'safety-top-tabs';
+              bar.className = 'top-safety-tabs';
+              header.insertAdjacentElement('afterend', bar);
+            }
+
+            // Ensure the bar is visible whenever Safety tabs are requested
+            bar.style.display = '';
+
+            bar.innerHTML = '';
+
+            const items = [
+              ['usc-safe',         '📑', 'USC-Safe'],
+              ['fire',             '🔥', 'Fire'],
+              ['electrical',       '⚡', 'Electrical'],
+              ['structural',       '🏗️', 'Structural'],
+              ['health',           '⚕️', 'Health'],
+              ['gas',              '🧯', 'Gas'],
+              ['boiler',           '⚙️', 'Boiler'],
+              ['consultant',       '💼', 'Consultant'],
+              ['dsa',              '🏛️', 'DSA'],
+              ['emergency-power',  '🔌', 'Emergency'],
+              ['training',         '🎓', 'Training'],
+              ['incidents',        '🚨', 'Incidents'],
+              ['grievances',       '📋', 'Grievances'],
+              ['agent',            '🛡️', 'Agent'],
+              ['audits',           '🧾', 'Audits']
+            ];
+
+            function setActive(key){
+              try{
+                bar.querySelectorAll('.sm-tab').forEach(function(btn){
+                  const k = btn.getAttribute('data-safety-tab');
+                  btn.classList.toggle('active', k === key);
+                });
+              }catch(e){}
+            }
+
+            items.forEach(function([key, emoji, label]){
+              const btn = document.createElement('button');
+              btn.className = 'sm-tab';
+              btn.setAttribute('data-safety-tab', key);
+              const iconBox = document.createElement('div');
+              iconBox.className = 'sm-icon-box';
+              const span = document.createElement('span');
+              span.className = 'sm-ico';
+              span.textContent = emoji;
+              iconBox.appendChild(span);
+              const lbl = document.createElement('div');
+              lbl.className = 'sm-lbl';
+              lbl.textContent = label;
+              btn.appendChild(iconBox);
+              btn.appendChild(lbl);
+
+              btn.addEventListener('click', function(ev){
+                ev.preventDefault();
+                try {
+                  if (key === 'audits') {
+                    if (typeof showAuditList === 'function') showAuditList();
+                  } else if (key === 'training') {
+                    window.location.href = '/training.html';
+                  } else if (key === 'agent') {
+                    if (typeof showSafetyAgent === 'function') showSafetyAgent();
+                  } else if (typeof switchTab === 'function') {
+                    switchTab(key);
+                  }
+                  setActive(key);
+                } catch (e) {
+                  console.warn('safety top tab click failed', e);
+                }
+              });
+
+              bar.appendChild(btn);
+            });
+
+            // Default tab: always open the *first* safety tab in the
+            // center working pane so the user immediately sees content
+            // when landing on the Safety Officer dashboard.
+            try{
+              const first = items[0] && items[0][0]; // e.g. 'usc-safe'
+              if (first && typeof switchTab === 'function') {
+                switchTab(first);
+                setActive(first);
+              }
+            }catch(e){ console.warn('Failed to open default safety tab', e); }
         }
       </script>
-
-      <!-- Quick Links -->
-      <div class="dashboard-card full-width-card">
-        <div class="card-header">Quick Links</div>
-        <div class="action-buttons" style="grid-template-columns: repeat(3, 1fr);">
-          <a class="action-btn" href="/safety-audits.html">
-            <div class="action-icon">📋</div>
-            <div class="action-label">Safety Audits</div>
-          </a>
-          <a class="action-btn" href="/training.html">
-            <div class="action-icon">🎓</div>
-            <div class="action-label">Training</div>
-          </a>
-          <a class="action-btn" href="/attendance/scan.html">
-            <div class="action-icon">🧾</div>
-            <div class="action-label">Attendance Scan</div>
-          </a>
-          <a class="action-btn" href="/attendance/admin.html">
-            <div class="action-icon">🧰</div>
-            <div class="action-label">Attendance Admin</div>
-          </a>
-          <a class="action-btn" href="/ai/analyst.html">
-            <div class="action-icon">🤖</div>
-            <div class="action-label">AI Analyst</div>
-          </a>
-          <a class="action-btn" href="/suppliers/rfq.html">
-            <div class="action-icon">🚚</div>
-            <div class="action-label">Supplier RFQs</div>
-          </a>
-          <a class="action-btn" href="/hr/index.html">
-            <div class="action-icon">👥</div>
-            <div class="action-label">HR & Payroll</div>
-          </a>
-          <a class="action-btn" href="/accounting/index.html">
-            <div class="action-icon">💰</div>
-            <div class="action-label">Accounting</div>
-          </a>
-          <a class="action-btn" href="/billing.html">
-            <div class="action-icon">💳</div>
-            <div class="action-label">Billing</div>
-          </a>
-          <a class="action-btn" href="/support.html">
-            <div class="action-icon">💬</div>
-            <div class="action-label">Chat/Support</div>
-          </a>
-          <a class="action-btn" href="mailto:?subject=Safety%20Office">
-            <div class="action-icon">✉️</div>
-            <div class="action-label">Email</div>
-          </a>
-          <a class="action-btn" href="/tasks/planning.html">
-            <div class="action-icon">🗓️</div>
-            <div class="action-label">Task Planner</div>
-          </a>
-        </div>
-      </div>
 
       </div> <!-- Close dashboard-content -->
     </div> <!-- Close tab-overview -->
@@ -2114,7 +2858,9 @@
               </div>
               <div class="form-group">
                 <label style="font-size: 13px;">Employee Name</label>
-                <input type="text" name="employeeName" style="font-size: 13px; padding: 6px;">
+                <select name="employeeName" id="grievanceEmployeeName" style="font-size: 13px; padding: 6px;">
+                  <option value="">-- Select Employee --</option>
+                </select>
               </div>
               <div class="form-group">
                 <label style="font-size: 13px;">Department</label>
@@ -3353,7 +4099,7 @@
           </div>
         </div>
         <div id="electrical-form" class="form-container" style="padding: 16px;">
-          <form id="electricalFormData" onsubmit="saveElectrical(event)">
+          <form id="electricalFormData" onsubmit="handleElectricalSubmit(event)">
             <div style="margin-bottom: 24px;">
               <h3 style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #1a73e8;">Basic Information</h3>
               <div class="form-grid" style="gap: 12px;">
@@ -3675,8 +4421,8 @@
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
-        <div id="structural-form" class="form-container">
-          <form id="structuralFormData" onsubmit="saveStructural(event)">
+        <div id="structural-form" class="form-container" style="padding: 16px;">
+          <form id="structuralFormData" onsubmit="handleStructuralSubmit(event)">
             <div class="form-grid">
               <div class="form-group">
                 <label>Inspection Date *</label>
@@ -3825,6 +4571,7 @@
       </div>
     </div>
 
+
     <!-- USC-Safe Tab -->
     <div id="tab-usc-safe" class="tab-content">
       <div style="padding: 24px;">
@@ -3837,175 +4584,7 @@
           </div>
         </div>
         <div id="usc-safe-form" class="form-container" style="padding: 16px;">
-          <form id="uscSafeFormData" onsubmit="saveUSCSafe(event)">
-            
-            <!-- Fire Safety & Protection – Smoking Controls -->
-            <h3 style="color: #0ea5e9; margin-bottom: 12px; font-size: 15px; font-weight: 600;">🔥 Fire Safety & Protection – Smoking Controls</h3>
-            
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Smoking prohibited inside all buildings</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="smoking_prohibited" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="smoking_prohibited" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="smoking_prohibited" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">"No Smoking" signs in Urdu & English posted at entrances</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="no_smoking_signs" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="no_smoking_signs" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="no_smoking_signs" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Designated outdoor smoking areas provided and clearly marked (if applicable)</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="outdoor_smoking" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="outdoor_smoking" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="outdoor_smoking" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <!-- Fire Safety & Protection – Housekeeping & Egress -->
-            <h3 style="color: #0ea5e9; margin: 20px 0 12px 0; font-size: 15px; font-weight: 600;">🔥 Fire Safety & Protection – Housekeeping & Egress</h3>
-            
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Housekeeping policy in writing with regular cleaning schedule</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="housekeeping_policy" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="housekeeping_policy" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="housekeeping_policy" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Floors, walls, ceilings, ventilation cleaned to avoid lint/dust accumulation</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="cleaning_lint" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="cleaning_lint" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="cleaning_lint" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Egress paths kept clear and unobstructed</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="egress_clear" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="egress_clear" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="egress_clear" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Daily inspections for egress, fire doors, storage, hot-work, smoking compliance</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="daily_inspections" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="daily_inspections" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="daily_inspections" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Fire doors tested for self-closing and latching</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="fire_doors_tested" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="fire_doors_tested" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="fire_doors_tested" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <!-- Fire Safety & Protection – Exits & Evacuation -->
-            <h3 style="color: #0ea5e9; margin: 20px 0 12px 0; font-size: 15px; font-weight: 600;">🔥 Fire Safety & Protection – Exits & Evacuation</h3>
-            
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">No lockable exit doors in production areas</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="no_lockable_exits" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="no_lockable_exits" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="no_lockable_exits" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Only swinging doors in production; sliding doors only in offices/admin (&lt;10 persons)</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="swinging_doors" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="swinging_doors" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="swinging_doors" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Exit capacity meets applicable code requirements</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="exit_capacity" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="exit_capacity" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="exit_capacity" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <div class="form-group full-width" style="margin-bottom: 8px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8fafc; border-radius: 6px;">
-                <span style="font-size: 13px;">Exits discharge directly to exterior or protected by fire-rated separation + sprinklers</span>
-                <div class="radio-group" style="margin: 0; gap: 10px;">
-                  <label style="font-size: 12px;"><input type="radio" name="exits_discharge" value="Yes"> Yes</label>
-                  <label style="font-size: 12px;"><input type="radio" name="exits_discharge" value="No"> No</label>
-                  <label style="font-size: 12px;"><input type="radio" name="exits_discharge" value="N/A"> N/A</label>
-                </div>
-              </label>
-            </div>
-
-            <!-- (Additional USC-Safe sections truncated for brevity – they remain in file) -->
-
-            <div class="form-actions" style="margin-top: 24px;">
-              <button type="submit" class="action-button save-btn">💾 Save</button>
-              <button type="button" class="action-button reset-btn" onclick="resetForm('uscSafeFormData')">🔄 Reset</button>
-              <button type="button" class="action-button back-btn" onclick="goToDashboard()">← Back</button>
-            </div>
-          </form>
-        </div>
-      </div>
-      </div>
-    </div>
-
-    <!-- Health Hazards Tab -->
-    <div id="tab-health" class="tab-content">
-      <div style="padding: 24px;">
-        <div class="dashboard-card">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>⚠️ Health Hazard Assessment</span>
-          <div style="display: flex; gap: 10px;">
-            <button class="action-button export-btn" onclick="exportToExcel('usc-safe')">📊 Export to Excel</button>
-            <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
-          </div>
-        </div>
-        <div id="usc-safe-form" class="form-container" style="padding: 16px;">
-          <form id="uscSafeFormData" onsubmit="saveUSCSafe(event)">
+          <form id="uscSafeFormData" onsubmit="handleUSCSafeSubmit(event)">
             <h3 style="color: #0ea5e9; margin-bottom: 8px; font-size: 14px; font-weight: 600;">🔥 Fire Safety & Protection - Smoking Cabins</h3>
             
             <div class="form-group full-width" style="margin-bottom: 4px;">
@@ -4934,7 +5513,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="worker_safety" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="worker_safety" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="worker_safety" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="worker_safety" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -4943,7 +5522,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="explosion_controls" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="explosion_controls" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="explosion_controls" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="explosion_controls" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
             </div>
@@ -4956,7 +5535,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="prohibited_storage" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="prohibited_storage" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="prohibited_storage" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="prohibited_storage" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -4965,7 +5544,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="nfpa_standard" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="nfpa_standard" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="nfpa_standard" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="nfpa_standard" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -4974,7 +5553,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="technical_guidance" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="technical_guidance" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="technical_guidance" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="technical_guidance" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
             </div>
@@ -4987,7 +5566,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="safe_storage" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="safe_storage" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="safe_storage" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="safe_storage" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
             </div>
@@ -5000,7 +5579,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_storage" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_storage" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_storage" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_storage" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -5009,7 +5588,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_compliance" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_compliance" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_compliance" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="transitional_compliance" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
             </div>
@@ -5022,7 +5601,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="room_enclosed" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="room_enclosed" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="room_enclosed" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="room_enclosed" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -5031,7 +5610,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="fire_doors" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="fire_doors" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="fire_doors" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="fire_doors" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -5040,7 +5619,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="verified_compliant" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="verified_compliant" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="verified_compliant" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="verified_compliant" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
 
@@ -5049,7 +5628,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
                 <div style="display: flex; gap: 16px; font-size: 12px;">
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="ongoing_compliance" value="Yes" style="width: 14px; height: 14px; margin: 0;"> Yes</label>
                   <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="ongoing_compliance" value="No" style="width: 14px; height: 14px; margin: 0;"> No</label>
-                  <label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="ongoing_compliance" value="N/A" style="width: 14px; height: 14px; margin: 0;"> N/A</label>
+<label style="display: flex; align-items: center; gap: 4px;"><input type="radio" name="ongoing_compliance" value="N/A" checked style="width: 14px; height: 14px; margin: 0;"> N/A</label>
                 </div>
               </div>
             </div>
@@ -6994,84 +7573,13 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       overlay.classList.toggle('active');
     }
 
-    // Tab switching functionality for main safety tabs
-    // Simplified so every tab (including USC-Safe and Structural) reliably shows its content
-    function switchTab(tabName) {
-      // Default to overview if tabName is missing
-      if (!tabName) tabName = 'overview';
-
-      // Close sidebar after selecting
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.querySelector('.sidebar-overlay');
-      if (sidebar) sidebar.classList.remove('open');
-      if (overlay) overlay.classList.remove('active');
-
-      // Hide all tab contents
-      document.querySelectorAll('.tab-content').forEach(c => {
-        c.classList.remove('active');
-        c.style.display = 'none';
-      });
-
-      // Clear active state from sidebar links
-      document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-
-      // Resolve the tab element by id (tab-<name>)
-      let tabContent = document.getElementById('tab-' + tabName);
-      if (!tabContent) {
-        console.warn('Tab content not found for', tabName, 'falling back to overview');
-        tabName = 'overview';
-        tabContent = document.getElementById('tab-overview');
-      }
-
-      if (tabContent) {
-        tabContent.style.display = 'block';
-        tabContent.classList.add('active');
-      }
-
-      // Highlight matching sidebar nav item (Incidents, Grievances, USC‑Safe, etc.)
-      document.querySelectorAll('.nav-link').forEach(link => {
-        const onclick = link.getAttribute('onclick') || '';
-        if (onclick.includes("'" + tabName + "'")) {
-          link.classList.add('active');
-        }
-      });
-
-      // Fire per-tab loaders where they exist
-      try {
-        if (tabName === 'incidents' && typeof loadIncidents === 'function') {
-          loadIncidents();
-        } else if (tabName === 'grievances' && typeof loadGrievances === 'function') {
-          loadGrievances();
-        } else if (tabName === 'fire' && typeof loadFireSafetyData === 'function') {
-          loadFireSafetyData();
-        } else if (tabName === 'electrical' && typeof loadElectrical === 'function') {
-          loadElectrical();
-        } else if (tabName === 'structural' && typeof loadStructural === 'function') {
-          loadStructural();
-        } else if (tabName === 'health' && typeof loadHealth === 'function') {
-          loadHealth();
-        }
-      } catch (e) {
-        console.warn('Tab loader failed for', tabName, e);
-      }
-    }
-
-    // Wire up click handlers only for the main horizontal safety tabs
-    document.querySelectorAll('#tabs-navigation .tab-item').forEach(tab => {
-      tab.addEventListener('click', function () {
-        const tabName = this.getAttribute('data-tab');
-        if (tabName) {
-          switchTab(tabName);
-        }
-      });
-    });
 
     // Existing scripts
     // Add click interactivity
     document.querySelectorAll('.status-item').forEach(item => {
       item.addEventListener('click', function() {
         const label = this.querySelector('.status-label').textContent.trim();
-        alert(`Viewing: ${label}`);
+        showToast(`Viewing: ${label}`, 'info');
       });
     });
 
@@ -7079,7 +7587,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       item.addEventListener('click', function(e) {
         if (!e.target.classList.contains('view-link')) {
           const title = this.querySelector('.incident-title').textContent;
-          alert(`Opening incident: ${title}`);
+          showToast(`Opening incident: ${title}`, 'info');
         }
       });
     });
@@ -7126,9 +7634,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
 
     // ==================== FORM MANAGEMENT ====================
     
-    // Navigate to Dashboard (Overview tab)
+    // Navigate to Dashboard: reload the Safety Officer dashboard so the
+    // original three-column layout (left Safety, center working area,
+    // right Procurement) is fully restored.
     function goToDashboard() {
-      switchTab('overview');
+      window.location.href = '/masters/safety-office.html';
     }
 
     // Reset Form
@@ -7142,84 +7652,9 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     }
 
     // ==================== INCIDENTS ====================
-    
-    async function saveIncident(event) {
-      event.preventDefault();
-      const form = event.target;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-
-      try {
-        const response = await fetch('/api/safety/incidents', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          alert('✅ Incident saved successfully!');
-          resetForm('incidentFormData');
-          loadIncidents();
-        } else {
-          alert('❌ Error: ' + result.error);
-        }
-      } catch (error) {
-        console.error('Error saving incident:', error);
-        alert('❌ Failed to save incident');
-      }
-    }
-
-    async function loadIncidents() {
-      try {
-        const response = await fetch('/api/safety/incidents');
-        const result = await response.json();
-        
-        if (result.success) {
-          const tbody = document.getElementById('incident-table-body');
-          if (result.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No incidents found</td></tr>';
-            return;
-          }
-          
-          tbody.innerHTML = result.data.map(incident => `
-            <tr>
-              <td>${incident.Id}</td>
-              <td>${new Date(incident.IncidentDate).toLocaleString()}</td>
-              <td>${incident.IncidentType}</td>
-              <td>${incident.Location}</td>
-              <td>${incident.Severity || 'N/A'}</td>
-              <td><span class="status-badge status-${incident.Status.toLowerCase().replace(' ', '-')}">${incident.Status}</span></td>
-              <td>
-                <button class="table-action-btn btn-edit" onclick="editIncident(${incident.Id})">✏️ Edit</button>
-                <button class="table-action-btn btn-delete" onclick="deleteIncident(${incident.Id})">🗑️ Delete</button>
-              </td>
-            </tr>
-          `).join('');
-        }
-      } catch (error) {
-        console.error('Error loading incidents:', error);
-      }
-    }
-
-    async function deleteIncident(id) {
-      if (!confirm('Are you sure you want to delete this incident?')) return;
-      
-      try {
-        const response = await fetch(`/api/safety/incidents/${id}`, { method: 'DELETE' });
-        const result = await response.json();
-        
-        if (result.success) {
-          alert('✅ Incident deleted successfully!');
-          loadIncidents();
-        } else {
-          alert('❌ Error: ' + result.error);
-        }
-      } catch (error) {
-        console.error('Error deleting incident:', error);
-        alert('❌ Failed to delete incident');
-      }
-    }
+    // NOTE: The main implementations of saveIncident/loadIncidents/deleteIncident
+    // live later in this file (near the bottom) and are the only versions used.
+    // This legacy block was removed to avoid duplicate/conflicting functions.
 
     // ==================== GRIEVANCES ====================
     
@@ -7238,7 +7673,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         const result = await response.json();
         if (result.success) {
-          alert('✅ Grievance saved successfully!');
+          showToast('✅ Grievance saved successfully!', 'info');
           resetForm('grievanceFormData');
           loadGrievances();
         } else {
@@ -7246,7 +7681,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         }
       } catch (error) {
         console.error('Error saving grievance:', error);
-        alert('❌ Failed to save grievance');
+        showToast('Failed to save grievance', 'error');
       }
     }
 
@@ -7283,21 +7718,21 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     }
 
     async function deleteGrievance(id) {
-      if (!confirm('Are you sure you want to delete this grievance?')) return;
+      // Auto-proceed without confirmation for smooth workflow
       
       try {
         const response = await fetch(`/api/safety/grievances/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Grievance deleted successfully!');
+          showToast('✅ Grievance deleted successfully!', 'info');
           loadGrievances();
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error deleting grievance:', error);
-        alert('❌ Failed to delete grievance');
+        showToast('❌ Failed to delete grievance', 'info');
       }
     }
 
@@ -7323,7 +7758,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         console.log('📥 Server response:', result);
         
         if (result.success) {
-          alert('✅ Fire safety data saved successfully!');
+          showToast('✅ Fire safety data saved successfully!', 'info');
           // Don't reset form - keep values visible
           // resetForm('fireFormData');
           loadFireSafety();
@@ -7370,21 +7805,21 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     }
 
     async function deleteFireSafety(id) {
-      if (!confirm('Are you sure you want to delete this fire safety record?')) return;
+      // Auto-proceed without confirmation for smooth workflow
       
       try {
         const response = await fetch(`/api/safety/fire/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Fire safety record deleted successfully!');
+          showToast('✅ Fire safety record deleted successfully!', 'info');
           loadFireSafety();
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error deleting fire safety record:', error);
-        alert('❌ Failed to delete fire safety record');
+        showToast('❌ Failed to delete fire safety record', 'info');
       }
     }
 
@@ -7407,7 +7842,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           filename = 'Fire_Safety_Export.csv';
           break;
         default:
-          alert('Invalid export type');
+          showToast('Invalid export type', 'info');
           return;
       }
 
@@ -7441,35 +7876,45 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ Data exported to CSV successfully!');
+      showToast('✅ Data exported to CSV successfully!', 'info');
     }
 
     // ==================== ELECTRICAL SAFETY ====================
     
-    async function saveElectrical(event) {
+    async function handleElectricalSubmit(event) {
       event.preventDefault();
       const form = event.target;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
 
       try {
-        const response = await fetch('/api/safety/electrical', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          alert('✅ Electrical safety record saved successfully!');
-          resetForm('electricalFormData');
-          loadElectrical();
+        const data = (window.SafetyAPI && SafetyAPI.collectFormData)
+          ? SafetyAPI.collectFormData(form)
+          : Object.fromEntries(new FormData(form).entries());
+
+        if (window.SafetyAPI && SafetyAPI.saveElectricalSafety) {
+          await SafetyAPI.saveElectricalSafety(data);
+          SafetyAPI.showSuccessMessage('Electrical safety checklist saved successfully!');
         } else {
-          alert('❌ Error: ' + result.error);
+          const response = await fetch('/api/safety/electrical', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formData: data })
+          });
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to save electrical safety checklist');
+          }
+          showToast('✅ Electrical safety checklist saved successfully!', 'info');
         }
+
+        // Do not reset form; leave saved values visible. The latest values
+        // are also reloaded on page load via SafetyAPI.loadElectricalSafety.
       } catch (error) {
-        console.error('Error saving electrical record:', error);
-        alert('❌ Failed to save electrical safety record');
+        console.error('Error saving electrical safety checklist:', error);
+        if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
+          SafetyAPI.showErrorMessage(error.message || 'Failed to save electrical safety checklist');
+        } else {
+          showToast('❌ Failed to save electrical safety checklist', 'info');
+        }
       }
     }
 
@@ -7506,50 +7951,60 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     }
 
     async function deleteElectrical(id) {
-      if (!confirm('Are you sure you want to delete this electrical safety record?')) return;
+      // Auto-proceed without confirmation for smooth workflow
       
       try {
         const response = await fetch(`/api/safety/electrical/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Electrical safety record deleted successfully!');
+          showToast('✅ Electrical safety record deleted successfully!', 'info');
           loadElectrical();
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error deleting electrical record:', error);
-        alert('❌ Failed to delete electrical safety record');
+        showToast('❌ Failed to delete electrical safety record', 'info');
       }
     }
 
     // ==================== STRUCTURAL SAFETY ====================
     
-    async function saveStructural(event) {
+    async function handleStructuralSubmit(event) {
       event.preventDefault();
       const form = event.target;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
 
       try {
-        const response = await fetch('/api/safety/structural', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          alert('✅ Structural safety record saved successfully!');
-          resetForm('structuralFormData');
-          loadStructural();
+        const data = (window.SafetyAPI && SafetyAPI.collectFormData)
+          ? SafetyAPI.collectFormData(form)
+          : Object.fromEntries(new FormData(form).entries());
+
+        if (window.SafetyAPI && SafetyAPI.saveStructuralSafety) {
+          await SafetyAPI.saveStructuralSafety(data);
+          SafetyAPI.showSuccessMessage('Structural safety checklist saved successfully!');
         } else {
-          alert('❌ Error: ' + result.error);
+          const response = await fetch('/api/safety/structural', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formData: data })
+          });
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to save structural safety checklist');
+          }
+          showToast('✅ Structural safety checklist saved successfully!', 'info');
         }
+
+        // Do not reset form; leave saved values visible. The latest values
+        // are also reloaded via SafetyAPI.loadStructuralSafety.
       } catch (error) {
-        console.error('Error saving structural record:', error);
-        alert('❌ Failed to save structural safety record');
+        console.error('Error saving structural safety checklist:', error);
+        if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
+          SafetyAPI.showErrorMessage(error.message || 'Failed to save structural safety checklist');
+        } else {
+          showToast('❌ Failed to save structural safety checklist', 'info');
+        }
       }
     }
 
@@ -7586,21 +8041,21 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     }
 
     async function deleteStructural(id) {
-      if (!confirm('Are you sure you want to delete this structural safety record?')) return;
+      // Auto-proceed without confirmation for smooth workflow
       
       try {
         const response = await fetch(`/api/safety/structural/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Structural safety record deleted successfully!');
+          showToast('✅ Structural safety record deleted successfully!', 'info');
           loadStructural();
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error deleting structural record:', error);
-        alert('❌ Failed to delete structural safety record');
+        showToast('❌ Failed to delete structural safety record', 'info');
       }
     }
 
@@ -7609,106 +8064,125 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     async function saveHealth(event) {
       event.preventDefault();
       const form = event.target;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
 
       try {
-        const response = await fetch('/api/safety/health', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          alert('✅ Health hazard record saved successfully!');
-          resetForm('healthFormData');
-          loadHealth();
+        const data = (window.SafetyAPI && SafetyAPI.collectFormData)
+          ? SafetyAPI.collectFormData(form)
+          : Object.fromEntries(new FormData(form).entries());
+
+        if (window.SafetyAPI && SafetyAPI.saveHealthHazards) {
+          await SafetyAPI.saveHealthHazards(data);
+          SafetyAPI.showSuccessMessage('Health hazard checklist saved successfully!');
         } else {
-          alert('❌ Error: ' + result.error);
+          const response = await fetch('/api/safety/health', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formData: data })
+          });
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to save health hazard checklist');
+          }
+          showToast('✅ Health hazard checklist saved successfully!', 'info');
         }
+
+        // Do not reset form; leave saved values visible. The latest values
+        // are also reloaded via SafetyAPI.loadHealthHazards.
       } catch (error) {
-        console.error('Error saving health hazard record:', error);
-        alert('❌ Failed to save health hazard record');
+        console.error('Error saving health hazard checklist:', error);
+        if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
+          SafetyAPI.showErrorMessage(error.message || 'Failed to save health hazard checklist');
+        } else {
+          showToast('❌ Failed to save health hazard checklist', 'info');
+        }
       }
     }
 
     async function loadHealth() {
+      // Legacy data-table loader; checklist values are handled through
+      // SafetyAPI.loadHealthHazards + populateForm.
       try {
         const response = await fetch('/api/safety/health');
         const result = await response.json();
-        
-        if (result.success) {
-          const tbody = document.getElementById('health-table-body');
-          if (result.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No health hazard records found</td></tr>';
-            return;
-          }
-          
-          tbody.innerHTML = result.data.map(record => `
-            <tr>
-              <td>${record.Id}</td>
-              <td>${new Date(record.AssessmentDate).toLocaleString()}</td>
-              <td>${record.Location}</td>
-              <td>${record.HazardType || 'N/A'}</td>
-              <td>${record.RiskLevel || 'N/A'}</td>
-              <td><span class="status-badge status-${record.Status.toLowerCase().replace(' ', '-')}">${record.Status}</span></td>
-              <td>
-                <button class="table-action-btn btn-edit" onclick="editHealth(${record.Id})">✏️ Edit</button>
-                <button class="table-action-btn btn-delete" onclick="deleteHealth(${record.Id})">🗑️ Delete</button>
-              </td>
-            </tr>
-          `).join('');
+        if (!result.success) return;
+        const tbody = document.getElementById('health-table-body');
+        if (!tbody) return;
+        const rows = result.data || [];
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No health hazard records found</td></tr>';
+          return;
         }
+        tbody.innerHTML = rows.map(r => `
+          <tr>
+            <td>${r.Id}</td>
+            <td>${r.CreatedDate ? new Date(r.CreatedDate).toLocaleString() : ''}</td>
+            <td colspan="5">Checklist snapshot saved</td>
+          </tr>
+        `).join('');
       } catch (error) {
         console.error('Error loading health hazard records:', error);
       }
     }
 
     async function deleteHealth(id) {
-      if (!confirm('Are you sure you want to delete this health hazard record?')) return;
+      // Auto-proceed without confirmation for smooth workflow
       
       try {
         const response = await fetch(`/api/safety/health/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (result.success) {
-          alert('✅ Health hazard record deleted successfully!');
+          showToast('✅ Health hazard record deleted successfully!', 'info');
           loadHealth();
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error deleting health hazard record:', error);
-        alert('❌ Failed to delete health hazard record');
+        showToast('❌ Failed to delete health hazard record', 'info');
       }
     }
 
     // ==================== USC-SAFE ====================
     
-    async function saveUSCSafe(event) {
+    async function handleUSCSafeSubmit(event) {
       event.preventDefault();
       const form = event.target;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-
+      
       try {
-        const response = await fetch('/api/safety/usc-safe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          alert('✅ USC-Safe checklist saved successfully!');
-          resetForm('uscSafeFormData');
+        // Prefer using shared SafetyAPI helpers so we get tenant/user info and
+        // a consistent FormData JSON structure that loadUSCSafe() can read.
+        const data = (window.SafetyAPI && SafetyAPI.collectFormData)
+          ? SafetyAPI.collectFormData(form)
+          : Object.fromEntries(new FormData(form).entries());
+
+        if (window.SafetyAPI && SafetyAPI.saveUSCSafe) {
+          await SafetyAPI.saveUSCSafe(data);
+          SafetyAPI.showSuccessMessage('USC-Safe checklist saved successfully!');
         } else {
-          alert('❌ Error: ' + result.error);
+          // Fallback: direct POST to backend, mirroring other checklist APIs
+          const response = await fetch('/api/safety/usc-safe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formData: data })
+          });
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to save USC-Safe checklist');
+          }
+          showToast('✅ USC-Safe checklist saved successfully!', 'info');
         }
+
+        // Do NOT reset the form; keep the saved values visible. The
+        // latest values will also be reloaded on next visit via
+        // loadFormFromSafetyAPI(SafetyAPI.loadUSCSafe, 'uscSafeFormData').
       } catch (error) {
         console.error('Error saving USC-Safe checklist:', error);
-        alert('❌ Failed to save USC-Safe checklist');
+        if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
+          SafetyAPI.showErrorMessage(error.message || 'Failed to save USC-Safe checklist');
+        } else {
+          showToast('❌ Failed to save USC-Safe checklist', 'info');
+        }
       }
     }
 
@@ -7735,7 +8209,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           if (!result.success) {
             throw new Error(result.error || 'Failed to save gas safety checklist');
           }
-          alert('✅ Gas safety checklist saved successfully!');
+          showToast('✅ Gas safety checklist saved successfully!', 'info');
         }
 
         form.reset();
@@ -7747,7 +8221,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
           SafetyAPI.showErrorMessage(error.message || 'Failed to save gas safety checklist');
         } else {
-          alert('❌ Failed to save gas safety checklist');
+          showToast('❌ Failed to save gas safety checklist', 'info');
         }
       }
     }
@@ -7775,11 +8249,13 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           if (!result.success) {
             throw new Error(result.error || 'Failed to save boiler safety data');
           }
-          alert('✅ Boiler safety data saved successfully!');
+          showToast('✅ Boiler safety data saved successfully!', 'info');
         }
 
         form.reset();
-        if (typeof setDefaultRadioButtons === 'function') {
+        if (form && form.id === 'boilerFormData' && typeof setDefaultLastRadioButtons === 'function') {
+          setDefaultLastRadioButtons(form.id);
+        } else if (typeof setDefaultRadioButtons === 'function') {
           setDefaultRadioButtons(form.id);
         }
       } catch (error) {
@@ -7787,7 +8263,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
           SafetyAPI.showErrorMessage(error.message || 'Failed to save boiler safety data');
         } else {
-          alert('❌ Failed to save boiler safety data');
+          showToast('❌ Failed to save boiler safety data', 'info');
         }
       }
     }
@@ -7809,14 +8285,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         const result = await response.json();
         if (result.success) {
-          alert('✅ Consultant engagement checklist saved successfully!');
+          showToast('✅ Consultant engagement checklist saved successfully!', 'info');
           resetForm('consultantFormData');
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error saving consultant engagement checklist:', error);
-        alert('❌ Failed to save consultant engagement checklist');
+        showToast('❌ Failed to save consultant engagement checklist', 'info');
       }
     }
 
@@ -7837,14 +8313,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         const result = await response.json();
         if (result.success) {
-          alert('✅ DSA checklist saved successfully!');
+          showToast('✅ DSA checklist saved successfully!', 'info');
           resetForm('dsaFormData');
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error saving DSA checklist:', error);
-        alert('❌ Failed to save DSA checklist');
+        showToast('❌ Failed to save DSA checklist', 'info');
       }
     }
 
@@ -7865,14 +8341,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         const result = await response.json();
         if (result.success) {
-          alert('✅ Emergency Power checklist saved successfully!');
+          showToast('✅ Emergency Power checklist saved successfully!', 'info');
           resetForm('emergencyPowerFormData');
         } else {
           alert('❌ Error: ' + result.error);
         }
       } catch (error) {
         console.error('Error saving emergency power checklist:', error);
-        alert('❌ Failed to save emergency power checklist');
+        showToast('❌ Failed to save emergency power checklist', 'info');
       }
     }
 
@@ -7931,7 +8407,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           exportUSCSafeForm();
           return;
         default:
-          alert('Invalid export type');
+          showToast('Invalid export type', 'info');
           return;
       }
 
@@ -7961,7 +8437,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ Data exported to CSV successfully!');
+      showToast('✅ Data exported to CSV successfully!', 'info');
     };
 
     // Export form data functions
@@ -7987,7 +8463,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ Gas safety checklist exported to CSV successfully!');
+      showToast('✅ Gas safety checklist exported to CSV successfully!', 'info');
     }
 
     function exportUSCSafeForm() {
@@ -8012,7 +8488,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ USC-Safe checklist exported to CSV successfully!');
+      showToast('✅ USC-Safe checklist exported to CSV successfully!', 'info');
     }
 
     function exportBoilerForm() {
@@ -8037,7 +8513,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ Boiler safety data exported to CSV successfully!');
+      showToast('✅ Boiler safety data exported to CSV successfully!', 'info');
     }
 
     function exportConsultantForm() {
@@ -8062,7 +8538,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ Consultant engagement checklist exported to CSV successfully!');
+      showToast('✅ Consultant engagement checklist exported to CSV successfully!', 'info');
     }
 
     function exportDSAForm() {
@@ -8087,7 +8563,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ DSA checklist exported to CSV successfully!');
+      showToast('✅ DSA checklist exported to CSV successfully!', 'info');
     }
 
     function exportEmergencyPowerForm() {
@@ -8112,7 +8588,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       link.click();
       document.body.removeChild(link);
       
-      alert('✅ Emergency Power checklist exported to CSV successfully!');
+      showToast('✅ Emergency Power checklist exported to CSV successfully!', 'info');
     }
 
     // Placeholder edit functions (to be implemented)
@@ -8159,7 +8635,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ USC-Safe checklist saved successfully!');
+          showToast('✅ USC-Safe checklist saved successfully!', 'info');
         }
 
         form.reset();
@@ -8191,7 +8667,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ Electrical safety data saved successfully!');
+          showToast('✅ Electrical safety data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8226,7 +8702,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ Structural safety data saved successfully!');
+          showToast('✅ Structural safety data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8261,7 +8737,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ Health hazards data saved successfully!');
+          showToast('✅ Health hazards data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8296,7 +8772,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ Gas safety data saved successfully!');
+          showToast('✅ Gas safety data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8328,11 +8804,15 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ Boiler safety data saved successfully!');
+          showToast('✅ Boiler safety data saved successfully!', 'info');
         }
 
         form.reset();
-        setDefaultRadioButtons(form.id);
+        if (form && form.id === 'boilerFormData' && typeof setDefaultLastRadioButtons === 'function') {
+          setDefaultLastRadioButtons(form.id);
+        } else {
+          setDefaultRadioButtons(form.id);
+        }
       } catch (err) {
         console.error('Error saving boiler safety:', err);
         if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
@@ -8355,12 +8835,17 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           await SafetyAPI.saveConsultant(data);
           SafetyAPI.showSuccessMessage('Consultant engagement data saved successfully!');
         } else {
-          await fetch('/api/safety/consultant', {
+          const response = await fetch('/api/safety/consultant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ formData: data })
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
           });
-          alert('✅ Consultant engagement data saved successfully!');
+          const result = await response.json().catch(() => ({ success: true }));
+          if (result.success === false) {
+            throw new Error(result.error || 'Failed to save consultant engagement data');
+          }
+          showToast('✅ Consultant engagement data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8387,12 +8872,17 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           await SafetyAPI.saveDSA(data);
           SafetyAPI.showSuccessMessage('DSA data saved successfully!');
         } else {
-          await fetch('/api/safety/dsa', {
+          const response = await fetch('/api/safety/dsa', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ formData: data })
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
           });
-          alert('✅ DSA data saved successfully!');
+          const result = await response.json().catch(() => ({ success: true }));
+          if (result.success === false) {
+            throw new Error(result.error || 'Failed to save DSA data');
+          }
+          showToast('✅ DSA data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8419,12 +8909,17 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           await SafetyAPI.saveEmergencyPower(data);
           SafetyAPI.showSuccessMessage('Emergency power data saved successfully!');
         } else {
-          await fetch('/api/safety/emergency-power', {
+          const response = await fetch('/api/safety/emergency-power', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ formData: data })
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
           });
-          alert('✅ Emergency power data saved successfully!');
+          const result = await response.json().catch(() => ({ success: true }));
+          if (result.success === false) {
+            throw new Error(result.error || 'Failed to save emergency power data');
+          }
+          showToast('✅ Emergency power data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8456,7 +8951,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ Safety training data saved successfully!');
+          showToast('✅ Safety training data saved successfully!', 'info');
         }
 
         form.reset();
@@ -8488,7 +8983,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ formData: data })
           });
-          alert('✅ UNGP checklist saved successfully!');
+          showToast('✅ UNGP checklist saved successfully!', 'info');
         }
 
         form.reset();
@@ -8508,16 +9003,99 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       const form = document.getElementById(formId);
       if (form) {
         form.reset();
-        // Set N/A as default for all radio buttons after reset
-        setDefaultRadioButtons(formId);
-        alert('🔄 Form reset successfully!');
+        // Set defaults after reset
+        if (formId === 'boilerFormData' && typeof setDefaultLastRadioButtons === 'function') {
+          setDefaultLastRadioButtons(formId);
+        } else {
+          setDefaultRadioButtons(formId);
+        }
+        showToast('🔄 Form reset successfully!', 'info');
       }
     }
 
     // ==================== INCIDENT & GRIEVANCE FUNCTIONS ====================
     
+    // Cache of employees loaded from the HR module so we can populate the
+    // injured-person Name dropdown and auto-fill Job Title.
+    let _incidentEmployees = null;
+
+    async function loadIncidentEmployees() {
+      if (_incidentEmployees !== null) return _incidentEmployees;
+      try {
+        const resp = await fetch('/api/hr/employees', { credentials: 'same-origin' });
+        const json = await resp.json().catch(() => null);
+        let rows = [];
+        if (Array.isArray(json)) {
+          rows = json;
+        } else if (json && Array.isArray(json.data)) {
+          rows = json.data;
+        }
+        _incidentEmployees = rows.map(e => ({
+          id: e.Id || e.EmployeeId || e.id,
+          name: e.Name || e.FullName || e.EmployeeName || '',
+          jobTitle: e.JobTitle || e.Designation || e.Title || '',
+          department: e.Department || e.DepartmentName || e.DeptName || e.Dept || '',
+          phone: e.Phone || e.Mobile || e.ContactNumber || e.PhoneNumber || e.WorkPhone || ''
+        })).filter(e => e.name);
+      } catch (err) {
+        console.error('Failed to load HR employees for incident form:', err);
+        _incidentEmployees = [];
+      }
+      return _incidentEmployees;
+    }
+
+    // Helper to wire the grievance form "Employee Name" field to HR employees
+    async function initGrievanceEmployeeLookup() {
+      try {
+        const pane = document.querySelector('.working-pane');
+        const form = (pane && pane.querySelector('#grievanceFormData')) || document.getElementById('grievanceFormData');
+        if (!form) return;
+
+        const select = form.querySelector('select[name="employeeName"]');
+        if (!select || select.dataset.hrBound === '1') return;
+        select.dataset.hrBound = '1';
+
+        const employees = await loadIncidentEmployees();
+        if (!employees || !employees.length) return;
+
+        // Preserve the first option (placeholder), clear any others
+        while (select.options.length > 1) {
+          select.remove(1);
+        }
+
+        employees.forEach(emp => {
+          const opt = document.createElement('option');
+          opt.value = emp.name;
+          opt.textContent = emp.name + (emp.jobTitle ? ' - ' + emp.jobTitle : '');
+          if (emp.id != null) opt.dataset.id = emp.id;
+          if (emp.department) opt.dataset.department = emp.department;
+          if (emp.jobTitle) opt.dataset.jobTitle = emp.jobTitle;
+          if (emp.phone) opt.dataset.phone = emp.phone;
+          select.appendChild(opt);
+        });
+
+        select.addEventListener('change', function () {
+          const sel = this.options[this.selectedIndex];
+          if (!sel) return;
+          const f = this.closest('form');
+          if (!f) return;
+          const idInput = f.querySelector('input[name="employeeId"]');
+          const deptInput = f.querySelector('input[name="department"]');
+          const jobInput = f.querySelector('input[name="jobTitle"]');
+          const phoneInput = f.querySelector('input[name="contactNumber"]');
+
+          if (idInput) idInput.value = sel.dataset.id || '';
+          if (deptInput && sel.dataset.department) deptInput.value = sel.dataset.department;
+          if (jobInput && sel.dataset.jobTitle) jobInput.value = sel.dataset.jobTitle;
+          if (phoneInput && sel.dataset.phone) phoneInput.value = sel.dataset.phone;
+        });
+      } catch (err) {
+        console.error('Failed to initialize grievance employee lookup:', err);
+      }
+    }
+
     // Dynamic sections for Incident form
-    function addInjuredPerson() {
+    async function addInjuredPerson() {
       const container = document.getElementById('injuredPersonsContainer');
       if (!container) return;
       const index = container.children.length + 1;
@@ -8527,6 +9105,8 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       wrapper.style.padding = '12px';
       wrapper.style.border = '1px solid #e2e8f0';
       wrapper.style.borderRadius = '8px';
+
+      // Build the basic card structure first
       wrapper.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <strong>Injured Person ${index}</strong>
@@ -8535,11 +9115,13 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:12px;">
           <div>
             <label style="font-size:12px;">Name</label>
-            <input type="text" name="injuredPersonName${index}" style="width:100%; font-size:13px; padding:6px; border:1px solid #e2e8f0; border-radius:6px;">
+            <select name="injuredPersonName${index}" data-role="injured-name" style="width:100%; font-size:13px; padding:6px; border:1px solid #e2e8f0; border-radius:6px;">
+              <option value="">-- Select Employee --</option>
+            </select>
           </div>
           <div>
             <label style="font-size:12px;">Job Title</label>
-            <input type="text" name="injuredPersonJobTitle${index}" style="width:100%; font-size:13px; padding:6px; border:1px solid #e2e8f0; border-radius:6px;">
+            <input type="text" name="injuredPersonJobTitle${index}" data-role="injured-job" readonly style="width:100%; font-size:13px; padding:6px; border:1px solid #e2e8f0; border-radius:6px; background:#f9fafb;">
           </div>
           <div>
             <label style="font-size:12px;">Injury Description</label>
@@ -8548,6 +9130,26 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         </div>
       `;
       container.appendChild(wrapper);
+
+      // Populate the Name dropdown from HR employees
+      const select = wrapper.querySelector('select[data-role="injured-name"]');
+      const jobInput = wrapper.querySelector('input[data-role="injured-job"]');
+      const employees = await loadIncidentEmployees();
+      if (select && employees && employees.length) {
+        employees.forEach(emp => {
+          const opt = document.createElement('option');
+          opt.value = emp.id || emp.name;
+          opt.textContent = emp.name;
+          opt.dataset.jobTitle = emp.jobTitle || '';
+          select.appendChild(opt);
+        });
+
+        select.addEventListener('change', function() {
+          const sel = this.options[this.selectedIndex];
+          const jt = sel ? (sel.dataset.jobTitle || '') : '';
+          if (jobInput) jobInput.value = jt;
+        });
+      }
     }
 
     function addDamagedEquipment() {
@@ -8622,9 +9224,13 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         const result = await response.json();
         if (result.success) {
-          alert('✅ Incident saved successfully!');
+          showToast('✅ Incident saved successfully!', 'info');
           form.reset();
-          loadIncidents(); // Reload the table
+          // After saving, ensure the visible incident list (in the
+          // working pane) is refreshed so "Loading..." is replaced.
+          if (typeof loadIncidents === 'function') {
+            loadIncidents();
+          }
         } else {
           alert('❌ Error: ' + result.error);
         }
@@ -8663,7 +9269,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         const result = await response.json();
         if (result.success) {
-          alert('✅ Grievance saved successfully!');
+          showToast('✅ Grievance saved successfully!', 'info');
           form.reset();
           loadGrievances(); // Reload the tables
         } else {
@@ -8680,44 +9286,74 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     async function loadIncidents() {
       try {
         const response = await fetch('/api/safety/incidents', { credentials: 'same-origin' });
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          const tbody = document.getElementById('incident-table-body');
-          if (!tbody) return;
-          
-          if (result.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No incidents found</td></tr>';
-            return;
-          }
-          
-          tbody.innerHTML = result.data.map(incident => `
-            <tr>
-              <td>${incident.Id}</td>
-              <td>${incident.IncidentDate ? new Date(incident.IncidentDate).toLocaleDateString() : '-'}</td>
-              <td>${incident.IncidentType || '-'}</td>
-              <td>${incident.Location || '-'}</td>
-              <td>${incident.Department || '-'}</td>
-              <td>${incident.ReportedBy || '-'}</td>
-              <td><span class="status-badge status-${incident.Status?.toLowerCase()}">${incident.Status || 'Open'}</span></td>
-              <td>
-                <button class="table-action-btn btn-edit" onclick="editIncident(${incident.Id})">Edit</button>
-              </td>
-            </tr>
-          `).join('');
+        const result = await response.json().catch(() => null);
+
+        // Prefer the INCIDENT table that lives in the working pane (center
+        // column). The original tab template also contains an
+        // #incident-table-body, but that one is hidden and should not stay
+        // stuck on "Loading..." while the visible table never updates.
+        let tbody = null;
+        const pane = document.querySelector('.working-pane');
+        if (pane) {
+          tbody = pane.querySelector('#incident-table-body');
         }
+        if (!tbody) {
+          tbody = document.getElementById('incident-table-body');
+        }
+        if (!tbody) return;
+
+        // Normalise API shapes:
+        //  - [{...}]                (plain array)
+        //  - { data: [...] }
+        //  - { success:true,data:[...] }
+        let rows = [];
+        if (Array.isArray(result)) {
+          rows = result;
+        } else if (result && Array.isArray(result.data)) {
+          rows = result.data;
+        } else if (result && result.success === false) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Failed to load incidents</td></tr>';
+          return;
+        }
+
+        if (!rows || rows.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No incidents found</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = rows.map(incident => `
+          <tr>
+            <td>${incident.Id}</td>
+            <td>${incident.IncidentDate ? new Date(incident.IncidentDate).toLocaleDateString() : '-'}</td>
+            <td>${incident.IncidentType || '-'}</td>
+            <td>${incident.Location || '-'}</td>
+            <td>${incident.Department || '-'}</td>
+            <td>${incident.ReportedBy || '-'}</td>
+            <td><span class="status-badge status-${(incident.Status || 'open').toLowerCase()}">${incident.Status || 'Open'}</span></td>
+            <td>
+              <button class="table-action-btn btn-edit" onclick="editIncident(${incident.Id})">Edit</button>
+            </td>
+          </tr>
+        `).join('');
       } catch (err) {
         console.error('Error loading incidents:', err);
+        const pane = document.querySelector('.working-pane');
+        const tbody = (pane && pane.querySelector('#incident-table-body')) || document.getElementById('incident-table-body');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Error loading incidents</td></tr>';
+        }
       }
     }
-
     async function loadGrievances() {
       try {
-        const response = await fetch('/api/safety/grievances', { credentials: 'same-origin' });
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          console.log('Grievances loaded:', result.data);
+        if (typeof populateSearchGrievances === 'function') {
+          await populateSearchGrievances();
+        } else {
+          const response = await fetch('/api/safety/grievances', { credentials: 'same-origin' });
+          const result = await response.json();
+          if (result.success && result.data) {
+            console.log('Grievances loaded:', result.data);
+          }
         }
       } catch (err) {
         console.error('Error loading grievances:', err);
@@ -8775,14 +9411,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const response = await fetch(`/api/safety/incidents/${id}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (!result.success || !result.data) {
-          alert('Unable to load incident details.');
+          showToast('Unable to load incident details.', 'info');
           return;
         }
         const incident = result.data;
         alert(`Incident #${incident.Id}\nType: ${incident.IncidentType || '-'}\nLocation: ${incident.Location || '-'}\nDepartment: ${incident.Department || '-'}\nDescription: ${incident.Description || ''}`);
       } catch (err) {
         console.error('Error viewing incident:', err);
-        alert('Error loading incident details.');
+        showToast('Error loading incident details.', 'info');
       }
     }
 
@@ -8802,7 +9438,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           <tr data-grievance-row>
             <td>${g.GrievanceDate ? new Date(g.GrievanceDate).toLocaleDateString() : '-'}</td>
             <td>${g.ComplainantName || '-'}</td>
-            <td>${g.Department || '-'}</td>
+            <td>${g.Department || g.Category || '-'}</td>
             <td>${g.GrievanceType || '-'}</td>
             <td>${g.Status || 'Pending'}</td>
             <td style="text-align:center;">
@@ -8835,37 +9471,71 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const response = await fetch(`/api/safety/grievances/${id}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (!result.success || !result.data) {
-          alert('Unable to load grievance details.');
+          showToast('Unable to load grievance details.', 'info');
           return;
         }
         const g = result.data;
         alert(`Grievance #${g.Id}\nName: ${g.ComplainantName || '-'}\nType: ${g.GrievanceType || '-'}\nStatus: ${g.Status || 'Pending'}\nDescription: ${g.Description || ''}`);
       } catch (err) {
         console.error('Error viewing grievance:', err);
-        alert('Error loading grievance details.');
+        showToast('Error loading grievance details.', 'info');
       }
     }
 
     // Set N/A as default for all radio buttons in a form
     function setDefaultRadioButtons(formId) {
-      const form = document.getElementById(formId);
+      // Prefer the live form inside the working pane (center column),
+      // then fall back to the hidden template by id.
+      let form = null;
+      const pane = document.querySelector('.working-pane');
+      if (pane) {
+        form = pane.querySelector('#' + formId);
+      }
+      if (!form) {
+        form = document.getElementById(formId);
+      }
       if (!form) return;
-      
+
       // Get all unique radio button names
       const radioNames = new Set();
       form.querySelectorAll('input[type="radio"]').forEach(radio => {
         if (radio.name) radioNames.add(radio.name);
       });
-      
-      // For each radio group, if no button is checked, check the last one (usually N/A)
+
+      // For each radio group, if no button is checked, default to N/A (preferred)
+      // otherwise fall back to the last option.
       radioNames.forEach(name => {
-        const radios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
-        const checkedRadio = Array.from(radios).find(r => r.checked);
-        
-        if (!checkedRadio && radios.length > 0) {
-          // Check the last radio button (usually N/A)
-          radios[radios.length - 1].checked = true;
-        }
+        const radios = Array.from(form.querySelectorAll(`input[type="radio"][name="${name}"]`));
+        const checkedRadio = radios.find(r => r.checked);
+        if (checkedRadio || radios.length === 0) return;
+
+        const na = radios.find(r => (r.value || '').toUpperCase() === 'N/A' || (r.value || '').toUpperCase() === 'NA');
+        (na || radios[radios.length - 1]).checked = true;
+      });
+    }
+
+    // Boiler requirement: default the LAST radio option in each group (no unselected).
+    function setDefaultLastRadioButtons(formId) {
+      let form = null;
+      const pane = document.querySelector('.working-pane');
+      if (pane) {
+        form = pane.querySelector('#' + formId);
+      }
+      if (!form) {
+        form = document.getElementById(formId);
+      }
+      if (!form) return;
+
+      const radioNames = new Set();
+      form.querySelectorAll('input[type="radio"]').forEach(radio => {
+        if (radio.name) radioNames.add(radio.name);
+      });
+
+      radioNames.forEach(name => {
+        const radios = Array.from(form.querySelectorAll(`input[type="radio"][name="${name}"]`));
+        const checkedRadio = radios.find(r => r.checked);
+        if (checkedRadio || radios.length === 0) return;
+        radios[radios.length - 1].checked = true;
       });
     }
 
@@ -8877,9 +9547,22 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         if (!raw) return;
         const data = Array.isArray(raw) ? null : raw;
         if (!data) return;
-        const form = document.getElementById(formId);
-        if (form) {
-          SafetyAPI.populateForm(form, data);
+
+        // Prefer a live form inside the working pane if present, but also
+        // populate the hidden template so newly opened tabs get values.
+        const pane = document.querySelector('.working-pane');
+        const liveForm = pane ? pane.querySelector('#' + formId) : null;
+        const templateForm = document.getElementById(formId);
+
+        if (liveForm) {
+          SafetyAPI.populateForm(liveForm, data);
+        }
+        if (templateForm && templateForm !== liveForm) {
+          SafetyAPI.populateForm(templateForm, data);
+        }
+
+        if (typeof setDefaultRadioButtons === 'function') {
+          setDefaultRadioButtons(formId);
         }
       } catch (err) {
         console.error(`Error loading data for form ${formId}:`, err);
@@ -8927,31 +9610,81 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
 
     // Load data when page loads
     document.addEventListener('DOMContentLoaded', function() {
-      // Set N/A as default for all forms
+      // Pre-fill Incident Reporting date-time with the current local
+      // value so both date and time appear in the control immediately.
+      (function initIncidentDateTimeDefault(){
+        try {
+          const form = document.getElementById('incidentFormData');
+          const dtInput = form ? form.querySelector('input[name="incidentDateTime"]') : null;
+          if (dtInput && !dtInput.value) {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const localValue = [
+              now.getFullYear(),
+              pad(now.getMonth() + 1),
+              pad(now.getDate())
+            ].join('-') + 'T' + [
+              pad(now.getHours()),
+              pad(now.getMinutes())
+            ].join(':');
+            dtInput.value = localValue;
+          }
+        } catch (e) {
+          console.warn('Failed to initialize incident datetime', e);
+        }
+      })();
+
+      // Set defaults for all forms on initial load
       setDefaultRadioButtons('fireFormData');
       setDefaultRadioButtons('electricalFormData');
       setDefaultRadioButtons('structuralFormData');
       setDefaultRadioButtons('healthFormData');
       setDefaultRadioButtons('gasFormData');
-      setDefaultRadioButtons('boilerFormData');
       setDefaultRadioButtons('consultantFormData');
       setDefaultRadioButtons('dsaFormData');
       setDefaultRadioButtons('emergencyPowerFormData');
       setDefaultRadioButtons('uscSafeFormData');
       setDefaultRadioButtons('safetyTrainingFormData');
       setDefaultRadioButtons('ungpFormData');
+      // Boiler requirement: always default last option (usually N/A)
+      if (typeof setDefaultLastRadioButtons === 'function') {
+        setDefaultLastRadioButtons('boilerFormData');
+      } else {
+        setDefaultRadioButtons('boilerFormData');
+      }
       
       // Pre-load latest saved JSON form data for checklist-style forms
       if (window.SafetyAPI) {
-        loadFormFromSafetyAPI(SafetyAPI.loadUSCSafe, 'uscSafeFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadHealthHazards, 'healthFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadGasSafety, 'gasFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadBoilerSafety, 'boilerFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadConsultant, 'consultantFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadDSA, 'dsaFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadEmergencyPower, 'emergencyPowerFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadSafetyTraining, 'safetyTrainingFormData');
-        loadFormFromSafetyAPI(SafetyAPI.loadUNGP, 'ungpFormData');
+        if (typeof SafetyAPI.loadUSCSafe === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadUSCSafe, 'uscSafeFormData');
+        }
+        if (typeof SafetyAPI.loadElectricalSafety === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadElectricalSafety, 'electricalFormData');
+        }
+        if (typeof SafetyAPI.loadStructuralSafety === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadStructuralSafety, 'structuralFormData');
+        }
+        if (typeof SafetyAPI.loadHealthHazards === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadHealthHazards, 'healthFormData');
+        }
+        if (typeof SafetyAPI.loadGasSafety === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadGasSafety, 'gasFormData');
+        }
+        if (typeof SafetyAPI.loadConsultant === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadConsultant, 'consultantFormData');
+        }
+        if (typeof SafetyAPI.loadDSA === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadDSA, 'dsaFormData');
+        }
+        if (typeof SafetyAPI.loadEmergencyPower === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadEmergencyPower, 'emergencyPowerFormData');
+        }
+        if (typeof SafetyAPI.loadSafetyTraining === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadSafetyTraining, 'safetyTrainingFormData');
+        }
+        if (typeof SafetyAPI.loadUNGP === 'function') {
+          loadFormFromSafetyAPI(SafetyAPI.loadUNGP, 'ungpFormData');
+        }
       }
       
       loadIncidents();
@@ -8994,9 +9727,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         var bar = ensureTopSafetyBar();
         if (!bar) return;
 
+        // Order: USC-Safe | Fire | Electrical | Structural | Health | Gas | Boiler |
+        // Consultant | DSA | Emergency | Training | Incidents | Grievances |
+        // Agent | Audits
         bar.innerHTML = [
-          ['incidents','🚨','Incidents'],
-          ['grievances','📋','Grievances'],
           ['usc-safe','📑','USC-Safe'],
           ['fire','🔥','Fire'],
           ['electrical','⚡','Electrical'],
@@ -9007,9 +9741,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           ['consultant','💼','Consultant'],
           ['dsa','🏛️','DSA'],
           ['emergency-power','🔌','Emergency'],
-          ['audits','🧾','Audits'],
           ['training','🎓','Training'],
-          ['agent','🛡️','Agent']
+          ['incidents','🚨','Incidents'],
+          ['grievances','📋','Grievances'],
+          ['agent','🛡️','Agent'],
+          ['audits','🧾','Audits']
         ].map(function(row){
           var key=row[0], ico=row[1], label=row[2];
           return '<button class="sm-tab" data-key="'+key+'">'
@@ -9038,7 +9774,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           }
         };
 
-        var target = initialTab || 'incidents';
+        var target = initialTab || 'usc-safe';
         var targetBtn = bar.querySelector('.sm-tab[data-key="'+target+'"]') || bar.querySelector('.sm-tab');
         if (targetBtn) targetBtn.click();
       } catch (e) {
@@ -9097,7 +9833,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       }
     }
 
-    // CRM email sub-tabs (icon bar) when CRM module or Email icon are clicked from this page
+    // CRM workspace sub-tabs (icon bar) when CRM module is clicked from this page
     function showCRMTabs() {
       try {
         var bar = ensureTopSafetyBar();
@@ -9138,17 +9874,71 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           bar.appendChild(btn);
         }
 
-        // CRM mailbox views: Inbox, Sent, Drafts; plus Compose
+        // CRM workspace views: Add Contact, Search Contact, Phone Notes, Segment
+        addTab('add-contact','➕','Add Contact','/crm.html?embedded=1&view=add-contact');
+        addTab('search-contact','🔍','Search Contact','/crm.html?embedded=1&view=search-contact');
+        addTab('add-phone','📝','Add Phone Notes','/crm.html?embedded=1&view=add-phone-notes');
+        addTab('search-phone','📞','Search Phone Notes','/crm.html?embedded=1&view=search-phone-notes');
+        addTab('segment','📊','Segment','/crm.html?embedded=1&view=segment');
+
+        // Default to Add Contact
+        var first = bar.querySelector('.sm-tab[data-crm="add-contact"]') || bar.querySelector('.sm-tab');
+        if (first) first.click();
+      } catch (e) {
+        console.warn('showCRMTabs (safety page) failed', e);
+      }
+    }
+
+    // Email sub-tabs (Inbox/Sent/Drafts/Compose) when Email icon is clicked
+    function showEmailTabs() {
+      try {
+        var bar = ensureTopSafetyBar();
+        if (!bar) return;
+
+        // Keep agents on CRM module
+        if (window.AgentUI) {
+          window.AgentUI.initModuleAgents({
+            containerSelector: '#safety-agents-panel',
+            moduleId: 'crm'
+          });
+        }
+
+        bar.innerHTML = '';
+        function openInWorking(url) {
+          try {
+            var pane = document.querySelector('.working-pane');
+            if (!pane) { window.location.href = url.replace('?embedded=1', ''); return; }
+            pane.style.display = 'block';
+            pane.style.alignItems = 'stretch';
+            pane.style.justifyContent = 'flex-start';
+            pane.style.padding = '0';
+            pane.innerHTML = '<iframe src="'+url+'" style="border:0;width:100%;height:calc(86vh);background:#ffffff"></iframe>';
+          } catch (e) {}
+        }
+        function addTab(id, emoji, label, href) {
+          var btn = document.createElement('button');
+          btn.className = 'sm-tab';
+          btn.setAttribute('data-email', id);
+          btn.innerHTML = '<div class="sm-icon-box"><div class="sm-ico">'+emoji+'</div></div>'+
+                          '<div class="sm-lbl">'+label+'</div>';
+          btn.addEventListener('click', function(ev){
+            ev.preventDefault();
+            Array.prototype.forEach.call(bar.querySelectorAll('.sm-tab'), function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            openInWorking(href);
+          });
+          bar.appendChild(btn);
+        }
+
         addTab('inbox','📥','Inbox','/crm/mailbox.html?embedded=1&folder=Inbox');
         addTab('sent','📤','Sent','/crm/mailbox.html?embedded=1&folder=Sent');
         addTab('drafts','📝','Drafts','/crm/mailbox.html?embedded=1&folder=Drafts');
         addTab('compose','✉️','Compose','/crm/mailbox-compose.html?embedded=1');
 
-        // Default to Inbox
-        var first = bar.querySelector('.sm-tab[data-crm="inbox"]') || bar.querySelector('.sm-tab');
+        var first = bar.querySelector('.sm-tab[data-email="inbox"]') || bar.querySelector('.sm-tab');
         if (first) first.click();
       } catch (e) {
-        console.warn('showCRMTabs (safety page) failed', e);
+        console.warn('showEmailTabs (safety page) failed', e);
       }
     }
   </script>

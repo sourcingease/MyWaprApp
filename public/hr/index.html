@@ -41,21 +41,27 @@
         <a href="#" onclick="scrollToForm();return false;"><span>👤</span> Add New Employee</a>
       </div>
       <div class="tabs">
-        <button id="tab-main" class="active" onclick="showTab('main')">Add New Employee</button>
-        <button id="tab-totals" onclick="showTab('totals')">Totals</button>
-        <button id="tab-payroll" onclick="showTab('payroll')">Payroll Details</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 auto;min-width:0">
+          <button id="tab-main" class="active" onclick="showTab('main')">Add New Employee</button>
+          <button id="tab-totals" onclick="showTab('totals')">Totals</button>
+          <button id="tab-paydetails" onclick="showTab('paydetails')">Payroll Details</button>
+        </div>
+        <div style="margin-left:auto;flex:0 0 auto">
+          <button class="ct primary" type="button" onclick="saveEmployeeAll()">Save</button>
+        </div>
       </div>
       <div class="tab-panel" id="panel-main">
-        <form id="empForm" onsubmit="saveProfile();return false;">
+        <form id="empForm" onsubmit="saveEmployeeAll();return false;">
           <div class="grid">
             <div class="form-group"><label class="form-label">Employee Name *</label><input id="EmpName" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Email Address *</label><input id="EmpEmail" class="form-input"/></div>
-            <div class="form-group"><label class="form-label">Active</label><div><input id="EmpActive" type="checkbox"/> Active Y/N</div></div>
+            <div class="form-group"><label class="form-label">Active</label><div><input id="EmpActive" type="checkbox" checked/> Active Y/N</div></div>
+            <div class="form-group"><label class="form-label">Country</label><select id="EmpCountry" class="form-select"><option value="">Select Country</option></select></div>
+            <div class="form-group"><label class="form-label">State/Province</label><select id="EmpState" class="form-select"><option value="">Select State/Province</option></select></div>
+            <div class="form-group"><label class="form-label">City</label><select id="EmpCity" class="form-select"><option value="">Select City</option></select></div>
             <div class="form-group"><label class="form-label">Address 1</label><input id="EmpAddr1" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Address 2</label><input id="EmpAddr2" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Phone</label><input id="EmpPhone" class="form-input"/></div>
-            <div class="form-group"><label class="form-label">Country</label><input id="EmpCountry" class="form-input"/></div>
-            <div class="form-group"><label class="form-label">State/Province</label><input id="EmpState" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Zip/Area Code</label><input id="EmpZip" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Fax</label><input id="EmpFax" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Employee Type</label><select id="EmpType" class="form-select"><option value="">Select</option><option>Salary</option><option>Commission</option><option>Hourly</option><option>Salary+Commission</option></select></div>
@@ -81,12 +87,11 @@
           </div>
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
             <button class="ct" type="button" onclick="resetForm()">Clear</button>
-            <button class="ct primary" type="submit">Save</button>
           </div>
         </form>
       </div>
       <div class="tab-panel" id="panel-totals" style="display:none">
-        <form id="totalsForm" onsubmit="saveTotals();return false;">
+        <form id="totalsForm" onsubmit="saveEmployeeAll();return false;">
           <div class="grid">
             <div class="form-group"><label class="form-label">Month to Date Gross</label><input id="T_MTD_Gross" type="number" step="0.01" class="form-input"/></div>
             <div class="form-group"><label class="form-label">Month to Date State</label><input id="T_MTD_State" type="number" step="0.01" class="form-input"/></div>
@@ -109,16 +114,119 @@
           </div>
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
             <button class="ct" type="button" onclick="loadTotals()">Back</button>
-            <button class="ct primary" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+      <div class="tab-panel" id="panel-paydetails" style="display:none">
+        <form id="payDetailsForm" onsubmit="saveEmployeeAll();return false;">
+          <div class="grid">
+            <div class="form-group"><label class="form-label">Salary Scale</label><input id="PD_SalaryScale" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Pay Frequency</label><select id="PD_PayFrequency" class="form-select"><option value="">Select</option><option>Weekly</option><option>Biweekly</option><option>Monthly</option></select></div>
+            <div class="form-group"><label class="form-label">Commission Code (0: for Sale, 1: for Profit)</label><input id="PD_CommissionCode" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">FICA / EOBI Y/N</label><div><input id="PD_FicaEobi" type="checkbox" /> Apply FICA / EOBI</div></div>
+            <div class="form-group"><label class="form-label">State Allowance</label><input id="PD_StateAllowance" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Federal Withholding Amount</label><input id="PD_FederalWithholding" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">City Withholding Amount</label><input id="PD_CityWithholding" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Country Filing Status</label><select id="PD_CountryFilingStatus" class="form-select"><option value="">Select</option><option>NA</option><option>Single</option><option>Married</option></select></div>
+            <div class="form-group"><label class="form-label">Amount</label><input id="PD_Amount" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Deductions</label><input id="PD_Deductions" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Blank Check Overtime Rate</label><input id="PD_BlankCheckOvertimeRate" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Year to Date Regular Hours</label><input id="PD_YTD_RegularHours" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Last Adjusted Gross</label><input id="PD_LastAGI" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Pregnancy Leaves</label><input id="PD_PregnancyLeaves" type="number" step="1" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Pay Y/N</label><div><input id="PD_PayYN" type="checkbox" /> Pay Employee</div></div>
+            <div class="form-group"><label class="form-label">Salary</label><input id="PD_Salary" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Commission Percent</label><input id="PD_CommissionPercent" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Federal Income Tax Y/N</label><div><input id="PD_FederalIncomeTaxYN" type="checkbox" /> Apply Federal Income Tax</div></div>
+            <div class="form-group"><label class="form-label">Country Allowance</label><input id="PD_CountryAllowance" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">State Withholding Amount</label><input id="PD_StateWithholding" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Federal Filing Status</label><select id="PD_FederalFilingStatus" class="form-select"><option value="">NA</option><option>Single</option><option>Married</option></select></div>
+            <div class="form-group"><label class="form-label">City Filing Status</label><select id="PD_CityFilingStatus" class="form-select"><option value="">NA</option><option>Single</option><option>Married</option></select></div>
+            <div class="form-group"><label class="form-label">Net Amount</label><input id="PD_NetAmount" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Pre Tax Amount</label><input id="PD_PreTaxAmount" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Year to Date FIT</label><input id="PD_YTD_FIT" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Year to Date Overtime Hours</label><input id="PD_YTD_OvertimeHours" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Last FICA / EOBI</label><input id="PD_LastFicaEobi" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Pay Type</label><select id="PD_PayType" class="form-select"><option value="Salary">Salary</option><option>Hourly</option><option>Commission</option><option>Salary + Commission</option></select></div>
+            <div class="form-group"><label class="form-label">Hourly Rate</label><input id="PD_HourlyRate" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Overtime Rate</label><input id="PD_OvertimeRate" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Federal Allowance</label><input id="PD_FederalAllowance" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">City Allowance</label><input id="PD_CityAllowance" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Country Withholding Amount</label><input id="PD_CountryWithholding" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">State Filing Status</label><select id="PD_StateFilingStatus" class="form-select"><option value="">NA</option><option>Single</option><option>Married</option></select></div>
+            <div class="form-group"><label class="form-label">Gender</label><select id="PD_Gender" class="form-select"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div class="form-group"><label class="form-label">Blank Check Hourly Rate</label><input id="PD_BlankCheckHourlyRate" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Additions</label><input id="PD_Additions" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Last Gross</label><input id="PD_LastGross" type="number" step="0.01" class="form-input" /></div>
+            <div class="form-group"><label class="form-label">Last FIT</label><input id="PD_LastFIT" type="number" step="0.01" class="form-input" /></div>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:#64748b;text-align:right">
+            Use the Save button at the top of the form to save Payroll Details.
           </div>
         </form>
       </div>
       <div class="tab-panel" id="panel-payroll" style="display:none">
-        <div class="muted">Payroll Details tab (Salary Scale, Pay Frequency, etc.) will be implemented on top of payroll tables.</div>
+        <div style="font-weight:700;margin-bottom:6px">Generate Payroll</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;align-items:end;margin-bottom:8px">
+          <div class="form-group">
+            <label class="form-label">Payroll Month *</label>
+            <div style="display:flex;gap:8px">
+              <select id="PayMonth" class="form-select">
+                <option value="">Month</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+              <select id="PayYear" class="form-select">
+                <option value="">Year</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="text-align:right">
+            <button class="ct" type="button" onclick="loadPayrollPreview()">Preview Payroll</button>
+          </div>
+        </div>
+        <div class="muted" style="margin-bottom:6px">Preview shows what will be posted to Accounts Payable for the selected month.</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Basic Salary</th>
+              <th>Tax</th>
+              <th>FICA/EOBI</th>
+              <th>Absent Days</th>
+              <th>Absent Deduction</th>
+              <th>Advance Deduction</th>
+              <th>Other Deduction</th>
+              <th>Net Pay</th>
+            </tr>
+          </thead>
+          <tbody id="payRows"><tr><td colspan="9">Select a payroll month and click Preview Payroll.</td></tr></tbody>
+        </table>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="ct primary" type="button" id="btnGeneratePayroll" onclick="generatePayroll()" disabled>Generate Payroll &amp; Post to AP</button>
+        </div>
+      </div>
+      <div class="tab-panel" id="panel-attendance" style="display:none">
+        <div style="font-weight:700;margin-bottom:6px">Attendance</div>
+        <p class="muted">This tab is reserved for employee attendance tracking. Layout and data wiring can be added here later.</p>
+      </div>
+      <div class="tab-panel" id="panel-advance" style="display:none">
+        <div style="font-weight:700;margin-bottom:6px">Advance Salary</div>
+        <p class="muted">This tab is reserved for managing employee advance salary requests and repayments.</p>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="empCard">
       <div style="font-weight:700;margin-bottom:4px">Employees</div>
       <table>
         <thead><tr><th>Employee ID</th><th>Name</th><th>Department</th><th>Email</th><th>Phone</th><th>Country</th><th>Active</th><th>Actions</th></tr></thead>
@@ -135,12 +243,132 @@
         if(new URL(location.href).searchParams.get('embedded') === '1'){
           var h = document.getElementById('hdr');
           if(h) h.style.display = 'none';
+          // When HR is embedded inside Safety dashboard, hide its own
+          // horizontal icons row so we only see the top HR tabs from shell.
+          var ic = document.querySelector('.icons');
+          if(ic) ic.style.display = 'none';
+          // In embedded mode, let the main shell stretch to full width so
+          // there are no large left/right grey margins when side panes are
+          // collapsed in the host dashboard.
+          var sh = document.querySelector('.shell');
+          if(sh){
+            sh.style.maxWidth = '100%';
+            sh.style.margin = '0';
+          }
         }
       }catch(e){}
     })();
 
     async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
     let currentEmpId=null; let employees=[];
+
+    // Basic validators reused across HR form fields
+    function hrIsValidEmail(v){
+      if(!v) return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+    function hrIsValidPhone(v){
+      if(!v) return true;
+      return /^[0-9+()\-\s]+$/.test(v);
+    }
+
+    // Simple in-memory location map for cascading Country 	 State 	 City for HR Employee form.
+    // Kept in sync (same structure) as CRM Add Contact advanced form.
+    const HR_LOCATION_DATA = {
+      'Pakistan': {
+        'Punjab': ['Lahore','Faisalabad','Multan'],
+        'Sindh': ['Karachi','Hyderabad'],
+        'Khyber Pakhtunkhwa': ['Peshawar'],
+        'Balochistan': ['Quetta']
+      },
+      'Bangladesh': {
+        'Dhaka': ['Dhaka'],
+        'Chattogram': ['Chattogram']
+      },
+      'United States': {
+        'California': ['Los Angeles','San Francisco'],
+        'New York': ['New York'],
+        'Texas': ['Houston','Dallas']
+      }
+    };
+
+    async function loadEmpCountries(){
+      try{
+        const r = await j('/api/crm/countries');
+        const sel = document.getElementById('EmpCountry');
+        if(!sel) return;
+        const current = sel.value || '';
+        const countries = r.data || [];
+        sel.innerHTML = '<option value="">Select Country</option>' +
+          countries.map(c=>`<option value="${c}">${c}</option>`).join('');
+        if(current && countries.includes(current)){
+          sel.value = current;
+        }
+      }catch(e){ console.error(e); }
+    }
+
+    function populateEmpStates(country,valueToSelect){
+      const stateSel = document.getElementById('EmpState');
+      const citySel = document.getElementById('EmpCity');
+      if(!stateSel || !citySel) return;
+      stateSel.innerHTML = '<option value="">Select State/Province</option>';
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = HR_LOCATION_DATA[country] || null;
+      if(!states){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; stateSel.appendChild(opt);
+          stateSel.value = valueToSelect;
+        }
+        return;
+      }
+      Object.keys(states).forEach(s=>{
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s; stateSel.appendChild(opt);
+      });
+      if(valueToSelect){ stateSel.value = valueToSelect; }
+    }
+
+    function populateEmpCities(country,state,valueToSelect){
+      const citySel = document.getElementById('EmpCity');
+      if(!citySel) return;
+      citySel.innerHTML = '<option value="">Select City</option>';
+      const states = HR_LOCATION_DATA[country] || null;
+      const cities = states && states[state] || null;
+      if(!cities){
+        if(valueToSelect){
+          const opt = document.createElement('option');
+          opt.value = valueToSelect; opt.textContent = valueToSelect; citySel.appendChild(opt);
+          citySel.value = valueToSelect;
+        }
+        return;
+      }
+      cities.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; citySel.appendChild(opt);
+      });
+      if(valueToSelect){ citySel.value = valueToSelect; }
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const countryEl = document.getElementById('EmpCountry');
+      const stateEl = document.getElementById('EmpState');
+      if(countryEl){
+        countryEl.addEventListener('change', e=>{
+          const country = e.target.value || '';
+          populateEmpStates(country,null);
+          populateEmpCities(country,'',null);
+        });
+      }
+      if(stateEl){
+        stateEl.addEventListener('change', e=>{
+          const country = (document.getElementById('EmpCountry')||{}).value || '';
+          const state = e.target.value || '';
+          populateEmpCities(country,state,null);
+        });
+      }
+      loadEmpCountries();
+    });
 
     // Pre-fill Add Employee form when launched from Shortlisted/Offer with candidate data
     (function(){
@@ -152,7 +380,42 @@
         if (email && window.EmpEmail) EmpEmail.value = email;
       }catch(e){}
     })();
-    function showTab(id){ ['main','totals','payroll'].forEach(t=>{ document.getElementById('panel-'+t).style.display = (t===id)?'block':'none'; document.getElementById('tab-'+t).classList.toggle('active', t===id); }); }
+    function showTab(id){ ['main','totals','paydetails','payroll','attendance','advance'].forEach(t=>{ var panel=document.getElementById('panel-'+t); var tab=document.getElementById('tab-'+t); if(panel) panel.style.display = (t===id)?'block':'none'; if(tab) tab.classList.toggle('active', t===id); }); }
+
+    // Allow deep linking to specific HR tabs, e.g. ?tab=payroll or ?tab=salary
+    (function(){
+      try{
+        const url = new URL(location.href);
+        const tabRaw = (url.searchParams.get('tab') || '');
+        const tab = tabRaw.toLowerCase();
+        const isEmbedded = url.searchParams.get('embedded') === '1';
+        if(tab === 'totals' || tab === 'payroll' || tab === 'salary' || tab === 'paydetails' || tab === 'payroll-details' || tab === 'attendance' || tab === 'advance' || tab === 'advance-salary'){
+          if(tab === 'salary'){
+            showTab('payroll');
+          } else if(tab === 'payroll-details'){
+            showTab('paydetails');
+          } else if(tab === 'advance-salary'){
+            showTab('advance');
+          } else {
+            showTab(tab);
+          }
+          // When opened specifically from the shell (Generate Payroll / Attendance /
+          // Advance Salary) in embedded mode, hide the local inner tab buttons row so
+          // the user only sees the selected content.
+          if(isEmbedded && (tab === 'payroll' || tab === 'salary' || tab === 'attendance' || tab === 'advance' || tab === 'advance-salary')){
+            const tabsRow = document.querySelector('.tabs');
+            if(tabsRow) tabsRow.style.display = 'none';
+          }
+          // Additionally, when opened for Generate Payroll (payroll tab) from the shell
+          // in embedded mode, hide the Employees list card below the form.
+          if(isEmbedded && (tab === 'payroll' || tab === 'salary')){
+            const empCard = document.getElementById('empCard');
+            if(empCard) empCard.style.display = 'none';
+          }
+        }
+      }catch(e){}
+    })();
+
     function scrollToForm(){ document.getElementById('panel-main')?.scrollIntoView({behavior:'smooth'}); }
 
     function resetForm(){ document.getElementById('empForm').reset(); if(currentEmpId){ const e=employees.find(x=>x.CompanyUserId===currentEmpId); if(e){ EmpName.value=e.FullName||''; EmpEmail.value=e.Email||''; } } }
@@ -168,75 +431,23 @@
       try{
         const r=await j('/api/hr/employees/'+id); const d=r.data||{}; currentEmpId=id;
         EmpName.value=d.FullName||''; EmpEmail.value=d.Email||''; EmpActive.checked= d.Active===1 || d.Active===true;
-        EmpAddr1.value=d.Address1||''; EmpAddr2.value=d.Address2||''; EmpPhone.value=d.Phone||''; EmpCountry.value=d.Country||''; EmpState.value=d.State||''; EmpZip.value=d.Zip||''; EmpFax.value=d.Fax||'';
+        EmpAddr1.value=d.Address1||''; EmpAddr2.value=d.Address2||''; EmpPhone.value=d.Phone||'';
+        const country = d.Country || '';
+        const state = d.State || '';
+        const city = d.City || '';
+        EmpCountry.value = country || '';
+        populateEmpStates(country,state);
+        populateEmpCities(country,state,city);
+        EmpZip.value=d.Zip||''; EmpFax.value=d.Fax||'';
         EmpDept.value=d.Department||''; EmpType.value=d.EmployeeType||''; EmpSSN.value=d.SSN||''; EmpHire.value=d.HireDate? String(d.HireDate).substr(0,10):''; EmpBirth.value=d.BirthDate? String(d.BirthDate).substr(0,10):'';
         EmpComm.checked = d.Commissionable===1 || d.Commissionable===true; EmpCommPct.value=d.CommissionPercent!=null? d.CommissionPercent:'';
         EmpKinName.value=d.NextOfKinName||''; EmpKinNum.value=d.NextOfKinNumber||''; EmpSource.value=d.SourceType||''; EmpIndustry.value=d.Industry||''; EmpGeo.value=d.GeoLocation||'';
         EmpDisability.value=d.Disability||''; EmpInjury.value=d.WorkInjury||''; EmpHealth.value=d.HealthInsurance||''; EmpIdNum.value=d.IdNumber||''; EmpNotes.value=d.Notes||''; EmpHeritage.value=d.Heritage||''; EmpSexual.value=d.SexualOrientation||''; EmpJobDesc.value=d.JobDescription||'';
-        showTab('main'); scrollToForm();
         await loadTotals();
+        await loadPayDetails();
+        showTab('main');
+        scrollToForm();
       }catch(e){ console.error(e); alert('Failed to load employee'); }
-    }
-
-    async function saveProfile(){
-      const basePayload={
-        address1: EmpAddr1.value||null,
-        address2: EmpAddr2.value||null,
-        active: EmpActive.checked,
-        phone: EmpPhone.value||null,
-        country: EmpCountry.value||null,
-        state: EmpState.value||null,
-        zip: EmpZip.value||null,
-        fax: EmpFax.value||null,
-        department: EmpDept.value||null,
-        employeeType: EmpType.value||null,
-        ssn: EmpSSN.value||null,
-        email: EmpEmail.value||null,
-        hireDate: EmpHire.value||null,
-        birthDate: EmpBirth.value||null,
-        commissionable: EmpComm.checked,
-        commissionPercent: EmpCommPct.value||null,
-        nextOfKinName: EmpKinName.value||null,
-        nextOfKinNumber: EmpKinNum.value||null,
-        sourceType: EmpSource.value||null,
-        industry: EmpIndustry.value||null,
-        geoLocation: EmpGeo.value||null,
-        disability: EmpDisability.value||null,
-        workInjury: EmpInjury.value||null,
-        healthInsurance: EmpHealth.value||null,
-        idNumber: EmpIdNum.value||null,
-        notes: EmpNotes.value||null,
-        heritage: EmpHeritage.value||null,
-        sexualOrientation: EmpSexual.value||null,
-        jobDescription: EmpJobDesc.value||null
-      };
-      try{
-        // If no employee selected yet, create a new employee record first
-        if(!currentEmpId){
-          const name = (EmpName.value||'').trim();
-          const email = (EmpEmail.value||'').trim();
-          if(!name || !email){
-            alert('Employee Name and Email are required to create a new employee.');
-            return;
-          }
-          const createPayload={
-            fullName: name,
-            email: email,
-            department: EmpDept.value||null,
-            employeeType: EmpType.value||null
-          };
-          const created = await j('/api/hr/employees',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(createPayload) });
-          const row = created && created.data ? created.data : created;
-          currentEmpId = row.employeeId || row.CompanyUserId || row.EmployeeId || row.Id || null;
-          if(!currentEmpId){
-            alert('Failed to create employee record.');
-            return;
-          }
-        }
-        await j('/api/hr/employees/'+currentEmpId,{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(basePayload) });
-        alert('Employee HR profile saved');
-        loadEmployees();
-      }catch(e){ console.error(e); alert('Failed to save'); }
     }
 
     async function loadTotals(){
@@ -252,21 +463,254 @@
       }catch(e){ console.error(e); }
     }
 
-    async function saveTotals(){
-      if(!currentEmpId){ alert('Select an employee from the list to edit.'); return; }
-      const g=id=>{ const v=document.getElementById(id).value; return v!==''? parseFloat(v): null; };
+    async function loadPayDetails(empId){
+      const eid = empId || currentEmpId;
+      if(!eid) return;
+      try{
+        const r = await j('/api/hr/employees/'+eid+'/pay-details');
+        const p = r.data || {};
+        const setVal = (id, v) => { const el = document.getElementById(id); if(!el) return; el.value = v != null ? v : ''; };
+        const setBool = (id, v) => { const el = document.getElementById(id); if(!el) return; el.checked = v === 1 || v === true; };
+        setVal('PD_SalaryScale', p.SalaryScale);
+        setVal('PD_PayFrequency', p.PayFrequency);
+        setVal('PD_CommissionCode', p.CommissionCode);
+        setBool('PD_FicaEobi', p.FicaEobi);
+        setVal('PD_StateAllowance', p.StateAllowance);
+        setVal('PD_FederalWithholding', p.FederalWithholding);
+        setVal('PD_CityWithholding', p.CityWithholding);
+        setVal('PD_CountryFilingStatus', p.CountryFilingStatus);
+        setVal('PD_Amount', p.Amount);
+        setVal('PD_Deductions', p.Deductions);
+        setVal('PD_BlankCheckOvertimeRate', p.BlankCheckOvertimeRate);
+        setVal('PD_YTD_RegularHours', p.YTD_RegularHours);
+        setVal('PD_LastAGI', p.LastAGI);
+        setVal('PD_PregnancyLeaves', p.PregnancyLeaves);
+        setBool('PD_PayYN', p.PayYN);
+        setVal('PD_Salary', p.Salary);
+        setVal('PD_CommissionPercent', p.CommissionPercent);
+        setBool('PD_FederalIncomeTaxYN', p.FederalIncomeTaxYN);
+        setVal('PD_CountryAllowance', p.CountryAllowance);
+        setVal('PD_StateWithholding', p.StateWithholding);
+        setVal('PD_FederalFilingStatus', p.FederalFilingStatus);
+        setVal('PD_CityFilingStatus', p.CityFilingStatus);
+        setVal('PD_NetAmount', p.NetAmount);
+        setVal('PD_PreTaxAmount', p.PreTaxAmount);
+        setVal('PD_YTD_FIT', p.YTD_FIT);
+        setVal('PD_YTD_OvertimeHours', p.YTD_OvertimeHours);
+        setVal('PD_LastFicaEobi', p.LastFicaEobi);
+        setVal('PD_PayType', p.PayType);
+        setVal('PD_HourlyRate', p.HourlyRate);
+        setVal('PD_OvertimeRate', p.OvertimeRate);
+        setVal('PD_FederalAllowance', p.FederalAllowance);
+        setVal('PD_CityAllowance', p.CityAllowance);
+        setVal('PD_CountryWithholding', p.CountryWithholdingAmount || p.CountryWithholding);
+        setVal('PD_StateFilingStatus', p.StateFilingStatus);
+        setVal('PD_Gender', p.Gender);
+        setVal('PD_BlankCheckHourlyRate', p.BlankCheckHourlyRate);
+        setVal('PD_Additions', p.Additions);
+        setVal('PD_LastGross', p.LastGross);
+        setVal('PD_LastFIT', p.LastFIT);
+      }catch(e){ console.error(e); }
+    }
+
+    async function saveEmployeeAll(){
+      const nameTrimmed = (EmpName.value||'').trim();
+      const emailTrimmed = (EmpEmail.value||'').trim();
+      const phoneTrimmed = (EmpPhone.value||'').trim();
+      if(emailTrimmed && !hrIsValidEmail(emailTrimmed)){
+        alert('Please enter a valid Email Address.');
+        return;
+      }
+      if(phoneTrimmed && !hrIsValidPhone(phoneTrimmed)){
+        alert('Please enter a valid Phone number (digits, space, +, -, parentheses).');
+        return;
+      }
+      // For new employees, require at least name and email so the backend can create the core record.
+      if(!currentEmpId && (!nameTrimmed || !emailTrimmed)){
+        alert('Employee Name and Email are required to create a new employee.');
+        return;
+      }
+      const profile={
+        fullName: nameTrimmed || null,
+        email: emailTrimmed || null,
+        address1: EmpAddr1.value||null,
+        address2: EmpAddr2.value||null,
+        active: !!EmpActive.checked,
+        phone: EmpPhone.value||null,
+        country: EmpCountry.value||null,
+        state: EmpState.value||null,
+        city: (document.getElementById('EmpCity')||{}).value || null,
+        zip: EmpZip.value||null,
+        fax: EmpFax.value||null,
+        department: EmpDept.value||null,
+        employeeType: EmpType.value||null,
+        ssn: EmpSSN.value||null,
+        hireDate: EmpHire.value||null,
+        birthDate: EmpBirth.value||null,
+        commissionable: !!EmpComm.checked,
+        commissionPercent: EmpCommPct.value||null,
+        nextOfKinName: EmpKinName.value||null,
+        nextOfKinNumber: EmpKinNum.value||null,
+        sourceType: EmpSource.value||null,
+        industry: EmpIndustry.value||null,
+        geoLocation: EmpGeo.value||null,
+        disability: EmpDisability.value||null,
+        workInjury: EmpInjury.value||null,
+        healthInsurance: EmpHealth.value||null,
+        idNumber: EmpIdNum.value||null,
+        notes: EmpNotes.value||null,
+        heritage: EmpHeritage.value||null,
+        sexualOrientation: EmpSexual.value||null,
+        jobDescription: EmpJobDesc.value||null
+      };
+      const gNum = (id) => {
+        const el = document.getElementById(id);
+        if(!el) return null;
+        const v = el.value;
+        return v!=='' ? parseFloat(v) : null;
+      };
+      const totals={
+        MTD_Gross:gNum('T_MTD_Gross'), MTD_State:gNum('T_MTD_State'), QTD_Gross:gNum('T_QTD_Gross'), QTD_State:gNum('T_QTD_State'),
+        YTD_Gross:gNum('T_YTD_Gross'), YTD_State:gNum('T_YTD_State'), MTD_Fica:gNum('T_MTD_Fica'), QTD_Fica:gNum('T_QTD_Fica'), YTD_Fica:gNum('T_YTD_Fica'),
+        MTD_Local:gNum('T_MTD_Local'), QTD_Local:gNum('T_QTD_Local'), YTD_Local:gNum('T_YTD_Local'),
+        MTD_Federal:gNum('T_MTD_Federal'), QTD_Federal:gNum('T_QTD_Federal'), YTD_Federal:gNum('T_YTD_Federal'),
+        MTD_Other:gNum('T_MTD_Other'), QTD_Other:gNum('T_QTD_Other'), YTD_Other:gNum('T_YTD_Other')
+      };
+      const payDetails={
+        SalaryScale: document.getElementById('PD_SalaryScale')?.value || null,
+        PayFrequency: document.getElementById('PD_PayFrequency')?.value || null,
+        CommissionCode: document.getElementById('PD_CommissionCode')?.value || null,
+        FicaEobi: !!(document.getElementById('PD_FicaEobi')?.checked),
+        StateAllowance: gNum('PD_StateAllowance'),
+        FederalWithholding: gNum('PD_FederalWithholding'),
+        CityWithholding: gNum('PD_CityWithholding'),
+        CountryFilingStatus: document.getElementById('PD_CountryFilingStatus')?.value || null,
+        Amount: gNum('PD_Amount'),
+        Deductions: gNum('PD_Deductions'),
+        BlankCheckOvertimeRate: gNum('PD_BlankCheckOvertimeRate'),
+        YTD_RegularHours: gNum('PD_YTD_RegularHours'),
+        LastAGI: gNum('PD_LastAGI'),
+        PregnancyLeaves: gNum('PD_PregnancyLeaves'),
+        PayYN: !!(document.getElementById('PD_PayYN')?.checked),
+        Salary: gNum('PD_Salary'),
+        CommissionPercent: gNum('PD_CommissionPercent'),
+        FederalIncomeTaxYN: !!(document.getElementById('PD_FederalIncomeTaxYN')?.checked),
+        CountryAllowance: gNum('PD_CountryAllowance'),
+        StateWithholding: gNum('PD_StateWithholding'),
+        FederalFilingStatus: document.getElementById('PD_FederalFilingStatus')?.value || null,
+        CityFilingStatus: document.getElementById('PD_CityFilingStatus')?.value || null,
+        NetAmount: gNum('PD_NetAmount'),
+        PreTaxAmount: gNum('PD_PreTaxAmount'),
+        YTD_FIT: gNum('PD_YTD_FIT'),
+        YTD_OvertimeHours: gNum('PD_YTD_OvertimeHours'),
+        LastFicaEobi: gNum('PD_LastFicaEobi'),
+        PayType: document.getElementById('PD_PayType')?.value || null,
+        HourlyRate: gNum('PD_HourlyRate'),
+        OvertimeRate: gNum('PD_OvertimeRate'),
+        FederalAllowance: gNum('PD_FederalAllowance'),
+        CityAllowance: gNum('PD_CityAllowance'),
+        CountryWithholdingAmount: gNum('PD_CountryWithholding'),
+        StateFilingStatus: document.getElementById('PD_StateFilingStatus')?.value || null,
+        Gender: document.getElementById('PD_Gender')?.value || null,
+        BlankCheckHourlyRate: gNum('PD_BlankCheckHourlyRate'),
+        Additions: gNum('PD_Additions'),
+        LastGross: gNum('PD_LastGross'),
+        LastFIT: gNum('PD_LastFIT')
+      };
       const payload={
-        MTD_Gross:g('T_MTD_Gross'), MTD_State:g('T_MTD_State'), QTD_Gross:g('T_QTD_Gross'), QTD_State:g('T_QTD_State'),
-        YTD_Gross:g('T_YTD_Gross'), YTD_State:g('T_YTD_State'),
-        MTD_Fica:g('T_MTD_Fica'), QTD_Fica:g('T_QTD_Fica'), YTD_Fica:g('T_YTD_Fica'),
-        MTD_Local:g('T_MTD_Local'), QTD_Local:g('T_QTD_Local'), YTD_Local:g('T_YTD_Local'),
-        MTD_Federal:g('T_MTD_Federal'), QTD_Federal:g('T_QTD_Federal'), YTD_Federal:g('T_YTD_Federal'),
-        MTD_Other:g('T_MTD_Other'), QTD_Other:g('T_QTD_Other'), YTD_Other:g('T_YTD_Other')
+        employeeId: currentEmpId || null,
+        profile,
+        totals,
+        payDetails
       };
       try{
-        await j('/api/hr/employees/'+currentEmpId+'/totals',{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        alert('Totals saved');
-      }catch(e){ console.error(e); alert('Failed to save totals'); }
+        const res = await j('/api/hr/employees/full',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if(res && (res.employeeId || (res.data && res.data.employeeId))){
+          currentEmpId = res.employeeId || (res.data && res.data.employeeId);
+        }
+        alert('Employee and payroll details have been saved.');
+        loadEmployees();
+      }catch(e){ console.error(e); alert('Failed to save employee and payroll details'); }
+    }
+
+    // Initialize payroll month/year dropdowns with a small year range and default current period
+    (function(){
+      try{
+        const monthEl = document.getElementById('PayMonth');
+        const yearEl  = document.getElementById('PayYear');
+        if(!monthEl || !yearEl) return;
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const startYear = currentYear - 2;
+        const endYear = currentYear + 1;
+        for(let y=startYear; y<=endYear; y++){
+          const opt = document.createElement('option');
+          opt.value = String(y);
+          opt.textContent = String(y);
+          yearEl.appendChild(opt);
+        }
+        // Default to current month/year
+        const mm = String(now.getMonth()+1).padStart(2,'0');
+        const yy = String(currentYear);
+        if(monthEl.querySelector('option[value="'+mm+'"]').value){
+          monthEl.value = mm;
+        }
+        yearEl.value = yy;
+      }catch(e){}
+    })();
+
+    // --- Generate Payroll (preview + post to AP) ---
+    let payrollPreview=[];
+
+    function renderPayrollPreview(){
+      const tbody=document.getElementById('payRows');
+      if(!tbody) return;
+      if(!payrollPreview.length){
+        tbody.innerHTML='<tr><td colspan="9">No payroll rows for this period.</td></tr>';
+        return;
+      }
+      tbody.innerHTML=payrollPreview.map(r=>`
+        <tr>
+          <td>${r.EmployeeName||''}</td>
+          <td>${r.BasicSalary!=null?r.BasicSalary:''}</td>
+          <td>${r.Tax!=null?r.Tax:''}</td>
+          <td>${r.Fica!=null?r.Fica:''}</td>
+          <td>${r.AbsentDays!=null?r.AbsentDays:''}</td>
+          <td>${r.AbsentDeduction!=null?r.AbsentDeduction:''}</td>
+          <td>${r.AdvanceDeduction!=null?r.AdvanceDeduction:''}</td>
+          <td>${r.OtherDeduction!=null?r.OtherDeduction:''}</td>
+          <td>${r.NetPay!=null?r.NetPay:''}</td>
+        </tr>`).join('');
+    }
+
+    async function loadPayrollPreview(){
+      const monthEl=document.getElementById('PayMonth');
+      const yearEl=document.getElementById('PayYear');
+      const btn=document.getElementById('btnGeneratePayroll');
+      if(btn) btn.disabled=true;
+      if(!monthEl || !yearEl || !monthEl.value || !yearEl.value){ alert('Select payroll month and year first'); return; }
+      const period = yearEl.value + '-' + monthEl.value; // e.g. 2026-01
+      try{
+        const r=await j('/api/hr/payroll/preview?period='+encodeURIComponent(period));
+        payrollPreview=(r.data||[]);
+        renderPayrollPreview();
+        if(btn && payrollPreview.length) btn.disabled=false;
+      }catch(e){
+        console.error(e);
+        alert('Failed to load payroll preview');
+      }
+    }
+
+    async function generatePayroll(){
+      const monthEl=document.getElementById('PayMonth');
+      const yearEl=document.getElementById('PayYear');
+      if(!monthEl || !yearEl || !monthEl.value || !yearEl.value){ alert('Select payroll month and year first'); return; }
+      if(!payrollPreview.length){ alert('Load a payroll preview before generating.'); return; }
+      const period = yearEl.value + '-' + monthEl.value;
+      try{
+        await j('/api/hr/payroll/generate',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ period }) });
+        alert('Payroll generated and posted to Accounts Payable (if configured on server).');
+      }catch(e){ console.error(e); alert('Failed to generate payroll'); }
     }
 
     loadEmployees();

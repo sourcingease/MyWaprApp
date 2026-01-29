@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Waste Disposal</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    .container { max-width: 1100px; margin: 20px auto; }
+    .panel { background:#f7f7f7; border:1px solid #ddd; padding:18px; border-radius:4px }
+    .row { display:flex; gap:12px; margin-bottom:12px }
+    .col { flex:1 }
+    label { display:block; font-weight:600; margin-bottom:6px }
+    .actions { margin-top:14px }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>WASTE DISPOSAL</h2>
+    <div class="panel">
+      <form id="disposalForm">
+        <div class="row">
+          <div class="col">
+            <label for="wasteHandled">Waste Handled:</label>
+            <select id="wasteHandled" class="form-control">
+              <option value="">-- Select Waste Handling Record --</option>
+              <option value="General Waste">General Waste</option>
+              <option value="Hazardous Waste">Hazardous Waste</option>
+              <option value="Chemical Waste">Chemical Waste</option>
+              <option value="Organic Waste">Organic Waste</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="col">
+            <label for="disposalMethod">Disposal Method:</label>
+            <select id="disposalMethod" class="form-control">
+              <option value="Recycling">Recycling</option>
+              <option value="Incineration">Incineration</option>
+              <option value="Landfill">Landfill</option>
+              <option value="Treatment">Treatment</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="col">
+            <label for="disposalCompany">Disposal Company:</label>
+            <select id="disposalCompany" class="form-control">
+              <option value="">-- Select Company --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="disposalCompanyContact">Disposal Company Contact:</label>
+            <input id="disposalCompanyContact" type="text" class="form-control" />
+          </div>
+          <div class="col">
+            <label for="disposalCompanyNumber">Disposal Company Contact Number:</label>
+            <input id="disposalCompanyNumber" type="text" class="form-control" />
+          </div>
+          <div class="col">
+            <label for="dateOfDisposal">Date of Disposal:</label>
+            <input id="dateOfDisposal" type="date" class="form-control" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="transportationMethod">Transportation Method:</label>
+            <select id="transportationMethod" class="form-control">
+              <option value="Truck">Truck</option>
+              <option value="Van">Van</option>
+              <option value="Drum">Drum</option>
+              <option value="Manual">Manual</option>
+            </select>
+          </div>
+          <div class="col"></div>
+          <div class="col"></div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="backBtn" class="btn btn-secondary">Back</button>
+          <button type="submit" id="submitBtn" class="btn btn-primary">Submit</button>
+          <span id="status" style="margin-left:12px"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Populate companies (placeholder - can be replaced by API call)
+    const companies = ['Acme Waste Ltd', 'GreenRecycle Co', 'SafeDispose Inc'];
+    const companySelect = document.getElementById('disposalCompany');
+    companies.forEach(c => {
+      const opt = document.createElement('option'); opt.value = c; opt.textContent = c; companySelect.appendChild(opt);
+    });
+
+    const form = document.getElementById('disposalForm');
+    const status = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+
+      const wasteHandled = document.getElementById('wasteHandled').value;
+      const disposalMethod = document.getElementById('disposalMethod').value;
+      const disposalCompany = document.getElementById('disposalCompany').value;
+      const disposalCompanyContact = document.getElementById('disposalCompanyContact').value;
+      const disposalCompanyNumber = document.getElementById('disposalCompanyNumber').value;
+      const dateOfDisposal = document.getElementById('dateOfDisposal').value;
+      const transportationMethod = document.getElementById('transportationMethod').value;
+
+      // Map fields to existing /api/waste/management payload
+      const payload = {
+        dateOfWasteGeneration: dateOfDisposal || new Date().toISOString().slice(0,10),
+        wasteCategory: disposalMethod || 'Disposal',
+        typeOfWaste: wasteHandled || 'Unknown',
+        quantityOfWaste: 0,
+        unit: '',
+        sourceOfWaste: disposalCompany || '',
+        collectionMethod: transportationMethod || '',
+        storageMethod: '',
+        storageDuration: 0,
+        warehouseName: disposalCompany || '',
+        location: '',
+        notes: `Contact: ${disposalCompanyContact || ''} ${disposalCompanyNumber ? '| ' + disposalCompanyNumber : ''}`
+      };
+
+      try {
+        const res = await fetch('/api/waste/management', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const j = await res.json();
+        if (res.ok) {
+          status.style.color = 'green';
+          status.textContent = 'Submitted — ID: ' + (j.id || j.data?.id || 'unknown');
+          form.reset();
+        } else {
+          status.style.color = 'crimson';
+          status.textContent = j.error || j.message || 'Submission failed';
+        }
+      } catch (err) {
+        status.style.color = 'crimson';
+        status.textContent = err.message || 'Network error';
+      }
+    });
+
+    document.getElementById('backBtn').addEventListener('click', ()=>{ window.history.back(); });
+  </script>
+</body>
+</html>

@@ -6,27 +6,154 @@
   <title>CRM • ComplytEX</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css">
+  <script src="/js/master-layout.js"></script>
+  <script src="/js/agents-ui.js"></script>
   <style>
-    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
-    .shell{max-width:1100px;margin:0 auto;padding:22px}
-    .muted{color:#94a3b8}
-    .card{background:#0f172a;border:1px solid #1f2a3b;border-radius:12px;padding:16px}
-    a{color:#a78bfa}
+    body{margin:0;font-family:Segoe UI,Inter,Arial;background:#f5f7fa;color:#0f172a}
+    .layout{display:grid;grid-template-columns:200px 1fr 250px;gap:16px;max-width:1400px;margin:0 auto;padding:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .nav{padding:12px}
+    .nav .title{font-weight:800;color:#0f172a;margin-bottom:10px;font-size:11px;text-transform:uppercase;color:#64748b}
+    .nav a{display:block;padding:8px 10px;border-radius:8px;color:#0f172a;text-decoration:none;border:1px solid transparent;margin-bottom:6px;font-size:13px}
+    .nav a:hover{background:#f8fafc;border-color:#0ea5e9}
+    .nav a.active{background:#e0f2fe;border-color:#0ea5e9;color:#0369a1;font-weight:600}
+    .content{display:flex;flex-direction:column;gap:16px}
+    .section{padding:14px}
+    .section .hdr{font-weight:800;margin-bottom:8px;font-size:18px}
+    .section .sub{color:#64748b;font-size:13px;margin-bottom:12px}
+    .links{list-style:none;padding:0;margin:0}
+    .links li{margin-bottom:6px}
+    .links a{color:#0ea5e9;text-decoration:none;font-size:13px}
+    .links a:hover{text-decoration:underline}
+    .sidebar{padding:12px}
+    .sidebar .hdr{font-weight:700;margin-bottom:8px;font-size:14px}
+    .kpi-row{display:flex;gap:6px;flex-direction:column;margin-top:6px}
+    .kpi{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;background:#f8fafc}
+    .kpi .label{font-size:12px;color:#64748b}
+    .kpi .value{font-weight:700;font-size:18px;color:#0f172a}
+    .kpi .dot{width:8px;height:8px;border-radius:50%;margin-right:8px}
+    .kpi .dot.orange{background:#fb923c}
+    .kpi .dot.blue{background:#60a5fa}
+    .kpi .dot.purple{background:#a78bfa}
+    .kpi .dot.green{background:#4ade80}
+    @media (max-width:1200px){ .layout{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <h2>CRM</h2>
-    <p class="muted">Placeholder CRM workspace. Link your customer pages here.</p>
-    <div class="card" style="margin-top:12px">
-      <div>Quick Links</div>
-      <ul>
-        <li><a href="/index.html">Home</a></li>
-        <li><a href="/employees.html">HR (Employees)</a></li>
-        <li><a href="/billing.html">Billing</a></li>
-        <li><a href="/support.html">Support</a></li>
-      </ul>
+  <div class="dashboard-header" id="hdr">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">CRM</div></div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="layout">
+    <div class="card nav">
+      <div class="title">CRM Agents</div>
+      <div style="color:#22c55e;font-size:11px;margin-bottom:12px;display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:#22c55e"></div>Supervisor</div>
+      <div style="color:#64748b;font-size:11px;margin-bottom:12px;display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:#22c55e"></div>Contacts Agent</div>
+      <div class="title" style="margin-top:16px">Navigation</div>
+      <a href="#" class="active" data-tab="contacts">👤 Contacts</a>
+      <a href="#" data-tab="leads">📊 Leads</a>
+      <a href="#" data-tab="accounts">🏢 Accounts</a>
+      <a href="#" data-tab="mailbox">✉️ Mailbox</a>
+      <a href="#" data-tab="chat">💬 Chat</a>
+      <a href="#" data-tab="phone-notes">📞 Phone Notes</a>
+    </div>
+
+    <div class="content">
+      <div class="card" id="crm-agents-panel"></div>
+      
+      <div class="card section">
+        <div class="hdr">CRM</div>
+        <div class="sub">Placeholder CRM workspace. Link your customer pages here.</div>
+        <div class="hdr" style="font-size:14px;margin-top:16px">Quick Links</div>
+        <ul class="links">
+          <li><a href="/index.html">Home</a></li>
+          <li><a href="/crm/dashboard.html">CRM Dashboard</a></li>
+          <li><a href="/crm/contacts.html">Contacts</a></li>
+          <li><a href="/crm/leads.html">Leads</a></li>
+          <li><a href="/crm/accounts.html">Accounts</a></li>
+          <li><a href="/crm/mailbox.html">Mailbox</a></li>
+          <li><a href="/crm/chat.html">Chat</a></li>
+          <li><a href="/employees.html">HR (Employees)</a></li>
+          <li><a href="/billing.html">Billing</a></li>
+          <li><a href="/support.html">Support</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card sidebar">
+      <div class="hdr">Procurement Status</div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div style="display:flex;align-items:center"><div class="dot orange"></div><span class="label">Pending RFQs</span></div>
+          <div class="value">0</div>
+        </div>
+        <div class="kpi">
+          <div style="display:flex;align-items:center"><div class="dot blue"></div><span class="label">Quotes Received</span></div>
+          <div class="value">0</div>
+        </div>
+        <div class="kpi">
+          <div style="display:flex;align-items:center"><div class="dot purple"></div><span class="label">Orders Approved</span></div>
+          <div class="value">0</div>
+        </div>
+        <div class="kpi">
+          <div style="display:flex;align-items:center"><div class="dot green"></div><span class="label">Materials Delivered</span></div>
+          <div class="value">0</div>
+        </div>
+      </div>
+      
+      <div class="hdr" style="margin-top:20px">Safety</div>
+      <div style="color:#64748b;font-size:12px;margin-top:8px">Safety Agent</div>
+      <div style="color:#64748b;font-size:11px;margin-top:4px">Upload docs or type queries. All writes require approval.</div>
     </div>
   </div>
+
+  <script>
+    // Hide header if embedded
+    if(new URL(location.href).searchParams.get('embedded')==='1'){
+      const h=document.getElementById('hdr'); if(h) h.style.display='none';
+    }
+    
+    // Initialize CRM agents
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.AgentUI) {
+        window.AgentUI.initModuleAgents({
+          containerSelector: '#crm-agents-panel',
+          moduleId: 'crm'
+        });
+      }
+      
+      // Tab navigation
+      const tabs = document.querySelectorAll('.nav a[data-tab]');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tabId = this.getAttribute('data-tab');
+          
+          // Update active state
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Navigate to the corresponding page
+          const urls = {
+            'contacts': '/crm/contacts.html',
+            'leads': '/crm/leads.html',
+            'accounts': '/crm/accounts.html',
+            'mailbox': '/crm/mailbox.html',
+            'chat': '/crm/chat.html',
+            'phone-notes': '/crm/phone-notes.html'
+          };
+          
+          if (urls[tabId]) {
+            if (window.mlOpenInWorkingArea) {
+              window.mlOpenInWorkingArea(urls[tabId]);
+            } else {
+              location.href = urls[tabId];
+            }
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>

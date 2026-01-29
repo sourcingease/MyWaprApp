@@ -1,0 +1,381 @@
+ComplytEX (SaaS Agent)
+SQA Manual Testing Script
+
+Note: This is a plain-text test script. To use it in Microsoft Word:
+1) Open this file in Word.
+2) Save As → Word Document (*.docx).
+
+======================================================================
+SECTION 1 – Login & Authentication
+======================================================================
+
+TC-LOGIN-01 – Valid login (Owner)
+Objective: Verify that a valid Owner account can sign in.
+Preconditions: Owner demo user exists (owner@demo.example / DemoPass123!).
+Steps:
+ 1. Navigate to /login.html.
+ 2. Enter Owner email and password.
+ 3. Click "Sign In".
+Expected Result:
+ - Green status "Signed in!".
+ - Redirect to /dashboard.
+ - Session cookie is created.
+
+TC-LOGIN-02 – Invalid password
+Objective: Validate error handling for wrong password.
+Steps:
+ 1. Open /login.html.
+ 2. Enter valid email with incorrect password.
+ 3. Click "Sign In".
+Expected Result:
+ - Red error message (e.g. "Login failed").
+ - User remains on login page.
+
+TC-LOGIN-03 – Demo account quick login
+Objective: Confirm demo account buttons work.
+Steps:
+ 1. On /login.html locate Demo Accounts.
+ 2. Click "Login as HR Manager".
+Expected Result:
+ - Email/password auto-fill.
+ - User is logged in and redirected to dashboard.
+
+======================================================================
+SECTION 2 – Home / Demo Dashboard (/index.html)
+======================================================================
+
+TC-HOME-01 – Test DB connection success
+Objective: Verify database connection success path.
+Preconditions: DB reachable with correct configuration.
+Steps:
+ 1. Open /index.html.
+ 2. Click "Test Database Connection".
+Expected Result:
+ - Button shows loading state.
+ - Success panel appears showing database, server, table count, connection time.
+
+TC-HOME-02 – CRUD on demo contact
+Objective: Verify add, list, edit, delete of demo contacts.
+Steps:
+ 1. On Contact Management card, enter name "SQA Test Contact" and click "Add Contact".
+ 2. Click "Refresh List".
+ 3. In Contacts List, locate "SQA Test Contact" and click "Edit".
+ 4. Change name to "SQA Test Contact Updated"; save.
+ 5. Refresh list; verify updated name.
+ 6. Delete the contact and confirm.
+Expected Result:
+ - Contact is created, updated, and deleted without errors.
+
+======================================================================
+SECTION 3 – Owner Dashboard (/dashboard.html)
+======================================================================
+
+TC-DASH-01 – Load tenant summary
+Objective: Verify summary info loads correctly for valid tenant.
+Preconditions: Known tenantId with sample data.
+Steps:
+ 1. Open /dashboard.html.
+ 2. Enter valid Tenant ID.
+ 3. Click "Load".
+Expected Result:
+ - Tenant name and business type displayed.
+ - Employees/Customers/Suppliers/Certifications cards show counts.
+ - Modules grid displays at least one module.
+
+TC-DASH-02 – Invalid tenant ID
+Objective: Validate error handling for invalid tenant.
+Steps:
+ 1. Enter non-existent Tenant ID (e.g. 999999).
+ 2. Click "Load".
+Expected Result:
+ - Error message or "Tenant not found".
+ - No stats populated.
+
+======================================================================
+SECTION 4 – App Shell (/app.html)
+======================================================================
+
+TC-SHELL-01 – Module navigation
+Objective: Ensure left navigation loads correct modules.
+Steps:
+ 1. Log in and open /app.html.
+ 2. Click "HR & Payroll"; observe iframe content.
+ 3. Click "Accounting", "CRM", "Safety Office", "Support" one by one.
+Expected Result:
+ - Iframe loads /hr/index.html, /accounting/dashboard.html, /crm/index.html, etc.
+ - Shell itself does not reload; only iframe content changes.
+
+======================================================================
+SECTION 5 – Business Setup (/profile.html)
+======================================================================
+
+TC-BS-01 – Save company profile
+Objective: Verify company profile is saved and reloaded.
+Steps:
+ 1. In App Shell, open Business Setup.
+ 2. In Head Office section, set:
+    - Address1 = "SQA HO Address".
+    - Employees = 123.
+    - Min Wage = 100.
+    - Tick "Garments".
+ 3. Click "Save Company Profile".
+ 4. Refresh page.
+Expected Result:
+ - Values persist (Address1, Employees, Min Wage, Garments checked).
+
+TC-BS-02 – Add/Delete product line
+Objective: Verify product line management.
+Steps:
+ 1. Under Product Line, enter "SQA Product Line".
+ 2. Click "Add"; verify it appears.
+ 3. Click "Delete" for that line; confirm.
+Expected Result:
+ - Line added and then removed from list.
+
+TC-BS-03 – Add warehouse
+Objective: Verify creation of a new warehouse.
+Steps:
+ 1. Open Warehouses pane.
+ 2. Click "New Warehouse".
+ 3. Fill fields (Name = "SQA Warehouse", Address Type = Warehouse Address, Type = Distribution, City = "SQA City").
+ 4. Save.
+Expected Result:
+ - "SQA Warehouse" shown in list with correct city and type.
+
+TC-BS-04 – Add space with exit plan image
+Objective: Verify space creation including image upload.
+Steps:
+ 1. Open Spaces pane.
+ 2. Click "New Space".
+ 3. Name = "SQA Space", Type = "Production", Floor = 1.
+ 4. Select a small PNG for Exit Plan.
+ 5. Click "Save".
+Expected Result:
+ - Space appears in table.
+ - Exit Plan column shows thumbnail image.
+
+TC-BS-05 – Add certification with image and logo
+Objective: Verify certification creation with images.
+Steps:
+ 1. Open Certifications pane.
+ 2. Click "Add New".
+ 3. Name = "SQA Cert"; Type = "Ethical"; Policy = "Test Policy"; set valid dates.
+ 4. Upload certificate image and logo.
+ 5. Save.
+Expected Result:
+ - "SQA Cert" appears with certificate image and logo thumbnails.
+
+======================================================================
+SECTION 6 – Employees & Roles
+======================================================================
+
+TC-EMP-01 – Add employee
+Objective: Verify employee creation via /employees.html.
+Steps:
+ 1. Open /employees.html.
+ 2. Enter Tenant ID; click "Load".
+ 3. In Add employee, enter:
+    - Email = sqa.user+emp@example.com
+    - Full name = "SQA Emp"
+    - Password = "Welcome123!"
+    - Title = "QA Tester"
+ 4. Click "Add".
+Expected Result:
+ - New row "SQA Emp" appears with correct email and title.
+
+TC-ROLE-01 – Create and assign role
+Objective: Verify role lifecycle.
+Steps:
+ 1. Open /roles.html; set same Tenant ID; click "Load".
+ 2. In Create role, set Role name = "SQA Role"; tick at least one permission.
+ 3. Click "Create role".
+ 4. In Assign role section, use User ID of "SQA Emp" and Role ID of "SQA Role".
+ 5. Click "Assign".
+Expected Result:
+ - "SQA Role" visible in roles table.
+ - Employees page shows SQA Emp with role "SQA Role".
+
+======================================================================
+SECTION 7 – HR & Payroll (/hr/index.html)
+======================================================================
+
+TC-HR-01 – Create HR employee profile
+Objective: Verify HR module can create employee.
+Steps:
+ 1. Open /hr/index.html.
+ 2. In Add New Employee, enter:
+    - Name = "SQA HR Emp"
+    - Email = sqa.hr@example.com
+    - Department = HR
+ 3. Click "Save".
+ 4. Check Employees table.
+Expected Result:
+ - Row for "SQA HR Emp" exists with Department = HR.
+
+TC-HR-02 – Load totals for existing employee
+Objective: Verify Totals tab retrieves data.
+Steps:
+ 1. In Employees table, click "Edit" for any employee.
+ 2. Click "Totals" tab.
+Expected Result:
+ - Fields populate (0 or actual values) without JS errors.
+
+======================================================================
+SECTION 8 – CRM
+======================================================================
+
+TC-CRM-01 – CRM hub navigation
+Objective: Confirm CRM cards open correct pages.
+Steps:
+ 1. Open /crm/index.html.
+ 2. Click each card: Open Contacts, Open Leads, Open Accounts, Open Mailbox, Open Chat, Open Phone Notes.
+Expected Result:
+ - Each card navigates to appropriate page (no 404 errors).
+
+TC-CRM-02 – Add CRM contact (demo)
+Objective: Verify simple add-contact form.
+Steps:
+ 1. Open /crm/add-contact.html.
+ 2. Full Name = "SQA CRM Contact".
+ 3. Click "Save Contact".
+Expected Result:
+ - Success message shown; no JS errors.
+
+======================================================================
+SECTION 9 – Accounting
+======================================================================
+
+TC-ACC-01 – Add bank
+Objective: Verify adding a bank account.
+Steps:
+ 1. Open /accounting/banks.html.
+ 2. Enter Bank Name, Account Title, Account Number, Opening Balance.
+ 3. Click "Add Bank".
+Expected Result:
+ - Bank appears in list; Balance equals opening balance.
+
+TC-ACC-02 – Accounting hub KPIs
+Objective: Ensure KPIs load without errors.
+Steps:
+ 1. Open /accounting/index.html.
+Expected Result:
+ - Cash/Open Payables/Open Receivables display numeric values (0 allowed).
+ - No JS errors.
+
+======================================================================
+SECTION 10 – Safety & Compliance
+======================================================================
+
+TC-SAF-01 – Plan new audit
+Objective: Verify audit planning.
+Steps:
+ 1. Open /safety-audits.html.
+ 2. Click "Plan New Audit".
+ 3. Enter Name = "SQA Audit", Type = FIRE, Company = "SQA Safety Co", Date = today.
+ 4. Click "Save Audit"; close modal.
+Expected Result:
+ - "SQA Audit" appears in audits list.
+
+TC-SAF-02 – Fill and save audit sheet
+Objective: Verify audit items persistence.
+Steps:
+ 1. Click "View" for "SQA Audit".
+ 2. In Safety Audit Sheet, uncheck "No Issue" for one row.
+ 3. Enter Issue Details and Suggested Action.
+ 4. Click "Save Audit Sheet".
+Expected Result:
+ - Success message; re-opening audit shows same values.
+
+TC-SAF-03 – Create RFQ from issue
+Objective: Verify RFQ creation.
+Steps:
+ 1. In Open Issues section, expand an issue.
+ 2. Click "+ Create RFQ".
+ 3. Fill Item Name = "SQA Fire Extinguisher", Qty = 10, Unit any, Needed By future date, recipient email.
+ 4. Click "Send RFQ".
+Expected Result:
+ - RFQ appears in that issue's RFQ list and in Quote Dashboard.
+
+TC-TRN-01 – Create safety training session
+Objective: Verify training sessions API.
+Steps:
+ 1. Open /training.html.
+ 2. Name = "SQA Fire Training"; Related To = "Fire"; Date = today; Conducted By = "Safety Manager".
+ 3. Select at least one attendee; click "Save Training".
+Expected Result:
+ - Session listed in table; CSV export includes this row.
+
+======================================================================
+SECTION 11 – Tasks & Calendar
+======================================================================
+
+TC-TASK-01 – Create task in planner
+Objective: Verify task creation and display.
+Steps:
+ 1. Open /calendar.html.
+ 2. Select today in month grid.
+ 3. Click timeline slot for any user at 10:00.
+ 4. In modal, set Title = "SQA Task"; keep default times; click OK.
+Expected Result:
+ - Task pill "SQA Task" appears in that slot; persists after reload.
+
+======================================================================
+SECTION 12 – Support, Tracking, Billing, Reports
+======================================================================
+
+TC-SUP-01 – Create support ticket
+Objective: Verify ticket creation.
+Steps:
+ 1. Open /support.html.
+ 2. Enter Tenant ID, Subject = "SQA Ticket", Message sample.
+ 3. Click "Create ticket".
+Expected Result:
+ - Ticket appears in My Tickets table with ID and Status.
+
+TC-TRK-01 – Tracking filters
+Objective: Confirm tracking UI works.
+Steps:
+ 1. Open /tracking.html.
+ 2. Type "TRK-1001" in Search.
+ 3. Change Status dropdown between Open, Closed, Any.
+Expected Result:
+ - Table filters accordingly; no JS errors.
+
+TC-BILL-01 – Billing subscribe
+Objective: Verify subscribe request.
+Steps:
+ 1. Open /billing.html.
+ 2. Enter Tenant ID.
+ 3. Click "Subscribe".
+Expected Result:
+ - Either redirect to checkout URL or an error message in msg area; no JS errors.
+
+TC-REP-01 – Reports page loads
+Objective: Confirm /report.html basic behavior.
+Steps:
+ 1. Open /report.html.
+ 2. Click "Run" on each sample report.
+Expected Result:
+ - No JS errors; placeholder behavior as designed.
+
+======================================================================
+SECTION 13 – General / Non-Functional
+======================================================================
+
+TC-NF-01 – Unauthorized access redirect
+Objective: Ensure protected pages are guarded.
+Steps:
+ 1. Log out or clear cookies.
+ 2. Try to open /hr/index.html directly.
+Expected Result:
+ - Redirect to /login.html or 401/403 message.
+
+TC-NF-02 – Basic responsive check
+Objective: Quick sanity on mobile layout.
+Steps:
+ 1. Open /login.html, /app.html, /profile.html, /safety-audits.html.
+ 2. Use browser dev tools to switch to mobile viewport.
+Expected Result:
+ - Layout remains usable; critical buttons and fields are visible.
+
+End of testing script.

@@ -1,0 +1,1415 @@
+ComplytEX (SaaS Agent)
+User Manual
+Version 1.0
+
+-------------------------------------------------------------------------------
+1. INTRODUCTION
+-------------------------------------------------------------------------------
+
+This document is a functional user manual for the ComplytEX SaaS Agent
+application. It explains, module by module, how to use every major page,
+form, and tab in the web UI.
+
+The application is a Node.js backend with a static HTML/JavaScript frontend
+served from the `public` folder. You typically access it through a browser
+(e.g., `http://localhost:3000` or your deployed URL).
+
+Each section below describes:
+- Purpose of the page or module
+- How to navigate to it
+- Explanation of key fields and controls
+- Typical user workflows
+
+
+-------------------------------------------------------------------------------
+2. NAVIGATION OVERVIEW
+-------------------------------------------------------------------------------
+
+Main entry points:
+- Home / SaaS Agent Dashboard: `/index.html` or `/`
+- Login: `/login.html`
+- Owner Dashboard: `/dashboard.html`
+- Application Shell: `/app.html`
+
+App Shell (`/app.html`) is the recommended way to navigate modules, because it
+loads each module inside an iframe and keeps a consistent top header.
+
+In the shell, modules appear on the left as a list:
+- Business Setup (Profile)
+- Safety Office
+- Safety Auditor
+- HR & Payroll
+- Accounting
+- CRM
+- Support
+- AI
+
+Selecting a module changes the hash in the URL and loads the corresponding
+page into the right‑hand iframe.
+
+
+-------------------------------------------------------------------------------
+3. AUTHENTICATION MODULE
+-------------------------------------------------------------------------------
+
+3.1 Login Page (`/login.html`)
+
+PURPOSE
+- Authenticate users into ComplytEX and provide demo logins for typical roles.
+
+HOW TO OPEN
+- From the Home page, click "Login"; or navigate directly to `/login.html`.
+
+LAYOUT
+- ComplytEX logo at the top.
+- Title: "Login".
+- Two main input fields and a Sign In button.
+- Demo Accounts list with quick login buttons.
+
+FIELDS
+- Email
+  - Your login email address.
+- Password
+  - Your password.
+
+ACTIONS
+- Sign In
+  - Click the **Sign In** button.
+  - Sends a POST to `/api/auth/login` with email & password.
+  - On success, you are redirected either to a provided redirect URL from the
+    server or default `/dashboard`.
+  - On failure, an error message appears in the status area.
+
+- Demo Accounts
+  - Buttons such as "Login as Owner", "HR Manager", "Sales Manager",
+    "Buyer", "Supplier", "Designer", "Safety Auditor", "Safety Office",
+    and "Inspection".
+  - Clicking a button fills the email and password fields with demo
+    credentials and triggers login.
+
+STATUS MESSAGES
+- A message box appears after you attempt to sign in:
+  - Green background for success ("Signed in!").
+  - Red background for errors (e.g., "Login failed" or backend error text).
+
+
+3.2 Register Page (`/register.html`)
+
+PURPOSE
+- Create new tenant or user accounts (implementation may vary by backend).
+
+TYPICAL FLOW (CONCEPTUAL)
+- Provide organization/tenant information and admin user credentials.
+- Submit the form; on success, you can then log in at the Login page.
+
+(Exact fields depend on your server configuration and are not fully detailed
+in the static HTML.)
+
+
+-------------------------------------------------------------------------------
+4. HOME / DEMO DASHBOARD MODULE
+-------------------------------------------------------------------------------
+
+4.1 SaaS Agent Dashboard (`/index.html`)
+
+PURPOSE
+- Demonstration dashboard to test:
+  - Azure SQL Database connectivity.
+  - Basic CRUD operations on a demo contacts table (`contactTest`).
+
+HOW TO OPEN
+- Default root (`/`) or `/index.html`.
+
+SECTIONS
+
+A. Header Links
+- Login → `/login`
+- Register → `/register`
+- Owner Dashboard → `/dashboard`
+- Employees → `/employees`
+- Roles → `/roles`
+- Support → `/support`
+- Billing → `/billing`
+
+B. Database Connection Card
+- Button: **Test Database Connection**
+- When clicked:
+  - Sends POST to `/api/test-connection`.
+  - On success, shows:
+    - Database name
+    - Server name
+    - Tables Found (count)
+    - Connection Time (timestamp)
+  - Stats area also displays table count and server status.
+
+C. Contact Management Card
+- Purpose: Add, list, and delete contacts from the demo contacts table.
+
+FIELDS
+- Contact Name
+  - Single text box for the contact's name.
+
+ACTIONS
+- Add Contact
+  - Validates that name is non-empty.
+  - POST `/api/contacts` with `{ name }`.
+  - On success, shows confirmation and updated total contact count.
+  - Automatically refreshes the contacts list.
+
+- Refresh List
+  - GET `/api/contacts` to reload data.
+
+- Clear All
+  - DELETE `/api/contacts` to remove all demo contacts.
+
+D. Contacts List Card
+
+- Displays each contact from `/api/contacts`:
+  - Name
+  - ID
+  - Added date/time
+
+- For each contact:
+  - **Edit** button
+    - Opens an edit modal.
+    - Modal fields:
+      - New Name
+    - Actions:
+      - Save Changes → PUT `/api/contacts/{id}`.
+      - Cancel → closes modal.
+
+  - **Delete** button
+    - Confirms and then DELETE `/api/contacts/{id}`.
+
+
+-------------------------------------------------------------------------------
+5. OWNER DASHBOARD MODULE
+-------------------------------------------------------------------------------
+
+5.1 Owner Dashboard (`/dashboard.html`)
+
+PURPOSE
+- Give business owners an overview of their tenant data and key modules.
+
+HOW TO OPEN
+- `/dashboard.html` or via link from Home or Login redirects.
+
+FIELDS
+- Tenant ID
+  - Numeric or identifier for the tenant to load.
+
+- Business Type
+  - Manufacturer
+  - Buyer
+  - Supplier
+  - Designer
+  - SafetyAuditor
+  - SafetyOffice
+  - Inspection
+
+ACTIONS
+- Load
+  - Validates Tenant ID is provided.
+  - GET `/api/tenant/{tenantId}/summary`.
+  - If successful:
+    - Displays tenant name and business type.
+    - Fills counts cards:
+      - Employees
+      - Customers
+      - Suppliers
+      - Certifications
+    - Fills Modules grid based on backend data.
+    - Highlights modules most relevant to the selected business type.
+
+SECTIONS
+- Summary cards
+  - Each card shows a label (Employees, Customers, etc.) and a count.
+
+- Modules grid
+  - Grid of modules available to the tenant.
+  - Items may be visually emphasized if they are core to the selected
+    business type (e.g., HR for Manufacturer, CRM for Buyer, etc.).
+
+
+-------------------------------------------------------------------------------
+6. APPLICATION SHELL MODULE
+-------------------------------------------------------------------------------
+
+6.1 App Shell (`/app.html`)
+
+PURPOSE
+- Provide a unified shell with a left navigation pane and a main iframe for
+  module content.
+
+LAYOUT
+- Top header: ComplytEX logo and title.
+- Left card: "Modules" list.
+- Right card: iframe titled "Application".
+
+LEFT MODULE LINKS
+- Business Setup → hash `#/profile`
+- Safety Office → `#/safety`
+- Safety Auditor → `#/auditor`
+- HR & Payroll → `#/hr`
+- Accounting → `#/accounting`
+- CRM → `#/crm`
+- Support → `#/support`
+- AI → `#/ai`
+
+IFRAME URL MAPPING
+- `#/profile` → `/profile.html?embedded=1`
+- `#/safety` → `/masters/safety-office.html?embedded=1`
+- `#/auditor` → `/masters/safety-auditor.html?embedded=1`
+- `#/hr` → `/hr/index.html`
+- `#/accounting` → `/accounting/dashboard.html?embedded=1`
+- `#/crm` → `/crm/index.html`
+- `#/support` → `/support.html?embedded=1`
+- `#/ai` → `/ai/analyst.html?embedded=1`
+- Additional hashes map to other pages (e.g., employees, tracking, report).
+
+RESPONSIVE BEHAVIOR
+- The iframe height is dynamically adjusted so the content fits the viewport
+  (minus header and footer margins).
+
+TYPICAL USAGE
+- Users should log in, navigate to `/app.html`, then switch modules via the
+  left list. Each module remains visually consistent due to the shared shell.
+
+
+-------------------------------------------------------------------------------
+7. BUSINESS SETUP MODULE (PROFILE)
+-------------------------------------------------------------------------------
+
+7.1 Overview (`/profile.html`)
+
+PURPOSE
+- Central configuration area for company profile, warehouses, factory/land,
+  spaces, assets, certifications, unions, and an embedded Business Agent.
+
+LAYOUT
+- Global header: "BUSINESS SETUP".
+- Left panel: Business Setup Tabs (Head Office, Setup, Extended) and
+  Business Agent link.
+- Center working pane: shows different forms depending on selected tab.
+- Right panel: Quick Links (Safety Audits, Training, Attendance Scan,
+  AI Analyst).
+
+EMBEDDED MODE
+- When opened as `/profile.html?embedded=1`, its own header/sidebars are
+  hidden to prevent duplicate headers when inside the shell.
+
+
+7.2 Company Profile (Head Office) – `companyPane`
+
+HOW TO ACCESS
+- From left, choose Company Profile tab (Head Office) or use top tabs.
+
+FIELDS
+- Head Office Address 1 (required)
+- Address 2
+- City
+- State / Province
+- Postal Code
+- Total No. of Employees (required)
+- Capacity Type (e.g., units per day)
+- Capacity Qty
+- Minimum Order Qty
+- Sales Profit
+  - Type (e.g., percentage or fixed)
+  - Value
+- Minimum Wage
+- Minimum Age
+- Retirement Age
+- Product You Deal In
+  - Garments (checkbox)
+  - Home Textile (checkbox)
+- Logo Upload
+  - Upload PNG/JPEG.
+  - Preview displayed after successful upload.
+- Product Line
+  - New product line name
+  - Add button
+  - Existing lines displayed with Delete buttons.
+
+ACTIONS
+- Save Company Profile
+  - PUT `/api/company/profile` with all form values.
+  - Updates company record used by other modules and sample invoice.
+
+- Add Product Line
+  - POST `/api/company/product-lines`.
+  - Refreshes the list from backend.
+
+- Delete Product Line
+  - DELETE `/api/company/product-lines/{id}`.
+
+- Upload Logo
+  - On file selection, reads the image and sends base64 data to
+    `/api/company/logo`.
+  - On success, updates logo preview.
+
+
+7.3 Warehouses – `warehousesPane`
+
+HOW TO ACCESS
+- From Business Setup tabs, select "Warehouse" or left Setup → Warehouse.
+
+WAREHOUSE LIST
+- Shows existing warehouses with:
+  - Name
+  - Warehouse Type
+  - Address summary
+  - Delete button
+
+NEW WAREHOUSE MODAL
+
+Fields:
+- Warehouse Name
+- Address Type
+  - Shipping Address / Warehouse Address / Store Address / Billing Address.
+- Warehouse Type
+  - Retail / Wholesale / Distribution / Store / Fulfillment.
+- Address 1 / Address 2
+- City
+- State
+- Postal Code
+- Country (predefined list; e.g., Bangladesh, China, India, Pakistan, etc.)
+
+Buttons:
+- Reset – clears all text fields.
+- Cancel – closes modal without saving.
+- Save – POST `/api/company/warehouses`.
+
+
+7.4 Factory/Land – `factoryPane`
+
+FIELDS
+- Factory Address 1 / 2
+- City
+- State / Province
+- Postal Code
+- Land Area (numeric)
+- Area Unit
+  - Square Feet / Square Meter / Acre / Hectare.
+- Ownership Type
+
+ACTION
+- Save
+  - Sends the factory/land details to backend (implementation-dependent).
+
+
+7.5 Spaces – `spacesPane`
+
+PURPOSE
+- Maintain list of physical spaces (rooms, halls, production areas) with
+  dimensional and safety information.
+
+CONTROLS
+- Search field – filters by Name/Purpose/Type.
+- Export Excel – downloads `spaces.csv` with all rows.
+- Export PDF – opens a print window containing a tabular report.
+- New Space – opens Space modal.
+
+TABLE COLUMNS
+- Space Name
+- Purpose
+- Floor
+- Space Type
+- Width
+- Length
+- Height
+- Unit (Meter/Feet)
+- Capacity
+- Ventilation
+- Exit Plan (image thumbnail)
+- Actions (Edit, Delete – Edit currently placeholder).
+
+NEW SPACE MODAL FIELDS
+- Space name (required)
+- Type (required)
+- Purpose
+- Width, Length, Height
+- Unit (Meter/Feet)
+- Floor
+- Capacity per unit / # of equipments
+- Ventilation
+- # Doors
+- # Windows
+- Emergency Exit plan (image upload)
+
+ACTIONS
+- Save
+  - Validates required fields.
+  - POST `/api/company/spaces`.
+  - If an exit plan image is selected, a second POST sends the base64 image to
+    `/api/company/spaces/{id}/exit-plan`.
+
+- Delete
+  - DELETE `/api/company/spaces/{id}`.
+
+
+7.6 Assets – `assetsPane`
+
+PURPOSE
+- Record and manage company assets (machinery, equipment, etc.).
+
+CONTROLS
+- Search – filter by asset name/type/supplier.
+- Export Excel/PDF – similar to spaces.
+- New Asset – opens asset modal.
+
+TABLE COLUMNS
+- Asset Name
+- Qty
+- Asset Type
+- Purchase Date
+- Purchase Price
+- Supplier
+- Notes
+- Saved On
+- Actions (Edit – placeholder; Delete).
+
+NEW ASSET MODAL FIELDS
+- Asset Name (required)
+- Asset Type
+- Quantity
+- Purchase Date
+- Purchase Price
+- Supplier
+- Notes
+
+ACTIONS
+- Save
+  - POST `/api/company/assets`.
+- Delete
+  - DELETE `/api/company/assets/{id}`.
+
+
+7.7 Certifications – `certsPane`
+
+PURPOSE
+- Manage certifications and compliance documents.
+
+CONTROLS
+- Search
+- Export Excel/PDF
+- Add New – opens certification modal.
+
+TABLE COLUMNS
+- Certificate Name
+- Certificate Image
+- Valid From
+- Valid Till
+- Certificate Logo
+- Certificate Detail
+- Actions (Delete)
+
+ADD NEW CERTIFICATION MODAL FIELDS
+- Type (e.g., Ethical Labor)
+- Policy (e.g., Fairtrade Textile Standard)
+- Name
+- Certificate Valid From
+- Certificate Valid Till
+- Detail (if any)
+- Upload Certificate (image file)
+- Upload Certificate logo (image file)
+
+ACTIONS
+- Save
+  - POST `/api/company/certifications` with metadata.
+  - If images selected, send them as base64 data to
+    `/api/company/certifications/{id}/image` and `/api/company/certifications/{id}/logo`.
+- Delete
+  - DELETE `/api/company/certifications/{id}`.
+
+
+7.8 Unions – `unionsPane`
+
+PURPOSE
+- Track labor unions or worker committees associated with the company.
+
+TABLE COLUMNS
+- Name
+- Description
+- Actions (Edit, Delete)
+
+UNION MODAL FIELDS
+- Union Name (required)
+- Description
+
+ACTIONS
+- Save
+  - POST or PUT to `/api/company/unions`.
+- Delete
+  - DELETE `/api/company/unions/{id}`.
+
+
+7.9 Business Agent (embedded in `profile.html`)
+
+PURPOSE
+- AI-driven assistant that reads text/files and proposes structured database
+  updates for safety/business data.
+
+FORM FIELDS
+- Text area: instructions or context (optional).
+- File upload: typical input is a document (e.g., scan, PDF, etc.).
+- Submit button.
+
+FLOW
+1. User enters optional text and/or uploads a file.
+2. On submit:
+   - If file is present:
+     - FormData is posted to `/api/safety/agent/upload`.
+   - Else:
+     - JSON payload posted to `/api/safety/agent/propose`.
+3. Server responds with:
+   - Proposal ID
+   - Extracted facts (bulleted list)
+   - Proposed changes (per table, action, payload).
+4. UI shows:
+   - Proposal number
+   - Extracted Facts list
+   - Proposed Changes list
+   - Buttons: **Approve & Apply**, **Reject**.
+
+APPROVAL/REJECTION
+- Approve & Apply
+  - POST `/api/safety/agent/proposals/{proposalId}/approve`.
+- Reject
+  - POST `/api/safety/agent/proposals/{proposalId}/reject` with a reason.
+
+
+-------------------------------------------------------------------------------
+8. EMPLOYEES & ROLES MODULES
+-------------------------------------------------------------------------------
+
+8.1 Employees (`/employees.html`)
+
+PURPOSE
+- Manage tenant employees (user accounts, roles assignments at a basic level).
+
+FIELDS & CONTROLS
+
+Top row:
+- Tenant ID – ID of the tenant.
+- **Load** – loads employees for that tenant via `/api/tenant/{tenantId}/employees`.
+- Text: link to Roles page.
+
+Add Employee section:
+- Email
+- Full name
+- Password (optional; can be auto-assigned server-side)
+- Title
+- Role name (optional; e.g., "HR Manager")
+- **Add** button
+
+Employees table:
+- Name
+- Email
+- Title
+- Owner (Yes/No)
+- Roles (comma-separated string from backend)
+
+PERMISSION AWARENESS
+- The page checks current permissions via `/api/permissions`.
+- If the user does not have `USER_MANAGE`, some input and buttons may be
+  disabled for security.
+
+WORKFLOW
+1. Insert Tenant ID (or let system detect from /api/auth/me).
+2. Click **Load** to view current employees.
+3. To add an employee, fill the Add Employee form and click **Add**.
+4. Check results in the table.
+
+
+8.2 Roles (`/roles.html`)
+
+PURPOSE
+- Define roles with permission sets and assign them to users.
+
+FIELDS & CONTROLS
+
+Top row:
+- Tenant ID
+- **Load** – load roles for tenant.
+- Link back to Employees page.
+
+Left pane – Create role:
+- Role name input (e.g., "HR Manager").
+- Permissions list (checkboxes)
+  - Fetched from `/api/permissions`.
+  - Displays permission code and module name.
+- **Create role** button
+  - POST `/api/tenant/{tenantId}/roles` with roleName and permissionCodes.
+
+Right pane – Existing roles & assignments:
+
+- Existing roles table
+  - Name
+  - System (Yes/No – indicates whether role is system-defined.)
+
+- Assign role to user
+  - User ID
+  - Role ID
+  - **Assign**
+    - POST `/api/tenant/{tenantId}/assign-role` with userId and roleId.
+
+WORKFLOW
+1. Ensure Tenant ID is set (auto-detected via `/api/auth/me` when possible).
+2. Use **Load** to fetch existing roles.
+3. Create new custom roles by checking permissions and clicking **Create**.
+4. Assign roles to users using their User ID from the Employees page.
+
+
+-------------------------------------------------------------------------------
+9. HR & PAYROLL MODULE
+-------------------------------------------------------------------------------
+
+9.1 HR & Payroll Main (`/hr/index.html`)
+
+PURPOSE
+- Comprehensive HR screen for:
+  - Creating and maintaining employee profiles.
+  - Managing HR/Payroll totals (MTD, QTD, YTD, etc.).
+  - Listing all employees.
+
+LAYOUT
+- Top header: HR & Payroll – Add New Employee.
+- Icon links to other HR pages: Job Posting, Job Postings list, Search
+  Applicants, Shortlisted Applicants, and shortcut to Add New Employee.
+- Tabs: Add New Employee, Totals, Payroll Details.
+- Bottom: Employees table.
+
+9.1.1 Add New Employee Tab
+
+FIELDS (represent key HR attributes; not exhaustive):
+
+- Employee Name *
+- Email Address *
+- Active (checkbox)
+- Address 1, Address 2
+- Phone
+- Country, State/Province, Zip/Area Code, Fax
+- Employee Type (Salary/Commission/Hourly/Salary+Commission)
+- Department (Marketing, Sales, HR, Merchandising, Accounts, etc.)
+- SS Number / NID
+- Hire Date
+- Birthday
+- Commissionable (Yes/No)
+- Commission Percent
+- Next of Kin Name & Number
+- Source Type (Customer, Direct, Magazine, etc.)
+- Industry
+- Geographical Location (Urban/Rural)
+- Any Disability (Yes/No)
+- Work-Injury Victim (Yes/No)
+- Health Insurance (Yes/No)
+- ID Number
+- Heritage
+- Sexual Orientation
+- Notes
+- Job Description
+
+ACTIONS
+- Clear
+  - Resets the form.
+
+- Save
+  - If `currentEmpId` is not set:
+    - Validates that Name and Email are present.
+    - POST `/api/hr/employees` to create a basic employee record.
+    - Obtains returned employee ID.
+  - PUT `/api/hr/employees/{id}` with full HR data from the form.
+  - Shows success or error via alerts.
+
+
+9.1.2 Totals Tab
+
+FIELDS
+- Month/Quarter/Year to Date values for:
+  - Gross
+  - State
+  - FICA/EOBI
+  - Local
+  - Federal
+  - Other
+
+Each has MTD, QTD, YTD numeric inputs.
+
+ACTIONS
+- Back
+  - Reloads totals from backend for currently selected employee.
+
+- Save
+  - PUT `/api/hr/employees/{id}/totals` with current numeric values.
+
+USAGE
+- Select an employee from the list below (Edit button).
+- Switch to Totals tab to view and modify payroll totals for that employee.
+
+
+9.1.3 Payroll Details Tab
+
+- Currently contains placeholder text describing that Payroll Details (Salary
+  Scale, Pay Frequency, etc.) will be implemented in future iterations.
+
+
+9.1.4 Employees Table
+
+COLUMNS
+- Employee ID (CompanyUserId)
+- Name
+- Department
+- Email
+- Phone
+- Country
+- Active (Yes/No)
+- Actions (Edit)
+
+ACTIONS
+- Edit
+  - GET `/api/hr/employees/{id}`.
+  - Populates the Add New Employee form with existing data.
+  - Loads the Totals via `/api/hr/employees/{id}/totals`.
+  - Scrolls to the form and selects the main tab.
+
+
+9.2 Job Posting (`/hr/job-posting.html`)
+
+PURPOSE
+- Create and edit job postings.
+
+FIELDS
+- Job Title *
+- Department
+- Location
+- Employment Type (Full-time, Part-Time, Contract)
+- Salary Range
+- Application Deadline (date)
+- Job Description
+- Required Qualification
+- Desired Qualification
+- Statements
+  - Diversity & Inclusion Statement (checkbox)
+  - Equal Opportunity Employer (checkbox)
+
+ACTIONS
+- Back
+  - Returns to main HR index page.
+
+- Save
+  - Constructs payload and POSTs to `/api/hr/postings` or PUT to
+    `/api/hr/postings/{id}` if editing.
+  - On success, shows alert and redirects to job postings list screen.
+
+
+-------------------------------------------------------------------------------
+10. CRM MODULE
+-------------------------------------------------------------------------------
+
+10.1 CRM Landing (`/crm/index.html`)
+
+PURPOSE
+- Hub to access CRM submodules: Contacts, Leads, Accounts, Mailbox, Chat,
+  Phone Notes.
+
+SECTIONS
+- CRM Agents panel (top) – injected by `AgentUI` helper.
+- Title and short description.
+- KPI tiles (stubbed counters): Contacts, Leads, Accounts, Open Emails.
+- Grid of cards with buttons:
+  - Contacts → `/crm/contacts.html`
+  - Leads → `/crm/leads.html`
+  - Accounts → `/crm/accounts.html`
+  - Mailbox → `/crm/mailbox.html`
+  - Chat → `/crm/chat.html`
+  - Phone Notes → `/crm/phone-notes.html`
+
+
+10.2 CRM Dashboard (`/crm/dashboard.html`)
+
+PURPOSE
+- Overview of CRM activity with appointments, follow‑ups, campaigns, and a
+  summary chart.
+
+LEFT NAV CARD
+- Add Contact (advanced)
+- Search Contact
+- Add Phone Notes
+- Search Phone Notes
+- Segments
+- Chat
+- Email (Mailbox)
+
+MAIN PANELS
+
+A. Appointments
+- Table: Company, Notes, Date.
+- Link: New appointment (opens `/crm/appointment.html?embedded=1`).
+
+B. Open Follow-ups
+- Table: Company, Notes, Follow-up.
+- Shows a subset of notes that have `FollowUpAt` set.
+
+C. Email Campaigns
+- Table: Name, Subject, Date.
+- Link: New campaign.
+
+D. Contacts/Leads/Accounts Chart
+- Bar chart with counts loaded from `/api/crm/summary`.
+
+
+10.3 Simple Add Contact (`/crm/add-contact.html`)
+
+FIELDS
+- Full Name
+- Email
+- Phone
+- Company
+
+ACTIONS
+- Reset
+  - Clears input fields.
+
+- Save Contact
+  - POST `/api/contacts` with `{ name }` (demo table).
+  - Shows success or error message.
+
+(In a production CRM, this would be wired to the full Contact model.)
+
+
+10.4 Accounts (`/crm/accounts.html`)
+
+PURPOSE
+- View customer accounts (converted leads).
+
+TABLE
+- Columns: Account, Owner, Stage, Last Activity.
+- Currently shows a stub row "No accounts yet" until backend integration.
+
+
+Other CRM screens (Contacts list, Leads, Campaigns, Mailbox, Chat, Phone
+Notes, Search) follow a similar pattern:
+- Filter/search inputs.
+- Table of results.
+- Action buttons for viewing or editing records.
+
+
+-------------------------------------------------------------------------------
+11. ACCOUNTING MODULE
+-------------------------------------------------------------------------------
+
+11.1 Accounting Hub (`/accounting/index.html`)
+
+PURPOSE
+- Overview of petty cash, payables, receivables; quick entry points and KPIs.
+
+SECTIONS
+- Accounting agents panel (top) for AI/automation.
+- Title & description.
+- KPI tiles:
+  - Cash Balance
+  - Open Payables
+  - Open Receivables
+  - Values are computed from `localStorage` (mock data) in the browser.
+- Cards:
+  - Petty Cash → `/accounting/petty-cash.html`
+  - Accounts Payable → `/accounting/payables.html`
+  - Accounts Receivable → `/accounting/receivables.html`
+- Blueprint card: explains conceptual React/TypeScript structure for future.
+
+
+11.2 Banks (`/accounting/banks.html`)
+
+PURPOSE
+- Record bank accounts and view balances derived from ledger entries.
+
+FIELDS (Add Bank)
+- Bank Name
+- Account Title
+- Account Number
+- Opening Balance
+
+ACTIONS
+- Add Bank
+  - POST `/api/accounting/banks` with bank metadata.
+  - Clears the form and reloads list.
+
+BANKS TABLE
+- Name
+- Account
+- Title
+- Balance (calculated: opening + credits – debits from ledger)
+- Actions
+  - Statement → `/accounting/bank-statement.html?bankId={id}`
+
+
+11.3 Petty Cash, Payables, Receivables
+
+(Inferred from filenames and blueprint; precise fields vary.)
+
+Petty Cash (`/accounting/petty-cash.html`)
+- Ledger-style table with date, description, debit/credit, balance.
+- Filters for date range and maybe reference.
+- New transaction form, export options.
+
+Accounts Payable (`/accounting/payables.html`)
+- Supplier invoices table.
+- Fields typically include Invoice #, Supplier, Amount, Status, Due Date.
+- Actions to mark invoices Paid, filter by status.
+
+Accounts Receivable (`/accounting/receivables.html`)
+- Customer invoice list.
+- Similar structure to Payables (focused on receivables).
+
+
+-------------------------------------------------------------------------------
+12. SAFETY & COMPLIANCE MODULES
+-------------------------------------------------------------------------------
+
+12.1 Safety Audits (`/safety-audits.html`)
+
+PURPOSE
+- Plan audits, manage audit checklists (audit sheets), capture issues,
+  generate RFQs, handle supplier quotes, and track invoices.
+
+KEY CONCEPTS
+- Tenant ID (internal; currently set in script as `1`).
+- Audit Plan – top-level safety audit event (name, type, company, date).
+- Audit Items – rows of checklist (Head, Value, No Issue, Issue Details, etc.).
+- RFQ – Request for Quotation associated with an issue.
+- Quotes – supplier responses to RFQs.
+- Invoices – financial documents associated with approved quotes.
+
+LAYOUT
+
+A. Search + Top Buttons
+- Search bar (by name, type, status) – filters audits.
+- **Plan New Audit** – opens Plan modal.
+- **Export to Excel** – placeholder; currently just alerts.
+
+B. Plan New Audit Modal
+
+Fields:
+- Audit Name (e.g., "Q3 Fire Safety Review").
+- Audit Type / Related To (FIRE, STRUCTURAL, UNIFIED SAFETY, etc.).
+- Audit Company (external auditor name).
+- Audit Date.
+
+Action:
+- Save Audit
+  - Validates name.
+  - Calls `SafetyAPI.createAuditPlan` with tenantId, auditName, auditType,
+    auditCompany, auditDate, createdBy.
+  - Shown in audits list after reload.
+
+C. Quote Dashboard
+
+- Counters (Submitted, Approved, Delivered)
+  - Loaded via `SafetyAPI.getQuoteStats({ tenantId })`.
+- Filters
+  - Item
+  - Supplier
+  - Status (All/Submitted/Approved/Delivered)
+  - Min/Max Amount
+  - Sort (date, amount, item alphabetical)
+- Table (RFQ lines)
+  - Audit Name
+  - Item Name
+  - Detail
+  - Qty
+  - Unit
+  - Amount (based on quotes)
+  - PO Number (if approved quote exists)
+  - View Terms
+  - View Quotes
+  - View Invoice
+
+D. Audits List
+
+- Table columns:
+  - Audit Date
+  - Audit Name
+  - Related To (Type)
+  - Status (NEW, PENDING CORRECTION, CLOSED)
+  - Action (View)
+  - Certificate (View, if Closed)
+
+- View
+  - Loads detailed plan and items via `SafetyAPI.getAuditDetails(Id)`.
+  - Opens detail card below with safety audit sheet and issues view.
+
+E. Safety Audit Sheet (Detail Card)
+
+- Header shows audit title, company, date, and plan status.
+- Audit sheet table columns:
+  - HEAD
+  - VALUE
+  - NO ISSUE (checkbox)
+  - ISSUE DETAIL (textarea)
+  - ATTACHMENT (file upload, stored as base64 string)
+  - SUGGESTED ACTION (textarea)
+  - INFORMED TO (text)
+
+Usage:
+- Each row corresponds to an audit item.
+- By default, rows with no issue details are considered "No Issue".
+- Uncheck "No Issue" and fill Issue Detail, Suggested Action, Informed To,
+  and attach proof if there is a finding.
+
+Save Audit Sheet:
+- **Save Audit Sheet** button collects all rows and calls
+  `SafetyAPI.saveAuditItems(auditId, items)`.
+- On success, shows success message and reloads audits list.
+
+F. Open Issues & Corrective Actions
+
+- Displays a card per item that has an issue (No Issue == false or IssueDetails
+  not empty).
+
+Fields per issue card:
+- Read-only summary (Head, Value, Issue details, Suggested Action, Informed To).
+- Corrective Action section:
+  - Corrective Action Taken (textarea)
+  - Attachments (URLs)
+  - Corrective Action By
+  - Corrective Action On (date)
+  - **Save Corrective Action** – calls
+    `SafetyAPI.submitCorrectiveAction(auditId, itemId, payload)`.
+
+G. RFQ Section for Each Issue
+
+- Button: **+ Create RFQ** – toggles RFQ form.
+
+RFQ Form Fields:
+- Item Name
+- Qty
+- Unit (select; options retrieved from `SafetyAPI.listUnits()`;
+  can also add a new unit inline).
+- Needed By (date)
+- Detail (free text, often pre-filled with issue/ action summary).
+- Recipients (emails, comma separated)
+- Shipping Terms
+- Payment Terms
+- Other Terms
+
+Action:
+- **Send RFQ** – calls `SafetyAPI.createRFQ(data)`.
+
+RFQ List
+- Below form a text list shows all RFQs for this issue via
+  `SafetyAPI.listRFQByItem(itemId)`.
+
+H. Quotes Overlay
+
+Access:
+- From Quote Dashboard table, click **Quotes** button.
+
+Overlay content:
+- Meta line: RFQ ID, item name, qty, unit.
+- Quotes table columns:
+  - Supplier
+  - Price
+  - Shipping
+  - Tax
+  - Discount
+  - Total
+  - Arrival date
+  - Status
+  - Actions: Approve (with PO number), Mark Delivered, Invoice.
+
+Actions:
+- Approve
+  - Takes PO number input and calls `SafetyAPI.approveQuote(id, po)`.
+- Mark Delivered
+  - `SafetyAPI.updateQuoteStatus(id, 'Delivered')`.
+- Invoice
+  - If invoice exists: show invoice number & total.
+  - Else: prompt user and call `SafetyAPI.createInvoice(quoteId, data)`.
+
+I. View Invoice (from Quote Dashboard)
+- If an approved quote has an invoice, shows invoice number and total.
+- If not, allows creating one using prompts.
+
+
+12.2 Safety Training (`/training.html`)
+
+PURPOSE
+- Maintain a log of safety training sessions, with attendees and export.
+
+FIELDS
+- Name
+- Related To
+- Date
+- Conducted By
+- Description
+- Attendees (multi-select list of employees loaded from
+  `/api/tenant/1/employees`).
+
+ACTIONS
+- Save Training
+  - Calls `SafetyAPI.createTrainingSession(payload)`.
+
+- Reset
+  - Clears form and resets current session ID.
+
+- Search + Download CSV
+  - Search filter (Name/Related To).
+  - **Download CSV** – exports visible table rows.
+
+LIST TABLE
+- Columns: Date, Name, Related To, Conducted By, Attendees (#), Actions.
+
+Actions:
+- Edit – loads selected session and attendees back into form.
+- Delete – removes session via `SafetyAPI.deleteTrainingSession(id)`.
+
+
+12.3 Other Safety‑related Pages
+
+- `test-fire-form.html`, `audit-verification.html`, `auditor-audit-sheet.html`
+  implement specialized forms for particular audit or verification workflows.
+  They follow the same pattern: labeled fields, save/submit buttons,
+  tables displaying previously saved rows.
+
+
+-------------------------------------------------------------------------------
+13. TASKS & CALENDAR MODULES
+-------------------------------------------------------------------------------
+
+13.1 Task Management Hub (`/tasks/index.html`)
+
+PURPOSE
+- Explain Task Planning concept and link to planner stub.
+
+CONTENT
+- Title: Task Management.
+- Description of planned React TS implementation (MiniCalendar, timeline,
+  TaskFormModal).
+- Card linking to Task Planner:
+  - **Open Planner** → `/tasks/planning.html`.
+
+
+13.2 Task Planner / Calendar (`/calendar.html` and `/tasks/planning.html`)
+
+PURPOSE
+- Visual calendar with a 24‑hour timeline for assigned tasks per employee.
+
+LAYOUT
+
+Left card (Month selector):
+- Prev / Next buttons
+- Month label (e.g., "January 2026")
+- Month grid (7 columns: Mon–Sun) with day cells:
+  - Today is highlighted.
+  - Selected date is highlighted.
+  - Muted days for previous/next month.
+- Instruction: click a day then click a user/time slot.
+
+Right card (Timeline):
+- Header row
+  - First column blank, followed by 24 columns for hours 0:00–23:00.
+- For each employee (row):
+  - First cell: employee name.
+  - 24 hourly slots.
+  - Tasks appear as colored "pills" spanning one or more hour slots.
+
+TASK CREATION MODAL
+- Opened by clicking an empty slot.
+
+Fields:
+- Start (datetime-local)
+- End (datetime-local)
+- Task (title; required)
+- Priority (High/Medium/Low)
+- Description
+- Upload Image
+- Assign To (employee dropdown, from `/api/tenant/{tid}/employees`)
+- Assign By (read-only current user name from `/api/auth/me`)
+- Repeat
+  - Does Not Repeat / Daily / Weekly / Monthly / Annually
+  - When a repeat is chosen:
+    - Sub-options appear (e.g., every N days for Daily).
+    - End mode: indefinitely / until date / repeat N times.
+
+Actions:
+- Back – closes modal without saving.
+- OK – saves task.
+
+SAVE LOGIC
+- Prepares payload with:
+  - date (selected day),
+  - startHour / endHour (derived from times),
+  - title, description, priority, assigneeId,
+  - encoded repeat information appended to notes.
+- Sends data to `/api/tasks` via helper.
+- Closes modal and refreshes timeline.
+
+
+-------------------------------------------------------------------------------
+14. SUPPORT, TRACKING, BILLING, REPORTS
+-------------------------------------------------------------------------------
+
+14.1 Support (`/support.html`)
+
+PURPOSE
+- Allow users to create and view support tickets.
+
+New Ticket card:
+- Tenant ID
+- Subject
+- Message
+- **Create ticket**
+  - POST `/api/support/tickets` with tenantId, subject, message.
+
+My Tickets card:
+- Table columns: ID, Subject, Status, Created.
+- Loaded via GET `/api/support/tickets`.
+
+
+14.2 Tracking (`/tracking.html`)
+
+PURPOSE
+- Simplified tracking interface for orders/incidents.
+
+FILTERS
+- Search text
+- Status dropdown (Any/Open/Closed)
+
+TABLE
+- Columns: ID, Type, Status, Updated.
+- Example rows demonstrate data structure; integration is extensible.
+
+
+14.3 Billing (`/billing.html`)
+
+PURPOSE
+- Start a billing subscription for a tenant.
+
+FIELDS
+- Tenant ID
+
+ACTIONS
+- Subscribe
+  - POST `/api/billing/subscribe?tenantId=...` with an empty JSON body.
+  - If success and response contains `data.url`, user is redirected to
+    payment/checkout page (Stripe or similar).
+  - Otherwise, error message is shown.
+
+
+14.4 Reports (`/report.html`)
+
+PURPOSE
+- Placeholder for reporting/BI integration.
+
+SECTIONS
+- Header: REPORTS.
+- Summary card: explains that this can be wired to reporting endpoints or BI.
+- Reports table:
+  - Name
+  - Type (Chart/Table)
+  - Last Run
+  - Actions (Run button – currently no backend call attached).
+
+
+-------------------------------------------------------------------------------
+15. ATTENDANCE & MASTERS
+-------------------------------------------------------------------------------
+
+15.1 Attendance (`/attendance/admin.html`, `/attendance/scan.html`)
+
+- Admin screen
+  - Typically shows configuration and a table of attendance logs with filters.
+
+- Scan screen
+  - UI for scanning QR codes or similar; marks check‑in/out events.
+
+(Exact fields depend on your implementation; front-end is designed for simple
+scan and status display.)
+
+
+15.2 Masters (Buyer, Supplier, Designer, Manufacturer, Safety Auditor,
+     Safety Office, Inspection)
+
+PAGES
+- `/masters/buyer.html`
+- `/masters/supplier.html`
+- `/masters/designer.html`
+- `/masters/manufacturer.html`
+- `/masters/safety-auditor.html`
+- `/masters/safety-office.html`
+- `/masters/inspection.html`
+
+PURPOSE
+- Template portal pages per business role.
+
+CONTENT
+- Simple header (e.g., "Buyer Portal", "Supplier Portal").
+- Quick links back to Owner Dashboard, Employees, Roles, Support, Billing.
+- Placeholder text where you can add widgets or role‑specific dashboards.
+
+
+-------------------------------------------------------------------------------
+16. CRM PLACEHOLDER PAGE
+-------------------------------------------------------------------------------
+
+16.1 Simple CRM Workspace (`/crm.html`)
+
+PURPOSE
+- Older/simple CRM placeholder page linking to key areas.
+
+CONTENT
+- Title: CRM.
+- Description: indicates placeholder.
+- Quick Links
+  - Home
+  - HR (Employees)
+  - Billing
+  - Support
+
+
+-------------------------------------------------------------------------------
+17. AI MODULES
+-------------------------------------------------------------------------------
+
+17.1 AI Analyst (`/ai/analyst.html`)
+
+PURPOSE
+- AI-driven analytics page; designed to be filled with forms to submit
+  analytic queries and receive explanations or charts.
+
+17.2 Safety Agent (`/ai/safety-agent.html`)
+
+PURPOSE
+- AI agent specialized for safety data, analogous to Business Agent but on a
+  dedicated page.
+
+BOTH PAGES
+- Use a similar layout (header, shell) and interact with safety endpoints
+  described earlier.
+
+
+-------------------------------------------------------------------------------
+18. BEST PRACTICES FOR USERS
+-------------------------------------------------------------------------------
+
+- Always log in via `/login.html` before accessing protected pages.
+- Prefer `/app.html` for navigation to keep a consistent experience.
+- When using Business Setup:
+  - Start with Company Profile (address, employees, product lines).
+  - Then configure Warehouses, Spaces, Assets, Certifications, and Unions.
+- For HR:
+  - Use HR Index to create employee master data.
+  - Maintain payroll Totals for statutory and reporting purposes.
+- For Safety:
+  - Use Safety Audits to plan audits, capture issues, then raise RFQs.
+  - Use Safety Training to record sessions and demonstrate training records.
+- For Accounting:
+  - Use Banks and Petty Cash first to ensure financial base is set.
+  - Add Payables/Receivables as your vendor/customer flows require.
+- For Support/Billing:
+  - Support tickets capture issues.
+  - Billing handles subscription for each tenant.
+
+This manual can be shared as a reference for new users of the ComplytEX
+(SaaS Agent) application.
