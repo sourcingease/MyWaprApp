@@ -73,6 +73,50 @@ class AzureSQLConnector {
     }
   }
 
+  async getTableColumns(tableName) {
+    try {
+      const request = this.pool.request();
+      request.input('tableName', sql.NVarChar, tableName);
+      const result = await request.query(`
+        SELECT COLUMN_NAME, DATA_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = @tableName
+        ORDER BY ORDINAL_POSITION
+      `);
+      return result.recordset;
+    } catch (err) {
+      console.error(`❌ Failed to get columns for table ${tableName}:`, err.message);
+      throw err;
+    }
+  }
+
+  async findDateColumn(tableName) {
+    try {
+      const columns = await this.getTableColumns(tableName);
+      const commonDateColumns = ['CreatedDate', 'Created', 'DateCreated', 'Timestamp', 'ModifiedDate', 'CreatedAt', 'UpdatedAt', 'Date'];
+      
+      // Find the first matching date/datetime column
+      for (const commonCol of commonDateColumns) {
+        const found = columns.find(c => 
+          c.COLUMN_NAME.toLowerCase() === commonCol.toLowerCase() &&
+          (c.DATA_TYPE.includes('date') || c.DATA_TYPE.includes('time'))
+        );
+        if (found) {
+          return found.COLUMN_NAME;
+        }
+      }
+      
+      // If no common column found, return the first date/datetime column
+      const anyDateCol = columns.find(c => 
+        c.DATA_TYPE.includes('date') || c.DATA_TYPE.includes('time')
+      );
+      
+      return anyDateCol ? anyDateCol.COLUMN_NAME : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   async monitorTable(tableName, dateColumn = 'CreatedDate', minutesBack = 5) {
     try {
       const request = this.pool.request();
@@ -215,43 +259,46 @@ class SaaSAgent {
       
       // Get list of tables to monitor
       const tables = await this.sqlConnector.getTableList();
+      let tablesMonitored = 0;
+      let tablesSkipped = 0;
       
       for (const table of tables) {
         try {
-          // Try to monitor each table (assuming they might have common date columns)
-          const commonDateColumns = ['CreatedDate', 'Created', 'DateCreated', 'Timestamp', 'ModifiedDate'];
+          // Find the appropriate date column for this table
+          const dateColumn = await this.sqlConnector.findDateColumn(table.TABLE_NAME);
           
-          for (const dateColumn of commonDateColumns) {
-            try {
-              const monitoring = await this.sqlConnector.monitorTable(
-                table.TABLE_NAME, 
-                dateColumn, 
-                this.config.monitoringIntervalMinutes
-              );
-              
-              if (monitoring.RecordCount > 0) {
-                console.log(`📈 Table ${table.TABLE_NAME}: ${monitoring.RecordCount} new records in last ${this.config.monitoringIntervalMinutes} minutes`);
-                
-                // Get the actual records for processing
-                const records = await this.sqlConnector.getRecentRecords(
-                  table.TABLE_NAME, 
-                  dateColumn, 
-                  this.config.monitoringIntervalMinutes
-                );
-                
-                await this.processRecords(table.TABLE_NAME, records);
-              }
-              break; // Found a valid date column, don't try others
-            } catch (columnErr) {
-              // Column doesn't exist, try next one
-              continue;
-            }
+          if (!dateColumn) {
+            tablesSkipped++;
+            continue; // Skip tables without date columns
+          }
+          
+          const monitoring = await this.sqlConnector.monitorTable(
+            table.TABLE_NAME, 
+            dateColumn, 
+            this.config.monitoringIntervalMinutes
+          );
+          
+          tablesMonitored++;
+          
+          if (monitoring.RecordCount > 0) {
+            console.log(`📈 Table ${table.TABLE_NAME}: ${monitoring.RecordCount} new records in last ${this.config.monitoringIntervalMinutes} minutes`);
+            
+            // Get the actual records for processing
+            const records = await this.sqlConnector.getRecentRecords(
+              table.TABLE_NAME, 
+              dateColumn, 
+              this.config.monitoringIntervalMinutes
+            );
+            
+            await this.processRecords(table.TABLE_NAME, records);
           }
         } catch (tableErr) {
           // Table monitoring failed, continue with next table
-          console.log(`⚠️ Could not monitor table ${table.TABLE_NAME}: ${tableErr.message}`);
+          tablesSkipped++;
         }
       }
+      
+      console.log(`✅ Monitoring complete: ${tablesMonitored} tables monitored, ${tablesSkipped} tables skipped`);
       
     } catch (err) {
       console.error('❌ Monitoring failed:', err.message);
