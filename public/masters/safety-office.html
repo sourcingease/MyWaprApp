@@ -2419,6 +2419,9 @@
                 if (typeof initGrievanceEmployeeLookup === 'function') {
                   initGrievanceEmployeeLookup();
                 }
+                if (typeof initGrievanceDetailToggles === 'function') {
+                  initGrievanceDetailToggles();
+                }
               } else if (lookupKey === 'fire' && typeof loadFireSafetyData === 'function') {
                 loadFireSafetyData();
               } else if (lookupKey === 'electrical' && typeof loadElectrical === 'function') {
@@ -2867,30 +2870,30 @@
             <div class="form-group full-width" style="margin-top: 10px;">
               <label style="font-size: 13px; font-weight: 600;">Select the type of complaints</label>
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px;">
-                <label style="font-size: 12px;"><input type="checkbox" name="type_sexual_harassment"> Sexual Harassment</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_violence"> Violence</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_excessive_hours"> Excessive Work Hours</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_maternity_pay"> Maternity Leave and Pay</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_dust_fiber"> Dust and Fiber Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_chemical"> Chemical Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_noise"> Noise Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_ergonomic"> Ergonomic Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_stress"> Stress Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_heat_stress"> Heat Stress Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_machine"> Machine Hazard</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_forced_labor"> Forced Labor</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_child_labor"> Child Labor</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_unsafe_conditions"> Unsafe Working Conditions</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_denial_rights"> Denial of worker's rights</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_other"> Other</label>
-                <label style="font-size: 12px;"><input type="checkbox" name="type_discrimination"> Discrimination</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_sexual_harassment" data-section="detail-sexual-harassment"> Sexual Harassment</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_violence" data-section="detail-violence"> Violence</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_excessive_hours" data-section="detail-excessive-hours"> Excessive Work Hours</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_maternity_pay" data-section="detail-maternity-pay"> Maternity Leave and Pay</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_dust_fiber" data-section="detail-dust-fiber"> Dust and Fiber Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_chemical" data-section="detail-chemical"> Chemical Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_noise" data-section="detail-noise"> Noise Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_ergonomic" data-section="detail-ergonomic"> Ergonomic Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_stress" data-section="detail-stress"> Stress Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_heat_stress" data-section="detail-heat-stress"> Heat Stress Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_machine" data-section="detail-machine"> Machine Hazard</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_forced_labor" data-section="detail-forced-labor"> Forced Labor</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_child_labor" data-section="detail-child-labor"> Child Labor</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_unsafe_conditions" data-section="detail-unsafe-conditions"> Unsafe Working Conditions</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_denial_rights" data-section="detail-denial-rights"> Denial of worker's rights</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_other" data-section="detail-other"> Other</label>
+                <label style="font-size: 12px;"><input type="checkbox" name="type_discrimination" data-section="detail-discrimination"> Discrimination</label>
               </div>
             </div>
 
             <!-- Sections -->
             <div style="display: grid; grid-template-columns: 1fr; gap: 14px;">
               <!-- Sexual Harassment -->
-              <div class="form-group full-width" style="margin-top: 6px;">
+              <div id="detail-sexual-harassment" class="form-group full-width grievance-detail-section" style="margin-top: 6px; display: none;">
                 <label style="font-weight: 600;">Details for: Sexual Harassment</label>
                 <input type="text" name="sh_nameOfAccused" placeholder="Name of Accused" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <div class="form-grid" style="margin-top:8px; gap:12px;">
@@ -2901,7 +2904,7 @@
               </div>
 
               <!-- Violence -->
-              <div class="form-group full-width">
+              <div id="detail-violence" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Violence</label>
                 <input type="text" name="vio_nameOfAccused" placeholder="Name of Accused" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <div class="form-grid" style="margin-top:8px; gap:12px;">
@@ -2912,13 +2915,13 @@
               </div>
 
               <!-- Excessive Work Hours -->
-              <div class="form-group full-width">
+              <div id="detail-excessive-hours" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Excessive Work Hours</label>
                 <input type="text" name="ewh_minutes" placeholder="How many extra minutes did you work?" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
               </div>
 
               <!-- Maternity Leave and Pay -->
-              <div class="form-group full-width">
+              <div id="detail-maternity-pay" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Maternity Leave and Pay</label>
                 <div class="form-grid" style="gap:12px; margin-top:6px;">
                   <div class="form-group"><label>Leave Detail Date</label><input type="date" name="mat_leave_date"></div>
@@ -2929,62 +2932,62 @@
               </div>
 
               <!-- Dust and Fiber Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-dust-fiber" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Dust and Fiber Hazard</label>
                 <input type="text" name="df_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="df_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Chemical Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-chemical" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Chemical Hazard</label>
                 <input type="text" name="chem_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="chem_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Noise Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-noise" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Noise Hazard</label>
                 <input type="text" name="noise_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="noise_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Ergonomic Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-ergonomic" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Ergonomic Hazard</label>
                 <input type="text" name="ergo_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="ergo_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Stress Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-stress" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Stress Hazard</label>
                 <input type="text" name="stress_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="stress_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Heat Stress Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-heat-stress" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Heat Stress Hazard</label>
                 <input type="text" name="heat_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="heat_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Machine Hazard -->
-              <div class="form-group full-width">
+              <div id="detail-machine" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Machine Hazard</label>
                 <input type="text" name="machine_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="machine_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Forced Labor -->
-              <div class="form-group full-width">
+              <div id="detail-forced-labor" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Forced Labor</label>
                 <textarea name="forced_labor_details" rows="2" placeholder="Description of coercion/forced work" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Child Labor -->
-              <div class="form-group full-width">
+              <div id="detail-child-labor" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Child Labor</label>
                 <div class="form-grid" style="gap:12px;">
                   <div class="form-group"><label>Child's approximate age</label><input type="number" name="child_age" min="0" style="padding:6px;"></div>
@@ -2993,26 +2996,26 @@
               </div>
 
               <!-- Unsafe Working Conditions -->
-              <div class="form-group full-width">
+              <div id="detail-unsafe-conditions" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Unsafe Working Conditions</label>
                 <input type="text" name="unsafe_location" placeholder="Location of Hazard" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <textarea name="unsafe_description" rows="2" placeholder="Description of Hazard" style="margin-top:8px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Denial of workers' rights -->
-              <div class="form-group full-width">
+              <div id="detail-denial-rights" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Denial of workers' rights</label>
                 <textarea name="denial_rights_details" rows="2" placeholder="Describe the right that was denied and the situation" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Other -->
-              <div class="form-group full-width">
+              <div id="detail-other" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Other</label>
                 <textarea name="other_details" rows="2" placeholder="Please specify the nature of your complaint" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
               </div>
 
               <!-- Discrimination -->
-              <div class="form-group full-width">
+              <div id="detail-discrimination" class="form-group full-width grievance-detail-section" style="display: none;">
                 <label style="font-weight: 600;">Details for: Discrimination</label>
                 <input type="text" name="disc_nameOfAccused" placeholder="Name of Accused" style="margin-top:6px; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
                 <div class="form-grid" style="margin-top:8px; gap:12px;">
@@ -9225,6 +9228,50 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         });
       } catch (err) {
         console.error('Failed to initialize grievance employee lookup:', err);
+      }
+    }
+
+    // Initialize show/hide toggles for grievance detail sections based on checkboxes
+    function initGrievanceDetailToggles() {
+      try {
+        const pane = document.querySelector('.working-pane');
+        const form = (pane && pane.querySelector('#grievanceFormData')) || document.getElementById('grievanceFormData');
+        if (!form) return;
+
+        // Find all checkboxes with data-section attribute
+        const checkboxes = form.querySelectorAll('input[type="checkbox"][data-section]');
+        checkboxes.forEach(checkbox => {
+          // Remove existing listener if any
+          if (checkbox.dataset.toggleBound === '1') return;
+          checkbox.dataset.toggleBound = '1';
+
+          const sectionId = checkbox.getAttribute('data-section');
+          const section = document.getElementById(sectionId);
+          if (!section) return;
+
+          // Add change event listener
+          checkbox.addEventListener('change', function() {
+            if (this.checked) {
+              section.style.display = 'block';
+            } else {
+              section.style.display = 'none';
+              // Clear inputs when hiding section
+              const inputs = section.querySelectorAll('input, textarea, select');
+              inputs.forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                  input.checked = false;
+                } else {
+                  input.value = '';
+                }
+              });
+            }
+          });
+
+          // Set initial state (hide all sections)
+          section.style.display = 'none';
+        });
+      } catch (err) {
+        console.error('Failed to initialize grievance detail toggles:', err);
       }
     }
 
