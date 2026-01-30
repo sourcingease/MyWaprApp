@@ -8181,26 +8181,42 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     async function saveConsultant(event) {
       event.preventDefault();
       const form = event.target;
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-
       try {
-        const response = await fetch('/api/safety/consultant', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          showToast('✅ Consultant engagement checklist saved successfully!', 'info');
-          resetForm('consultantFormData');
+        const data = (window.SafetyAPI && SafetyAPI.collectFormData)
+          ? SafetyAPI.collectFormData(form)
+          : Object.fromEntries(new FormData(form).entries());
+
+        if (window.SafetyAPI && SafetyAPI.saveConsultant) {
+          await SafetyAPI.saveConsultant(data);
+          SafetyAPI.showSuccessMessage('Consultant engagement data saved successfully!');
         } else {
-          alert('❌ Error: ' + result.error);
+          const payload = {
+            formData: data,
+            createdBy: 'System',
+            tenantId: 1
+          };
+          const response = await fetch('/api/safety/consultant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            credentials: 'same-origin'
+          });
+          const result = await response.json().catch(() => ({ success: true }));
+          if (result.success === false) {
+            throw new Error(result.error || 'Failed to save consultant engagement data');
+          }
+          showToast('✅ Consultant engagement data saved successfully!', 'info');
         }
-      } catch (error) {
-        console.error('Error saving consultant engagement checklist:', error);
-        showToast('❌ Failed to save consultant engagement checklist', 'info');
+
+        form.reset();
+        setDefaultRadioButtons(form.id);
+      } catch (err) {
+        console.error('Error saving consultant:', err);
+        if (window.SafetyAPI && SafetyAPI.showErrorMessage) {
+          SafetyAPI.showErrorMessage(err.message || 'Failed to save consultant engagement data');
+        } else {
+          alert('❌ Error saving data: ' + err.message);
+        }
       }
     }
 
