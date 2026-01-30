@@ -9011,6 +9011,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     // Cache of employees loaded from the HR module so we can populate the
     // injured-person Name dropdown and auto-fill Job Title.
     let _incidentEmployees = null;
+    let _incidentAssets = null;
 
     async function loadIncidentEmployees() {
       if (_incidentEmployees !== null) return _incidentEmployees;
@@ -9035,6 +9036,30 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         _incidentEmployees = [];
       }
       return _incidentEmployees;
+    }
+
+    async function loadIncidentAssets() {
+      if (_incidentAssets !== null) return _incidentAssets;
+      try {
+        const resp = await fetch('/api/company/assets', { credentials: 'same-origin' });
+        const json = await resp.json().catch(() => null);
+        let rows = [];
+        if (Array.isArray(json)) {
+          rows = json;
+        } else if (json && Array.isArray(json.data)) {
+          rows = json.data;
+        }
+        _incidentAssets = rows.map(a => ({
+          id: a.Id || a.AssetId || a.id,
+          name: a.AssetName || a.Name || a.name || '',
+          type: a.AssetType || a.Type || a.type || '',
+          location: a.Location || a.location || ''
+        })).filter(a => a.name);
+      } catch (err) {
+        console.error('Failed to load assets for incident form:', err);
+        _incidentAssets = [];
+      }
+      return _incidentAssets;
     }
 
     // Helper to populate reporter and writer dropdowns in incident form
@@ -9210,7 +9235,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       }
     }
 
-    function addDamagedEquipment() {
+    async function addDamagedEquipment() {
       const container = document.getElementById('damagedEquipmentContainer');
       if (!container) return;
       const index = container.children.length + 1;
@@ -9228,7 +9253,9 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:12px;">
           <div>
             <label style="font-size:12px;">Machine/Asset</label>
-            <input type="text" name="damagedEquipmentName${index}" style="width:100%; font-size:13px; padding:6px; border:1px solid #e2e8f0; border-radius:6px;">
+            <select name="damagedEquipmentName${index}" data-role="asset-select" style="width:100%; font-size:13px; padding:6px; border:1px solid #e2e8f0; border-radius:6px;">
+              <option value="">-- Select Asset --</option>
+            </select>
           </div>
           <div>
             <label style="font-size:12px;">Damage Description</label>
@@ -9241,6 +9268,20 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         </div>
       `;
       container.appendChild(wrapper);
+
+      // Populate the asset dropdown
+      const select = wrapper.querySelector('select[data-role="asset-select"]');
+      const assets = await loadIncidentAssets();
+      if (select && assets && assets.length) {
+        assets.forEach(asset => {
+          const opt = document.createElement('option');
+          opt.value = asset.name;
+          opt.textContent = asset.name + (asset.type ? ' (' + asset.type + ')' : '');
+          opt.dataset.id = asset.id || '';
+          opt.dataset.type = asset.type || '';
+          select.appendChild(opt);
+        });
+      }
     }
     
     async function saveIncident(event) {
