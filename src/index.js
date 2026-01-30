@@ -313,8 +313,10 @@ class SaaSAgent {
       const result = await this.sqlConnector.executeQuery(`
         SELECT 
           COUNT(*) as TotalRecords,
-          DB_NAME() as Database,
+          DB_NAME() as DatabaseName,
           GETDATE() as MaintenanceTime
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_TYPE = 'BASE TABLE'
       `);
       
       console.log('📊 Maintenance report:', result.recordset[0]);
