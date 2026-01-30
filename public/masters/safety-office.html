@@ -2362,6 +2362,23 @@
                   console.warn('Failed to restore DSA checklist from DB', e);
                 }
               })();
+            } else if (lookupKey === 'emergency-power' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadEmergencyPower === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadEmergencyPower();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#emergencyPowerFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Emergency Power checklist from DB', e);
+                }
+              })();
             }
 
             // Highlight matching sidebar nav item (Incidents, Grievances, USC-Safe, etc.)
@@ -6741,7 +6758,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
         </div>
         <div id="emergency-power-form" class="form-container" style="padding: 16px;">
-          <form id="emergencyPowerFormData" onsubmit="saveEmergencyPower(event)">
+          <form id="emergencyPowerFormData" onsubmit="saveEmergencyPowerTab(event); return false;">
             
             <!-- Section 1: Fire & Life-Safety -->
             <div style="margin-bottom: 24px;">
