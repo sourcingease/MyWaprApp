@@ -2857,7 +2857,9 @@
               </div>
               <div class="form-group">
                 <label style="font-size: 13px;">Union Name</label>
-                <input type="text" name="unionName" style="font-size: 13px; padding: 6px;">
+                <select name="unionName" id="grievanceUnionName" style="font-size: 13px; padding: 6px;">
+                  <option value="">-- Select Union --</option>
+                </select>
               </div>
             </div>
 
@@ -9060,6 +9062,30 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       return _incidentAssets;
     }
 
+    let _companyUnions = null;
+
+    async function loadCompanyUnions() {
+      if (_companyUnions !== null) return _companyUnions;
+      try {
+        const resp = await fetch('/api/company/unions', { credentials: 'same-origin' });
+        const json = await resp.json().catch(() => null);
+        let rows = [];
+        if (json && json.success && Array.isArray(json.data)) {
+          rows = json.data;
+        } else if (Array.isArray(json)) {
+          rows = json;
+        }
+        _companyUnions = rows.map(u => ({
+          id: u.Id || u.id,
+          name: u.Name || u.UnionName || ''
+        })).filter(u => u.name);
+      } catch (err) {
+        console.error('Failed to load company unions:', err);
+        _companyUnions = [];
+      }
+      return _companyUnions;
+    }
+
     // Helper to populate reporter and writer dropdowns in incident form
     async function initIncidentEmployeeDropdowns() {
       try {
@@ -9136,6 +9162,21 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         if (!select || select.dataset.hrBound === '1') return;
         select.dataset.hrBound = '1';
 
+        // Load unions for the union name dropdown
+        const unionNameSelect = form.querySelector('select[name="unionName"]');
+        if (unionNameSelect && !unionNameSelect.dataset.unionsBound) {
+          unionNameSelect.dataset.unionsBound = '1';
+          const unions = await loadCompanyUnions();
+          if (unions && unions.length) {
+            unions.forEach(union => {
+              const opt = document.createElement('option');
+              opt.value = union.name;
+              opt.textContent = union.name;
+              unionNameSelect.appendChild(opt);
+            });
+          }
+        }
+
         const employees = await loadIncidentEmployees();
         if (!employees || !employees.length) return;
 
@@ -9166,7 +9207,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           const jobInput = f.querySelector('input[name="jobTitle"]');
           const phoneInput = f.querySelector('input[name="contactNumber"]');
           const unionSelect = f.querySelector('select[name="union"]');
-          const unionNameInput = f.querySelector('input[name="unionName"]');
+          const unionNameSelect = f.querySelector('select[name="unionName"]');
 
           if (deptInput && sel.dataset.department) deptInput.value = sel.dataset.department;
           if (jobInput && sel.dataset.jobTitle) jobInput.value = sel.dataset.jobTitle;
@@ -9180,7 +9221,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
               unionSelect.value = 'No';
             }
           }
-          if (unionNameInput && sel.dataset.unionName) unionNameInput.value = sel.dataset.unionName;
+          if (unionNameSelect && sel.dataset.unionName) unionNameSelect.value = sel.dataset.unionName;
         });
       } catch (err) {
         console.error('Failed to initialize grievance employee lookup:', err);
