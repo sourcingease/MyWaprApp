@@ -2345,6 +2345,23 @@
                   console.warn('Failed to restore Consultant checklist from DB', e);
                 }
               })();
+            } else if (lookupKey === 'dsa' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadDSA === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadDSA();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#dsaFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore DSA checklist from DB', e);
+                }
+              })();
             }
 
             // Highlight matching sidebar nav item (Incidents, Grievances, USC-Safe, etc.)
@@ -6530,7 +6547,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
         </div>
         <div id="dsa-form" class="form-container" style="padding: 16px;">
-          <form id="dsaFormData" onsubmit="saveDSA(event)">
+          <form id="dsaFormData" onsubmit="saveDSATab(event); return false;">
             
             <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #0f172a;">DETAILED STRUCTURAL ASSESSMENT CHECKLIST</h3>
             
