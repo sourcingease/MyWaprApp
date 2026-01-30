@@ -2185,11 +2185,26 @@
               } else if (lookupKey === 'health') {
                 setDefaultRadioButtons('healthFormData');
               } else if (lookupKey === 'consultant') {
-                // Consultant requirement: all radios default to N/A (last option / N/A value)
-                setDefaultRadioButtons('consultantFormData');
+                // Consultant requirement: all radios default to last option (N/A)
+                if (typeof setDefaultLastRadioButtons === 'function') {
+                  setDefaultLastRadioButtons('consultantFormData');
+                } else {
+                  setDefaultRadioButtons('consultantFormData');
+                }
               } else if (lookupKey === 'dsa') {
-                // DSA checklist: default all Yes/No/N/A groups to N/A when empty
-                setDefaultRadioButtons('dsaFormData');
+                // DSA checklist: default all Yes/No/N/A groups to last option (N/A)
+                if (typeof setDefaultLastRadioButtons === 'function') {
+                  setDefaultLastRadioButtons('dsaFormData');
+                } else {
+                  setDefaultRadioButtons('dsaFormData');
+                }
+              } else if (lookupKey === 'emergency-power') {
+                // Emergency Power: default all radios to last option (N/A)
+                if (typeof setDefaultLastRadioButtons === 'function') {
+                  setDefaultLastRadioButtons('emergencyPowerFormData');
+                } else {
+                  setDefaultRadioButtons('emergencyPowerFormData');
+                }
               }
             }
 
@@ -9615,9 +9630,16 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       setDefaultRadioButtons('structuralFormData');
       setDefaultRadioButtons('healthFormData');
       setDefaultRadioButtons('gasFormData');
-      setDefaultRadioButtons('consultantFormData');
-      setDefaultRadioButtons('dsaFormData');
-      setDefaultRadioButtons('emergencyPowerFormData');
+      // Consultant, DSA, Emergency Power: default to last option
+      if (typeof setDefaultLastRadioButtons === 'function') {
+        setDefaultLastRadioButtons('consultantFormData');
+        setDefaultLastRadioButtons('dsaFormData');
+        setDefaultLastRadioButtons('emergencyPowerFormData');
+      } else {
+        setDefaultRadioButtons('consultantFormData');
+        setDefaultRadioButtons('dsaFormData');
+        setDefaultRadioButtons('emergencyPowerFormData');
+      }
       setDefaultRadioButtons('uscSafeFormData');
       setDefaultRadioButtons('safetyTrainingFormData');
       setDefaultRadioButtons('ungpFormData');
