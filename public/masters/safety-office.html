@@ -2409,6 +2409,9 @@
             try {
               if (lookupKey === 'incidents' && typeof loadIncidents === 'function') {
                 loadIncidents();
+                if (typeof initIncidentEmployeeDropdowns === 'function') {
+                  initIncidentEmployeeDropdowns();
+                }
               } else if (lookupKey === 'grievances') {
                 if (typeof loadGrievances === 'function') {
                   loadGrievances();
@@ -2562,26 +2565,26 @@
           <form id="incidentFormData" onsubmit="saveIncident(event)">
             
             <!-- Basic Incident Information -->
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
               <div class="form-group">
                 <label style="font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; display: block;">Date & Time of Incident:</label>
                 <input type="datetime-local" name="incidentDateTime" required style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
               </div>
               <div class="form-group">
-                <label style="font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; display: block;">Employee ID of Person Reporting:</label>
-                <input type="text" name="employeeId" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
-              </div>
-              <div class="form-group">
                 <label style="font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; display: block;">Name of Person Reporting:</label>
-                <input type="text" name="reporterName" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <select name="reporterName" id="reporterNameSelect" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                  <option value="">-- Select Employee --</option>
+                </select>
               </div>
               <div class="form-group">
                 <label style="font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; display: block;">Job Title of Person Reporting:</label>
-                <input type="text" name="reporterJobTitle" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <input type="text" name="reporterJobTitle" id="reporterJobTitle" readonly style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f9fafb;">
               </div>
               <div class="form-group">
                 <label style="font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; display: block;">Name of Person Writing:</label>
-                <input type="text" name="writerName" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <select name="writerName" id="writerNameSelect" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                  <option value="">-- Select Employee --</option>
+                </select>
               </div>
             </div>
 
@@ -9032,6 +9035,71 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         _incidentEmployees = [];
       }
       return _incidentEmployees;
+    }
+
+    // Helper to populate reporter and writer dropdowns in incident form
+    async function initIncidentEmployeeDropdowns() {
+      try {
+        const pane = document.querySelector('.working-pane');
+        const reporterSelect = (pane && pane.querySelector('#reporterNameSelect')) || document.getElementById('reporterNameSelect');
+        const writerSelect = (pane && pane.querySelector('#writerNameSelect')) || document.getElementById('writerNameSelect');
+        
+        if (!reporterSelect && !writerSelect) return;
+
+        const employees = await loadIncidentEmployees();
+        if (!employees || !employees.length) return;
+
+        // Populate reporter dropdown
+        if (reporterSelect && reporterSelect.dataset.hrBound !== '1') {
+          reporterSelect.dataset.hrBound = '1';
+          
+          // Clear existing options except placeholder
+          while (reporterSelect.options.length > 1) {
+            reporterSelect.remove(1);
+          }
+
+          employees.forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp.name;
+            opt.textContent = emp.name + (emp.jobTitle ? ' - ' + emp.jobTitle : '');
+            opt.dataset.jobTitle = emp.jobTitle || '';
+            opt.dataset.id = emp.id || '';
+            reporterSelect.appendChild(opt);
+          });
+
+          // Auto-populate job title when reporter is selected
+          reporterSelect.addEventListener('change', function() {
+            const sel = this.options[this.selectedIndex];
+            if (!sel) return;
+            const jobTitleInput = document.getElementById('reporterJobTitle') || 
+                                  (pane && pane.querySelector('#reporterJobTitle'));
+            if (jobTitleInput) {
+              jobTitleInput.value = sel.dataset.jobTitle || '';
+            }
+          });
+        }
+
+        // Populate writer dropdown
+        if (writerSelect && writerSelect.dataset.hrBound !== '1') {
+          writerSelect.dataset.hrBound = '1';
+          
+          // Clear existing options except placeholder
+          while (writerSelect.options.length > 1) {
+            writerSelect.remove(1);
+          }
+
+          employees.forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp.name;
+            opt.textContent = emp.name + (emp.jobTitle ? ' - ' + emp.jobTitle : '');
+            opt.dataset.id = emp.id || '';
+            writerSelect.appendChild(opt);
+          });
+        }
+
+      } catch (err) {
+        console.error('Failed to initialize incident employee dropdowns:', err);
+      }
     }
 
     // Helper to wire the grievance form "Employee Name" field to HR employees
