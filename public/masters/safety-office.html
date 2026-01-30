@@ -2328,6 +2328,23 @@
                   console.warn('Failed to restore Health checklist from DB', e);
                 }
               })();
+            } else if (lookupKey === 'consultant' && window.SafetyAPI &&
+                       typeof SafetyAPI.loadConsultant === 'function' &&
+                       typeof SafetyAPI.populateForm === 'function') {
+              (async function(){
+                try {
+                  const raw = await SafetyAPI.loadConsultant();
+                  if (!raw) return;
+                  const data = Array.isArray(raw) ? null : raw;
+                  if (!data) return;
+                  const liveForm = pane.querySelector('#consultantFormData');
+                  if (liveForm) {
+                    SafetyAPI.populateForm(liveForm, data);
+                  }
+                } catch (e) {
+                  console.warn('Failed to restore Consultant checklist from DB', e);
+                }
+              })();
             }
 
             // Highlight matching sidebar nav item (Incidents, Grievances, USC-Safe, etc.)
@@ -6263,7 +6280,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
         </div>
         <div id="consultant-form" class="form-container" style="padding: 16px;">
-          <form id="consultantFormData" onsubmit="saveConsultant(event)">
+          <form id="consultantFormData" onsubmit="saveConsultantTab(event); return false;">
             
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
               <span style="font-size: 20px;">📋</span>
@@ -9618,6 +9635,8 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
   
   <!-- Safety API Client Scripts -->
   <script src="/js/safety-api-client.js"></script>
+  <script src="/js/safety-tab-loader.js"></script>
+  <script src="/js/safety-tab-loader.js"></script>
   <script>
     // showSafetyTabs is called when the global Safety icon is clicked.
     // It restores the horizontal safety ICON bar (Incidents, Grievances, USC‑Safe, etc.)
