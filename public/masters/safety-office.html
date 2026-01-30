@@ -9025,7 +9025,9 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           name: e.Name || e.FullName || e.EmployeeName || '',
           jobTitle: e.JobTitle || e.Designation || e.Title || '',
           department: e.Department || e.DepartmentName || e.DeptName || e.Dept || '',
-          phone: e.Phone || e.Mobile || e.ContactNumber || e.PhoneNumber || e.WorkPhone || ''
+          phone: e.Phone || e.Mobile || e.ContactNumber || e.PhoneNumber || e.WorkPhone || '',
+          union: e.Union || e.UnionMember || e.IsMemberOfUnion || '',
+          unionName: e.UnionName || e.UnionOrganization || ''
         })).filter(e => e.name);
       } catch (err) {
         console.error('Failed to load HR employees for incident form:', err);
@@ -9150,6 +9152,8 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           if (emp.department) opt.dataset.department = emp.department;
           if (emp.jobTitle) opt.dataset.jobTitle = emp.jobTitle;
           if (emp.phone) opt.dataset.phone = emp.phone;
+          if (emp.union) opt.dataset.union = emp.union;
+          if (emp.unionName) opt.dataset.unionName = emp.unionName;
           select.appendChild(opt);
         });
 
@@ -9158,15 +9162,25 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           if (!sel) return;
           const f = this.closest('form');
           if (!f) return;
-          const idInput = f.querySelector('input[name="employeeId"]');
           const deptInput = f.querySelector('input[name="department"]');
           const jobInput = f.querySelector('input[name="jobTitle"]');
           const phoneInput = f.querySelector('input[name="contactNumber"]');
+          const unionSelect = f.querySelector('select[name="union"]');
+          const unionNameInput = f.querySelector('input[name="unionName"]');
 
-          if (idInput) idInput.value = sel.dataset.id || '';
           if (deptInput && sel.dataset.department) deptInput.value = sel.dataset.department;
           if (jobInput && sel.dataset.jobTitle) jobInput.value = sel.dataset.jobTitle;
           if (phoneInput && sel.dataset.phone) phoneInput.value = sel.dataset.phone;
+          if (unionSelect && sel.dataset.union) {
+            // Try to match Yes/No
+            const unionValue = sel.dataset.union.toString().toLowerCase();
+            if (unionValue === 'yes' || unionValue === '1' || unionValue === 'true') {
+              unionSelect.value = 'Yes';
+            } else if (unionValue === 'no' || unionValue === '0' || unionValue === 'false') {
+              unionSelect.value = 'No';
+            }
+          }
+          if (unionNameInput && sel.dataset.unionName) unionNameInput.value = sel.dataset.unionName;
         });
       } catch (err) {
         console.error('Failed to initialize grievance employee lookup:', err);
