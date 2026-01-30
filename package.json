@@ -4,8 +4,9 @@
   "description": "An agent for your SaaS application with Azure SQL Database integration",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
+    "start": "node src/web-server.js",
+    "agent": "node src/index.js",
+    "dev": "node --watch src/web-server.js",
     "test": "echo 'Skipping tests in CI - tests require database connection. Run npm run health-check locally.'",
     "test:local": "node tests/health-check.js",
     "health-check": "node tests/health-check.js",
