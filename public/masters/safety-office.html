@@ -2046,6 +2046,12 @@
                   containerSelector: '#safety-agents-panel',
                   moduleId: 'safety'
                 });
+                
+                // Sync agent tab with the current safety tab after initialization
+                // Default is usc-safe, so switch agent to usc-safe tab
+                if (typeof window.AgentUI.switchAgentTab === 'function') {
+                  window.AgentUI.switchAgentTab('usc-safe');
+                }
               } catch (e) {
                 console.warn('AgentUI.initModuleAgents failed for Safety module', e);
               }
