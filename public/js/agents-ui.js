@@ -168,7 +168,7 @@
         const dot = document.createElement('div');
         dot.className = 'agent-ui-agent-bullet';
         const label = document.createElement('span');
-        label.textContent = (tab.name || tab.id) + ' Agent';
+        label.textContent = (tab.name || tab.id) + ' Assistant';
         row.appendChild(dot);
         row.appendChild(label);
         sidebarEl.appendChild(row);
