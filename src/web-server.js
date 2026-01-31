@@ -4438,6 +4438,11 @@ initSafetyPool()
       const { setupWasteManagementRoutes } = require('./routes/waste-management');
       setupWasteManagementRoutes(app, pool);
     } catch (e) { console.warn('Waste Management API not loaded:', e.message); }
+    // Safety Checklist Routes
+    try {
+      const { setupChecklistRoutes } = require('./routes/checklist-api');
+      setupChecklistRoutes(app, pool);
+    } catch (e) { console.warn('Safety Checklist API not loaded:', e.message); }
     return autoSeedDemoIfNeeded();
   })
   .then(() => {

@@ -2094,7 +2094,7 @@
                 const tabKey = item.key.replace('safety-', '');
                 if (typeof switchTab === 'function') switchTab(tabKey);
               }
-              // Handle accounting sub-tabs (accounting-payable, accounting-receivable, etc.)
+              // Handle accounting sub-tabs (accounting-dashboard, accounting-receivable, etc.)
               else if (item.key.startsWith('accounting-')) {
                 const tabName = item.key.replace('accounting-', '');
                 const urlMap = {
@@ -2104,14 +2104,14 @@
                   'received': '/accounting/received-paid.html?tab=received',
                   'paid': '/accounting/received-paid.html?tab=paid',
                   'banks': '/accounting/banks.html',
+                  'petty-cash': '/accounting/petty-cash.html',
                   'transfer': '/accounting/transfer.html',
-                  'petty-cash': '/accounting/petty-cash.html'
+                  'balance': '/accounting/accounts-balance.html',
+                  'summary': '/accounting/bank-deposit-summary.html'
                 };
                 const url = urlMap[tabName] || '/accounting/dashboard.html';
-                if (typeof showAccountingTabs === 'function') {
-                  showAccountingTabs(tabName);
-                } else if (typeof loadInWorkingPane === 'function') {
-                  loadInWorkingPane(url + (url.includes('?') ? '&' : '?') + 'embedded=1');
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea(url + (url.includes('?') ? '&' : '?') + 'embedded=1');
                 } else {
                   window.location.href = url;
                 }
@@ -2145,12 +2145,17 @@
                   window.location.href = url;
                 }
               }
-              // Handle Setup sub-tabs (setup-profile, setup-company)
+              // Handle Setup sub-tabs (setup-profile, setup-company, setup-banks)
               else if (item.key.startsWith('setup-')) {
                 const tabKey = item.key.replace('setup-', '');
-                const url = '/profile.html?tab=' + tabKey;
+                const urlMap = {
+                  'profile': '/profile.html?tab=profile',
+                  'company': '/profile.html?tab=company',
+                  'banks': '/setup/banks.html'
+                };
+                const url = urlMap[tabKey] || '/profile.html?tab=company';
                 if (window.mlOpenInWorkingArea) {
-                  window.mlOpenInWorkingArea(url + '&embedded=1');
+                  window.mlOpenInWorkingArea(url + (url.includes('?') ? '&' : '?') + 'embedded=1');
                 } else {
                   window.location.href = url;
                 }
@@ -2369,6 +2374,11 @@
                 }
               }
             }
+
+          // Initialize checklist section for the active tab
+          if (typeof initChecklistSection === 'function') {
+            initChecklistSection(lookupKey);
+          }
 
           // After defaults, try to load the latest saved checklist
           // directly into the working-pane form (not the hidden template) so
@@ -3883,6 +3893,29 @@
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="fire" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="fire-form" class="form-container">
           <form id="fireFormData" onsubmit="saveFireSafetyTab(event)" method="post" action="">
             <h3 style="color: #0ea5e9; margin-bottom: 16px;">🔥 Fire Safety & Protection - Smoking Cabins</h3>
@@ -4293,6 +4326,29 @@
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="electrical" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="electrical-form" class="form-container" style="padding: 16px;">
           <form id="electricalFormData" onsubmit="handleElectricalSubmit(event)">
             <div style="margin-bottom: 24px;">
@@ -4616,6 +4672,29 @@
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="structural" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="structural-form" class="form-container" style="padding: 16px;">
           <form id="structuralFormData" onsubmit="handleStructuralSubmit(event)">
             <div class="form-grid">
@@ -4778,6 +4857,40 @@
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="usc-safe" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:16px;margin-bottom:12px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:12px;color:#0f172a;">➕ Add New Checklist Item</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#475569;">Checklist Text</label>
+              <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#475569;">Options (comma separated)</label>
+              <input type="text" class="safety-checklist-options" value="Yes,No,N/A" placeholder="Yes,No,N/A" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#475569;">Select Heading</label>
+              <select class="safety-heading-select" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;"></select>
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button type="button" class="safety-create-heading-btn" onclick="showCreateHeadingDialog(this)" style="padding:8px 12px;background:#10b981;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">+ New Heading</button>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="button" class="safety-save-item-btn" onclick="saveChecklistItem(this)" style="padding:8px 20px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Save Item</button>
+          </div>
+          
+          <!-- Debug Controls -->
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;">
+            <button type="button" onclick="debugChecklistStorage(this)" style="padding:6px 12px;background:#64748b;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;">🔍 Debug Storage</button>
+            <button type="button" onclick="clearChecklistStorage(this)" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;">🗑️ Clear Storage</button>
+          </div>
+        </div>
+        
         <div id="usc-safe-form" class="form-container" style="padding: 16px;">
           <form id="uscSafeFormData" onsubmit="handleUSCSafeSubmit(event)">
             <h3 style="color: #0ea5e9; margin-bottom: 8px; font-size: 14px; font-weight: 600;">🔥 Fire Safety & Protection - Smoking Cabins</h3>
@@ -5343,6 +5456,29 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="health" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="health-form" class="form-container" style="padding: 16px;">
           <form id="healthFormData" onsubmit="saveHealth(event)">
             
@@ -5698,6 +5834,29 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="gas" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="gas-form" class="form-container" style="padding: 16px;">
           <form id="gasFormData" onsubmit="saveGas(event)">
             <div style="margin-bottom: 20px;">
@@ -6116,6 +6275,29 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="boiler" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="boiler-form" class="form-container" style="padding: 16px;">
           <form id="boilerFormData" onsubmit="saveBoiler(event)">
             
@@ -6549,6 +6731,29 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="consultant" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="consultant-form" class="form-container" style="padding: 16px;">
           <form id="consultantFormData" onsubmit="saveConsultantTab(event); return false;">
             
@@ -6799,6 +7004,29 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="dsa" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="dsa-form" class="form-container" style="padding: 16px;">
           <form id="dsaFormData" onsubmit="saveDSATab(event); return false;">
             
@@ -6993,6 +7221,29 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
           </div>
         </div>
+        
+        <!-- Add Checklist Item Section -->
+        <div class="safety-add-item-section" data-tab="emergency-power" style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Checklist Text:</label>
+            <input type="text" class="safety-checklist-text" placeholder="Enter checklist statement..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Options (comma-separated):</label>
+            <input type="text" class="safety-checklist-options" value="Yes,No,N/A" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #475569;">Heading:</label>
+            <select class="safety-heading-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;">
+              <option value="">-- Select Heading --</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
+          </div>
+        </div>
+        
         <div id="emergency-power-form" class="form-container" style="padding: 16px;">
           <form id="emergencyPowerFormData" onsubmit="saveEmergencyPowerTab(event); return false;">
             
@@ -7800,22 +8051,15 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
     function showAccountingTabs(initial){
       const pane = document.querySelector('.working-pane');
       if(!pane) return;
+      
+      // Use iconic tabs above (created by master-layout.js), no duplicate button tabs needed
       const embeddedSuffix = '?embedded=1';
       const html = `
-        <div class="top-compact-tabs">
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-dashboard','Accounting-Dashboard');loadInWorkingPane('/accounting/dashboard.html' + embeddedSuffix)">Dashboard</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-receivable','Accounting-Receivable');loadInWorkingPane('/accounting/receivables.html' + embeddedSuffix)">Receivable</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-payable','Accounting-Payable');loadInWorkingPane('/accounting/payables.html' + embeddedSuffix)">Payable</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-received','Accounting-Received');loadInWorkingPane('/accounting/received-paid.html?tab=received&embedded=1')">Received</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-paid','Accounting-Paid');loadInWorkingPane('/accounting/received-paid.html?tab=paid&embedded=1')">Paid</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-banks','Accounting-Banks');loadInWorkingPane('/accounting/banks.html' + embeddedSuffix)">Banks</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-transfer','Accounting-Transfer');loadInWorkingPane('/accounting/transfer.html' + embeddedSuffix)">Transfer</button>
-          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-petty-cash','Accounting-Petty Cash');loadInWorkingPane('/accounting/petty-cash.html' + embeddedSuffix)">Petty Cash</button>
-        </div>
-        <div style="margin-top:8px;height:calc(100% - 40px);min-height:580px">
+        <div style="height:100%;min-height:580px">
           <iframe id="accountingFrame" src="" style="width:100%;height:100%;border:0;"></iframe>
         </div>`;
       pane.innerHTML = html;
+      
       const startUrl = initial==='dashboard'
         ? '/accounting/dashboard.html' + embeddedSuffix
         : initial==='receivables'
@@ -7844,6 +8088,790 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       form.querySelectorAll('input[type="radio"]').forEach(radio => {
         radio.checked = false;
       });
+    }
+
+    // ==================== DYNAMIC CHECKLIST MANAGEMENT ====================
+    
+    console.log('📋 CHECKLIST MANAGEMENT CODE LOADED - Version 2.0');
+    
+    // Make functions globally testable
+    window.checklistDebug = {
+      slugifyHeading: null,
+      ensureHeadingBlock: null,
+      saveChecklistItem: null,
+      showCreateHeadingDialog: null,
+      initChecklistSection: null
+    };
+    
+    // Convert heading text to a safe slug/key
+    function slugifyHeading(text) {
+      return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special chars
+        .replace(/\s+/g, '-')      // Replace spaces with hyphens
+        .replace(/-+/g, '-')       // Replace multiple hyphens with single
+        .trim();
+    }
+    window.checklistDebug.slugifyHeading = slugifyHeading;
+    
+    // Ensure heading block exists with proper structure and return items container
+    function ensureHeadingBlock(formContainer, headingText) {
+      console.log('🔍 ensureHeadingBlock called:', { headingText });
+      
+      const headingSlug = slugifyHeading(headingText);
+      
+      if (!formContainer) {
+        console.error('❌ No form container provided');
+        return null;
+      }
+      
+      // Check if heading block already exists
+      let headingBlock = formContainer.querySelector(`[data-heading="${headingSlug}"]`);
+      
+      if (headingBlock) {
+        console.log('✅ Found existing heading block:', headingSlug);
+        let itemsContainer = headingBlock.querySelector('.checklist-items');
+        
+        // If items container missing, create it
+        if (!itemsContainer) {
+          console.log('⚠️ Items container missing, creating it...');
+          itemsContainer = document.createElement('div');
+          itemsContainer.className = 'checklist-items';
+          itemsContainer.dataset.itemsFor = headingSlug;
+          headingBlock.appendChild(itemsContainer);
+        }
+        
+        return itemsContainer;
+      }
+      
+      // Create new heading block
+      console.log('🆕 Creating new heading block:', headingSlug);
+      
+      headingBlock = document.createElement('div');
+      headingBlock.className = 'checklist-heading-block';
+      headingBlock.dataset.heading = headingSlug;
+      headingBlock.style.cssText = 'margin-bottom: 20px;';
+      
+      // Create heading title
+      const headingTitle = document.createElement('h3');
+      headingTitle.className = 'heading-title';
+      headingTitle.style.cssText = 'color: #0ea5e9; margin-top: 16px; margin-bottom: 8px; font-size: 14px; font-weight: 600;';
+      headingTitle.textContent = headingText;
+      headingTitle.dataset.headingText = headingText;
+      
+      // Create items container
+      const itemsContainer = document.createElement('div');
+      itemsContainer.className = 'checklist-items';
+      itemsContainer.dataset.itemsFor = headingSlug;
+      
+      headingBlock.appendChild(headingTitle);
+      headingBlock.appendChild(itemsContainer);
+      
+      // Insert before the form actions (Save/Reset buttons)
+      const formActions = formContainer.querySelector('.form-actions');
+      if (formActions) {
+        console.log('✅ Inserting heading block before form actions');
+        formContainer.insertBefore(headingBlock, formActions);
+      } else {
+        console.log('⚠️ No form actions found, appending to form container');
+        formContainer.appendChild(headingBlock);
+      }
+      
+      return itemsContainer;
+    }
+    window.checklistDebug.ensureHeadingBlock = ensureHeadingBlock;
+    
+    // Get selected heading's items container
+    function getSelectedHeadingItemsContainer(formContainer, headingText) {
+      console.log('🎯 getSelectedHeadingItemsContainer:', { headingText });
+      
+      if (!formContainer) {
+        console.error('❌ No form container provided');
+        return null;
+      }
+      
+      const headingSlug = slugifyHeading(headingText);
+      
+      // Try to find existing heading block
+      let headingBlock = formContainer.querySelector(`[data-heading="${headingSlug}"]`);
+      
+      if (headingBlock) {
+        console.log('✅ Found heading block:', headingSlug);
+        const itemsContainer = headingBlock.querySelector('.checklist-items');
+        if (itemsContainer) {
+          console.log('✅ Found items container');
+          return itemsContainer;
+        } else {
+          console.error('❌ Heading block exists but no items container');
+        }
+      } else {
+        console.warn('⚠️ Heading block not found, will create it');
+      }
+      
+      // If not found or no items container, ensure it exists
+      return ensureHeadingBlock(formContainer, headingText);
+    }
+    
+    // Detect headings and wrap existing ones in proper structure
+    function detectAndWrapHeadings(formContainer) {
+      console.log('🔄 Detecting and wrapping headings');
+      
+      if (!formContainer) {
+        console.error('❌ No form container provided');
+        return [];
+      }
+      
+      const headings = [];
+      const h3Elements = Array.from(formContainer.querySelectorAll('h3'));
+      
+      console.log(`Found ${h3Elements.length} h3 elements`);
+      
+      h3Elements.forEach((h3, index) => {
+        // Skip if already wrapped
+        if (h3.closest('.checklist-heading-block')) {
+          const block = h3.closest('.checklist-heading-block');
+          const itemsContainer = block.querySelector('.checklist-items');
+          if (itemsContainer) {
+            headings.push({
+              text: h3.textContent.trim(),
+              slug: block.dataset.heading,
+              container: itemsContainer
+            });
+          }
+          return;
+        }
+        
+        // Wrap existing heading
+        const headingText = h3.textContent.trim();
+        const headingSlug = slugifyHeading(headingText);
+        
+        console.log(`Wrapping heading ${index + 1}:`, headingText);
+        
+        const headingBlock = document.createElement('div');
+        headingBlock.className = 'checklist-heading-block';
+        headingBlock.dataset.heading = headingSlug;
+        headingBlock.style.cssText = 'margin-bottom: 20px;';
+        
+        // Create items container
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'checklist-items';
+        itemsContainer.dataset.itemsFor = headingSlug;
+        
+        // Move all following form-groups until next h3 or form-actions into items container
+        let nextSibling = h3.nextElementSibling;
+        const elementsToMove = [];
+        
+        while (nextSibling && !nextSibling.matches('h3') && !nextSibling.classList.contains('form-actions') && !nextSibling.classList.contains('checklist-heading-block')) {
+          if (nextSibling.classList.contains('form-group')) {
+            elementsToMove.push(nextSibling);
+          }
+          const temp = nextSibling;
+          nextSibling = nextSibling.nextElementSibling;
+        }
+        
+        // Insert heading block before h3
+        h3.parentNode.insertBefore(headingBlock, h3);
+        
+        // Move h3 into block
+        headingBlock.appendChild(h3);
+        h3.className = 'heading-title';
+        h3.dataset.headingText = headingText;
+        
+        // Move form groups into items container
+        elementsToMove.forEach(el => {
+          itemsContainer.appendChild(el);
+        });
+        
+        // Add items container to block
+        headingBlock.appendChild(itemsContainer);
+        
+        headings.push({
+          text: headingText,
+          slug: headingSlug,
+          container: itemsContainer
+        });
+      });
+      
+      console.log(`✅ Wrapped ${headings.length} headings`);
+      return headings;
+    }
+    
+    // Initialize headings dropdown when tab becomes active
+    async function initChecklistSection(tabId) {
+      console.log('🚀 Initializing checklist section for tab:', tabId);
+      
+      // Get the WORKING PANE (where active content is displayed)
+      const workingPane = document.querySelector('.working-pane');
+      if (!workingPane) {
+        console.error('❌ Working pane not found');
+        return;
+      }
+      
+      const section = workingPane.querySelector(`.safety-add-item-section[data-tab="${tabId}"]`);
+      if (!section) {
+        console.log('⚠️ No add-item-section found for tab:', tabId);
+        return;
+      }
+      
+      const select = section.querySelector('.safety-heading-select');
+      if (!select) {
+        console.error('❌ No select element found');
+        return;
+      }
+      
+      // Get the form container in the working pane
+      const formContainer = workingPane.querySelector('.form-container, form');
+      if (!formContainer) {
+        console.error('❌ No form container found in working pane');
+        return;
+      }
+      
+      console.log('✅ Found form container');
+      
+      // Detect and wrap existing headings
+      const detectedHeadings = detectAndWrapHeadings(formContainer);
+      
+      // Load saved custom headings from database
+      let savedHeadings = [];
+      
+      try {
+        const response = await fetch(`/api/safety/checklist/headings/${tabId}`);
+        if (response.ok) {
+          savedHeadings = await response.json();
+          console.log(`✅ Loaded ${savedHeadings.length} custom headings from database:`, savedHeadings);
+        } else {
+          console.error('❌ Failed to load headings from database');
+        }
+      } catch (e) {
+        console.error('❌ Error loading headings:', e);
+      }
+      
+      // Populate dropdown
+      select.innerHTML = '<option value="">-- Select Heading --</option>';
+      
+      // Add detected headings
+      console.log(`Adding ${detectedHeadings.length} detected headings to dropdown`);
+      detectedHeadings.forEach((h, index) => {
+        console.log(`  ${index + 1}. ${h.text} (${h.slug})`);
+        const opt = document.createElement('option');
+        opt.value = h.slug;
+        opt.textContent = h.text;
+        opt.dataset.heading = h.text;
+        opt.dataset.slug = h.slug;
+        select.appendChild(opt);
+      });
+      
+      // Add saved custom headings
+      console.log(`Adding ${savedHeadings.length} custom headings to dropdown`);
+      savedHeadings.forEach((heading, index) => {
+        const headingText = heading.heading_text;
+        const slug = heading.heading_slug;
+        console.log(`  ${index + 1}. ${headingText} (${slug})`);
+        
+        // Ensure heading block exists in DOM BEFORE loading items
+        const container = ensureHeadingBlock(formContainer, headingText);
+        if (container) {
+          console.log(`  ✅ Heading block ensured for: ${headingText}`);
+        } else {
+          console.error(`  ❌ Failed to ensure heading block for: ${headingText}`);
+        }
+        
+        const opt = document.createElement('option');
+        opt.value = slug;
+        opt.textContent = headingText;
+        opt.dataset.heading = headingText;
+        opt.dataset.slug = slug;
+        opt.dataset.custom = 'true';
+        select.appendChild(opt);
+      });
+      
+      // Load saved options preference (still using localStorage for convenience)
+      const savedOptions = localStorage.getItem(`safety_options_${tabId}`);
+      if (savedOptions) {
+        const optionsInput = section.querySelector('.safety-checklist-options');
+        if (optionsInput) {
+          optionsInput.value = savedOptions;
+          console.log('✅ Restored options preference:', savedOptions);
+        }
+      }
+      
+      // IMPORTANT: Load items AFTER all heading blocks are created
+      console.log('📂 Now loading saved items after all headings are ready...');
+      await loadSavedChecklistItems(tabId);
+      
+      console.log(`✅ Initialized ${select.options.length - 1} total headings in dropdown`);
+    }
+    window.checklistDebug.initChecklistSection = initChecklistSection;
+    
+    // Show dialog to create new heading
+    async function showCreateHeadingDialog(btn) {
+      const section = btn.closest('.safety-add-item-section');
+      const tabId = section.dataset.tab;
+      
+      const headingName = prompt('Enter new heading name:');
+      if (!headingName || !headingName.trim()) {
+        console.log('❌ No heading name provided');
+        return;
+      }
+      
+      const trimmedName = headingName.trim();
+      const headingSlug = slugifyHeading(trimmedName);
+      
+      console.log('🆕 Creating new heading:', trimmedName, 'for tab:', tabId);
+      
+      // Save to database
+      try {
+        const response = await fetch('/api/safety/checklist/headings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tabId: tabId,
+            headingText: trimmedName,
+            headingSlug: headingSlug,
+            displayOrder: 0
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          if (response.status === 409) {
+            console.log('⚠️ Heading already exists in database');
+          } else {
+            throw new Error(result.error || 'Failed to save heading');
+          }
+        } else {
+          console.log('✅ Saved to database:', result);
+        }
+      } catch (e) {
+        console.error('❌ Error saving to database:', e);
+        alert('❌ Failed to save heading: ' + e.message);
+        return;
+      }
+      
+      // Get working pane and form container
+      const workingPane = document.querySelector('.working-pane');
+      if (!workingPane) {
+        console.error('❌ Working pane not found');
+        alert('❌ Could not find working pane');
+        return;
+      }
+      
+      const formContainer = workingPane.querySelector('.form-container, form');
+      if (!formContainer) {
+        console.error('❌ Form container not found in working pane');
+        alert('❌ Could not find form container');
+        return;
+      }
+      
+      console.log('✅ Found form container');
+      
+      // Create heading block in DOM
+      const itemsContainer = ensureHeadingBlock(formContainer, trimmedName);
+      
+      if (!itemsContainer) {
+        console.error('❌ Failed to create heading block');
+        alert('❌ Failed to create heading block');
+        return;
+      }
+      
+      console.log('✅ Heading block created in DOM');
+      
+      // Scroll to the new heading to make it visible
+      if (itemsContainer.parentElement) {
+        itemsContainer.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Refresh dropdown and select new heading
+      const select = section.querySelector('.safety-heading-select');
+      if (!select) {
+        console.error('❌ Select element not found');
+        return;
+      }
+      
+      // Add the new heading to dropdown manually
+      const slug = slugifyHeading(trimmedName);
+      
+      // Check if it already exists in dropdown
+      const existingOption = Array.from(select.options).find(opt => opt.value === slug);
+      if (existingOption) {
+        console.log('⚠️ Heading already in dropdown, selecting it');
+        select.value = slug;
+      } else {
+        const newOption = document.createElement('option');
+        newOption.value = slug;
+        newOption.textContent = trimmedName;
+        newOption.dataset.heading = trimmedName;
+        newOption.dataset.slug = slug;
+        newOption.dataset.custom = 'true';
+        select.appendChild(newOption);
+        select.value = slug;
+        console.log('✅ Added heading to dropdown and selected it:', slug);
+      }
+      
+      console.log('✅ Heading "' + trimmedName + '" is now ready for items!');
+      alert('✅ Heading "' + trimmedName + '" created successfully!\n\nYou can now add checklist items under this heading.');
+    }
+    window.checklistDebug.showCreateHeadingDialog = showCreateHeadingDialog;
+    
+    // Save checklist item
+    async function saveChecklistItem(btn) {
+      console.log('💾 Saving checklist item...');
+      
+      const section = btn.closest('.safety-add-item-section');
+      const tabId = section.dataset.tab;
+      
+      const textInput = section.querySelector('.safety-checklist-text');
+      const optionsInput = section.querySelector('.safety-checklist-options');
+      const select = section.querySelector('.safety-heading-select');
+      
+      const checklistText = textInput.value.trim();
+      const optionsStr = optionsInput.value.trim();
+      const selectedOption = select.options[select.selectedIndex];
+      
+      console.log('📝 Input values:', { checklistText, optionsStr, selectedValue: selectedOption?.value });
+      
+      // Validation
+      if (!checklistText) {
+        alert('❌ Please enter checklist text');
+        return;
+      }
+      
+      if (!selectedOption || !selectedOption.value) {
+        alert('❌ Please select a heading');
+        return;
+      }
+      
+      // Parse options
+      const options = optionsStr.split(',').map(o => o.trim()).filter(o => o);
+      if (options.length < 2) {
+        alert('❌ Please provide at least 2 options');
+        return;
+      }
+      
+      const headingText = selectedOption.dataset.heading;
+      const headingSlug = selectedOption.dataset.slug || slugifyHeading(headingText);
+      
+      console.log('🎯 Target heading:', { headingText, headingSlug });
+      
+      // Save to database
+      try {
+        const response = await fetch('/api/safety/checklist/items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tabId: tabId,
+            headingText: headingText,
+            headingSlug: headingSlug,
+            itemText: checklistText,
+            options: options,
+            displayOrder: 0
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to save item');
+        }
+        
+        console.log('✅ Saved to database:', result);
+        
+        // Create unique ID using database ID
+        const itemId = `item_${result.id}`;
+        
+        // Save options preference to localStorage (for convenience)
+        localStorage.setItem(`safety_options_${tabId}`, optionsStr);
+        
+        // Get working pane and form container
+        const workingPane = document.querySelector('.working-pane');
+        const formContainer = workingPane ? workingPane.querySelector('.form-container, form') : null;
+        
+        if (!formContainer) {
+          console.error('❌ Form container not found in working pane');
+          alert('❌ Failed to find form container. Please try again.');
+          return;
+        }
+        
+        // Get items container using strict function
+        const itemsContainer = getSelectedHeadingItemsContainer(formContainer, headingText);
+        
+        if (!itemsContainer) {
+          console.error('❌ Could not get items container for heading:', headingText);
+          alert('❌ Failed to find heading container. Please try again.');
+          return;
+        }
+        
+        console.log('✅ Found items container:', itemsContainer);
+        
+        // Create and insert checklist item
+        insertChecklistItemIntoContainer(itemsContainer, itemId, checklistText, options);
+        
+        // Clear text input
+        textInput.value = '';
+        
+        console.log('✅ Checklist item saved and inserted');
+        alert('✅ Checklist item added successfully!');
+        
+      } catch (e) {
+        console.error('❌ Error saving to database:', e);
+        alert('❌ Failed to save item: ' + e.message);
+      }
+    }
+    window.checklistDebug.saveChecklistItem = saveChecklistItem;
+    
+    // Insert checklist item into specific container
+    function insertChecklistItemIntoContainer(container, itemId, checklistText, options) {
+      console.log('📌 Inserting item into container:', { itemId, checklistText, containerClass: container.className });
+      
+      // Create checklist row
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'form-group full-width';
+      itemDiv.style.cssText = 'margin-bottom: 4px;';
+      itemDiv.dataset.itemId = itemId;
+      
+      const label = document.createElement('label');
+      label.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8fafc; border-radius: 4px;';
+      
+      const textSpan = document.createElement('span');
+      textSpan.style.cssText = 'font-size: 12px; color: #475569;';
+      textSpan.textContent = checklistText;
+      
+      const radioGroup = document.createElement('div');
+      radioGroup.className = 'radio-group';
+      radioGroup.style.cssText = 'display: flex; gap: 10px; margin: 0;';
+      
+      // Generate radio buttons
+      const radioName = `custom_${itemId}`;
+      options.forEach((opt, idx) => {
+        const radioLabel = document.createElement('label');
+        radioLabel.style.cssText = 'font-size: 11px; display: flex; align-items: center; gap: 4px;';
+        
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = radioName;
+        radio.value = opt;
+        radio.style.cssText = 'width: 14px; height: 14px; margin: 0;';
+        
+        // Select last option by default
+        if (idx === options.length - 1) {
+          radio.checked = true;
+        }
+        
+        radioLabel.appendChild(radio);
+        radioLabel.appendChild(document.createTextNode(opt));
+        radioGroup.appendChild(radioLabel);
+      });
+      
+      label.appendChild(textSpan);
+      label.appendChild(radioGroup);
+      itemDiv.appendChild(label);
+      
+      // Append to container
+      container.appendChild(itemDiv);
+      console.log('✅ Item appended to container, container now has', container.children.length, 'children');
+    }
+    
+    // Load saved checklist items on page load
+    async function loadSavedChecklistItems(tabId) {
+      console.log('📂 Loading saved checklist items for tab:', tabId);
+      
+      let savedItems = [];
+      
+      try {
+        const response = await fetch(`/api/safety/checklist/items/${tabId}`);
+        if (response.ok) {
+          savedItems = await response.json();
+          console.log(`📦 Found ${savedItems.length} saved items in database`);
+        } else {
+          console.error('❌ Failed to load items from database');
+          return;
+        }
+      } catch (e) {
+        console.error('❌ Error loading items:', e);
+        return;
+      }
+      
+      if (savedItems.length === 0) {
+        console.log('✅ No saved items to load');
+        return;
+      }
+      
+      // Get working pane and form container
+      const workingPane = document.querySelector('.working-pane');
+      if (!workingPane) {
+        console.error('❌ Working pane not found');
+        return;
+      }
+      
+      const formContainer = workingPane.querySelector('.form-container, form');
+      if (!formContainer) {
+        console.error('❌ No form container found in working pane');
+        return;
+      }
+      
+      console.log('✅ Form container found, starting to restore items...');
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      savedItems.forEach((item, index) => {
+        console.log(`\n📌 Restoring item ${index + 1}/${savedItems.length}:`);
+        console.log(`   Text: "${item.item_text}"`);
+        console.log(`   Heading: "${item.heading_text}"`);
+        console.log(`   Options:`, item.options);
+        
+        try {
+          const itemsContainer = getSelectedHeadingItemsContainer(formContainer, item.heading_text);
+          if (itemsContainer) {
+            console.log(`   ✅ Found container for heading: "${item.heading_text}"`);
+            // Parse options (they're stored as comma-separated string)
+            const options = item.options.split(',').map(o => o.trim());
+            const itemId = `item_${item.id}`;
+            insertChecklistItemIntoContainer(itemsContainer, itemId, item.item_text, options);
+            successCount++;
+            console.log(`   ✅ Item restored successfully`);
+          } else {
+            console.error(`   ❌ Could not find container for heading: "${item.heading_text}"`);
+            failCount++;
+          }
+        } catch (e) {
+          console.error(`   ❌ Error restoring item:`, e);
+          failCount++;
+        }
+      });
+      
+      console.log(`\n✅ Restore complete: ${successCount} success, ${failCount} failed`);
+      
+      if (failCount > 0) {
+        console.warn(`⚠️ Some items could not be restored. This might mean their headings don't exist.`);
+      }
+    }
+    
+    // Initialize all safety tabs on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🎬 DOM loaded, checklist system ready');
+      
+      // Show a visual indicator that the system loaded
+      setTimeout(() => {
+        const workingPane = document.querySelector('.working-pane');
+        if (workingPane) {
+          const addSection = workingPane.querySelector('.safety-add-item-section');
+          if (addSection) {
+            // Add a success indicator
+            const indicator = document.createElement('div');
+            indicator.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #10b981; color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; z-index: 9999; box-shadow: 0 2px 8px rgba(0,0,0,0.2);';
+            indicator.textContent = '✅ Checklist System Loaded';
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => indicator.remove(), 3000);
+            
+            console.log('✅ Checklist system visual indicator shown');
+          }
+        }
+        
+        // Auto-run diagnostic
+        console.log('\n🔍 AUTO-DIAGNOSTIC ON PAGE LOAD:');
+        console.log('localStorage available:', typeof(Storage) !== 'undefined');
+        console.log('localStorage test write:');
+        try {
+          localStorage.setItem('test_key', 'test_value');
+          const testRead = localStorage.getItem('test_key');
+          console.log('  ✅ Write/Read successful:', testRead === 'test_value');
+          localStorage.removeItem('test_key');
+        } catch (e) {
+          console.error('  ❌ localStorage error:', e.message);
+        }
+        
+        // Check all safety tabs for storage
+        const tabs = ['usc-safe', 'fire', 'electrical', 'structural', 'health', 'gas', 'boiler', 'consultant', 'dsa', 'emergency-power'];
+        console.log('\n📦 Checking storage for all tabs:');
+        tabs.forEach(tabId => {
+          const headingsKey = `safety_headings_${tabId}`;
+          const itemsKey = `safety_items_${tabId}`;
+          const headings = JSON.parse(localStorage.getItem(headingsKey) || '[]');
+          const items = JSON.parse(localStorage.getItem(itemsKey) || '[]');
+          if (headings.length > 0 || items.length > 0) {
+            console.log(`  ${tabId}: ${headings.length} headings, ${items.length} items`);
+          }
+        });
+        console.log('🔍 END AUTO-DIAGNOSTIC\n');
+      }, 500);
+    });
+
+    // ==================== DEBUG UTILITIES ====================
+    
+    function debugChecklistStorage(btn) {
+      const section = btn.closest('.safety-add-item-section');
+      const tabId = section.dataset.tab;
+      
+      console.log('=== CHECKLIST STORAGE DEBUG ===');
+      console.log('Tab ID:', tabId);
+      
+      // Check headings
+      const headingsKey = `safety_headings_${tabId}`;
+      const headingsValue = localStorage.getItem(headingsKey);
+      console.log('\nHeadings Storage:');
+      console.log('  Key:', headingsKey);
+      console.log('  Value:', headingsValue);
+      console.log('  Parsed:', JSON.parse(headingsValue || '[]'));
+      
+      // Check items
+      const itemsKey = `safety_items_${tabId}`;
+      const itemsValue = localStorage.getItem(itemsKey);
+      console.log('\nItems Storage:');
+      console.log('  Key:', itemsKey);
+      console.log('  Value:', itemsValue);
+      const items = JSON.parse(itemsValue || '[]');
+      console.log('  Parsed:', items);
+      console.log('  Count:', items.length);
+      
+      // Check options
+      const optionsKey = `safety_options_${tabId}`;
+      const optionsValue = localStorage.getItem(optionsKey);
+      console.log('\nOptions Storage:');
+      console.log('  Key:', optionsKey);
+      console.log('  Value:', optionsValue);
+      
+      // Check working pane
+      const workingPane = document.querySelector('.working-pane');
+      console.log('\nDOM State:');
+      console.log('  Working pane found:', !!workingPane);
+      if (workingPane) {
+        const formContainer = workingPane.querySelector('.form-container, form');
+        console.log('  Form container found:', !!formContainer);
+        if (formContainer) {
+          const headingBlocks = formContainer.querySelectorAll('.checklist-heading-block');
+          console.log('  Heading blocks:', headingBlocks.length);
+          headingBlocks.forEach((block, i) => {
+            const title = block.querySelector('.heading-title');
+            const items = block.querySelector('.checklist-items');
+            console.log(`    ${i+1}. "${title?.textContent}" - ${items?.children.length || 0} items`);
+          });
+        }
+      }
+      
+      console.log('=== END DEBUG ===');
+      
+      alert('📊 Debug info logged to console (press F12)');
+    }
+    
+    function clearChecklistStorage(btn) {
+      const section = btn.closest('.safety-add-item-section');
+      const tabId = section.dataset.tab;
+      
+      if (!confirm('⚠️ Clear ALL saved headings and items for this tab?')) return;
+      
+      localStorage.removeItem(`safety_headings_${tabId}`);
+      localStorage.removeItem(`safety_items_${tabId}`);
+      localStorage.removeItem(`safety_options_${tabId}`);
+      
+      console.log('🗑️ Cleared storage for tab:', tabId);
+      alert('✅ Storage cleared! Refresh the page to see changes.');
     }
 
     // ==================== INCIDENTS ====================

@@ -130,46 +130,10 @@ window.mlOpenInWorkingArea = function(url){
       const isAppPage = p.endsWith('.html') || p.startsWith('/accounting') || p.startsWith('/crm') || p.startsWith('/hr') || p.startsWith('/masters') || p.startsWith('/ai') || p.startsWith('/support');
       if(!isAppPage) return;
       e.preventDefault();
-      if(/^\/accounting\//.test(p) && window.showAccountingTabs){ window.showAccountingTabs(); }
       window.mlOpenInWorkingArea(u.href);
     }catch(_){ /* ignore */ }
   }, true);
 })();
-
-// Render Accounting tabs into a container (and wire to working area)
-window.renderAccountingTabs = function(container, currentUrl){
-  if(!container) return;
-  const tabs = [
-    ['Dashboard','/accounting/dashboard.html'],
-    ['Banks','/accounting/banks.html'],
-    ['Payables','/accounting/payables.html'],
-    ['Receivables','/accounting/receivables.html'],
-    ['Received/Paid','/accounting/received-paid.html'],
-    ['Petty Cash','/accounting/petty-cash.html'],
-    ['Transfer','/accounting/transfer.html'],
-    ['Accounts Balance','/accounting/accounts-balance.html'],
-    ['Summary','/accounting/bank-deposit-summary.html']
-  ];
-  const uNow = (function(){ try{ return new URL(currentUrl||location.href, location.origin).pathname; }catch(_){ return ''; } })();
-  container.innerHTML = '';
-  tabs.forEach(([label, href])=>{
-    const a = document.createElement('button'); a.className='ml-tab'; a.textContent = label; if(uNow===href) a.classList.add('active');
-    a.addEventListener('click', function(){ 
-      // Track in WIP with format Acc-{TabName}
-      console.log('[Accounting Tab Click]', label);
-      try{ 
-        if(typeof window._mlAddToWIP === 'function') {
-          window._mlAddToWIP('accounting-'+label.toLowerCase().replace(/[^a-z0-9]+/g,'-'), 'Accounting-'+label);
-        } else {
-          console.warn('[Accounting Tab] _mlAddToWIP not available');
-        }
-      }catch(e){ console.error('[Accounting Tab] WIP error:', e); }
-      const url = href + (href.includes('?')?'&':'?')+'embedded=1'; 
-      if(window.mlOpenInWorkingArea){ window.mlOpenInWorkingArea(url); } 
-    });
-    container.appendChild(a);
-  });
-};
 
 // Render Setup (Business Profile) tabs into a container (and wire to working area)
 window.renderSetupTabs = function(container, currentUrl){
@@ -330,9 +294,95 @@ window.renderMasterHeader = function(opts){
     }
     function openAccountingInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
-      // Ensure tabs are visible above working area/appFrame
-      try{ if(window.showAccountingTabs) window.showAccountingTabs(); }catch(e){}
-      // Prefer opening the new Accounting Dashboard in the working area/app iframe
+      
+      // Create iconic tabs bar under the header for Accounting
+      try{
+        window.disableSafetyTopTabs = true;
+        window.activeTopTabs = 'accounting';
+        const hdrEl = document.querySelector('.dashboard-header');
+        if(hdrEl){
+          // Reuse existing row under the header if any, otherwise create
+          let bar = document.getElementById('safety-top-tabs');
+          if(!bar){
+            const sibling = hdrEl.nextElementSibling;
+            if(sibling && sibling.querySelector('button')){
+              bar = sibling;
+            }
+          }
+          if(!bar){
+            bar = document.createElement('div');
+            bar.id = 'safety-top-tabs';
+            bar.className = 'top-safety-tabs';
+            hdrEl.insertAdjacentElement('afterend', bar);
+          }
+          bar.style.display = '';
+          bar.innerHTML = '';
+
+          // All Accounting tabs with icons
+          const tabs = [
+            ['dashboard',      '📊', 'Dashboard',        '/accounting/dashboard.html'],
+            ['receivable',     '📥', 'Receivable',       '/accounting/receivables.html'],
+            ['payable',        '📤', 'Payable',          '/accounting/payables.html'],
+            ['received',       '✅', 'Received',         '/accounting/received-paid.html?tab=received'],
+            ['paid',           '💸', 'Paid',             '/accounting/received-paid.html?tab=paid'],
+            ['banks',          '🏦', 'Banks',            '/accounting/banks.html'],
+            ['petty-cash',     '💵', 'Petty Cash',       '/accounting/petty-cash.html'],
+            ['transfer',       '🔄', 'Transfer',         '/accounting/transfer.html'],
+            ['balance',        '⚖️', 'Accounts Balance', '/accounting/accounts-balance.html'],
+            ['summary',        '📋', 'Summary',          '/accounting/bank-deposit-summary.html']
+          ];
+          
+          tabs.forEach(function([key, emoji, label, href]){
+            const btn = document.createElement('button');
+            btn.className = 'sm-tab';
+            btn.setAttribute('data-accounting-tab', key);
+            
+            const iconBox = document.createElement('div');
+            iconBox.className = 'sm-icon-box';
+            const span = document.createElement('span');
+            span.className = 'sm-ico';
+            span.textContent = emoji;
+            iconBox.appendChild(span);
+            
+            const lbl = document.createElement('div');
+            lbl.className = 'sm-lbl';
+            lbl.textContent = label;
+            
+            btn.appendChild(iconBox);
+            btn.appendChild(lbl);
+            
+            btn.addEventListener('click', function(ev){
+              ev.preventDefault();
+              // Track in WIP with format Accounting-{TabName}
+              console.log('[Accounting Tab Click]', key, label);
+              try{ 
+                if(typeof window._mlAddToWIP === 'function') {
+                  window._mlAddToWIP('accounting-'+key, 'Accounting-'+label);
+                } else {
+                  console.warn('[Accounting Tab] _mlAddToWIP not available');
+                }
+              }catch(e){ console.error('[Accounting Tab] WIP error:', e); }
+              
+              try {
+                const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea(url);
+                } else {
+                  location.href = href;
+                }
+              } catch (e) {
+                console.error('[Accounting Tab] Navigation error:', e);
+              }
+            });
+            
+            bar.appendChild(btn);
+          });
+        }
+      }catch(e){
+        console.error('Error creating Accounting tabs:', e);
+      }
+      
+      // Open default dashboard view
       if(window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/accounting/dashboard.html?embedded=1')) return;
       try{
         const f = document.getElementById('appFrame');
@@ -710,10 +760,11 @@ window.renderMasterHeader = function(opts){
           bar.innerHTML = '';
 
           const tabs = [
-            ['profile','🏢','Profile'],
-            ['company','⚙️','Setup']
+            ['profile','🏢','Profile', '/profile.html?tab=profile'],
+            ['company','⚙️','Setup', '/profile.html?tab=company'],
+            ['banks','🏦','Bank Setup', '/setup/banks.html']
           ];
-          tabs.forEach(function([key, emoji, label]){
+          tabs.forEach(function([key, emoji, label, href]){
             const btn = document.createElement('button');
             btn.className = 'sm-tab';
             const box = document.createElement('div'); box.className='sm-icon-box';
@@ -733,29 +784,11 @@ window.renderMasterHeader = function(opts){
                 }
               }catch(e){ console.error('[Setup Tab] WIP error:', e); }
               try{
+                const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
                 if(window.mlOpenInWorkingArea){
-                  window.mlOpenInWorkingArea('/profile.html?tab='+key+'&embedded=1');
-                  // After loading, trigger the appropriate sub-tabs view in the embedded frame
-                  setTimeout(function(){
-                    try{
-                      const frame = document.getElementById('ml-embed-frame');
-                      if(frame && frame.contentWindow){
-                        if(key === 'company'){
-                          // Show Setup sub-tabs (Add Space, Assign Role, etc.)
-                          if(typeof frame.contentWindow.showTopBarSetup === 'function'){
-                            frame.contentWindow.showTopBarSetup();
-                          }
-                        } else if(key === 'profile'){
-                          // Show Profile main view
-                          if(typeof frame.contentWindow.showTopBarProfile === 'function'){
-                            frame.contentWindow.showTopBarProfile();
-                          }
-                        }
-                      }
-                    }catch(e){}
-                  }, 300);
+                  window.mlOpenInWorkingArea(url);
                 } else {
-                  location.href = '/profile.html?tab='+key;
+                  location.href = href;
                 }
               }catch(e){}
             });

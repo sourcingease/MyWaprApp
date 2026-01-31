@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Banks • Accounting</title>
+  <title>Bank Setup • Business Setup</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css" />
   <style>
@@ -34,12 +34,12 @@
     })();
   </script>
   <div class="dashboard-header">
-    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Banks</div></div>
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Bank Setup</div></div>
     <div class="header-right"></div>
   </div>
   <div class="shell">
-    <div class="card" style="display:none">
-      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Bank Setup</div>
+    <div class="card">
+      <div style="font-weight:700;font-size:16px;margin-bottom:8px">Add New Bank</div>
       <div class="row">
         <div class="form-group"><label class="form-label">Bank Name</label><input id="bName" class="form-input"/></div>
         <div class="form-group"><label class="form-label">Account Title</label><input id="bTitle" class="form-input"/></div>
@@ -73,14 +73,27 @@
         const banks=(banksResp.data||[]).map(b=>({ id:b.BankId, name:b.Name, title:b.AccountTitle, number:b.AccountNumber, openingBalance:b.OpeningBalance }));
         const led=(ledResp.data||[]).map(x=>({ bankId:x.BankId, type:x.EntryType, amount:x.Amount }));
         banks.forEach(b=>{ const start=parseFloat(b.openingBalance||0)||0; const mov=led.filter(x=>x.bankId===b.id).reduce((s,x)=> s + (x.type==='CR'? Number(x.amount||0): -Number(x.amount||0)), 0); b.balance = Number((start + mov).toFixed(2)); });
-        const rows=document.getElementById('rows'); rows.innerHTML = banks.length? banks.map(b=>`<tr><td>${escapeHtml(b.name)}</td><td>${escapeHtml(b.number||'')}</td><td>${escapeHtml(b.title||'')}</td><td>$${(b.balance||0).toFixed(2)}</td><td><a class='ct' href='/accounting/bank-statement.html?bankId=${b.id}${embedded()}'>Statement</a></td></tr>`).join(''):'<tr><td colspan="5">No data</td></tr>';
+        const rows=document.getElementById('rows'); rows.innerHTML = banks.length? banks.map(b=>`<tr><td>${escapeHtml(b.name)}</td><td>${escapeHtml(b.number||'')}</td><td>${escapeHtml(b.title||'')}</td><td>$${(b.balance||0).toFixed(2)}</td><td><button class='ct' onclick='deleteBank(${b.id})'>Delete</button></td></tr>`).join(''):'<tr><td colspan="5">No data</td></tr>';
       }catch(err){ console.error(err); alert('Failed to load banks'); }
     }
-    async function addBank(){ const name=(bName.value||'').trim(); if(!name) return alert('Bank name is required');
-      try{ const payload={ name, title:bTitle.value||'', number:bNumber.value||'', openingBalance:parseFloat(bOpen.value||0)||0 };
+    async function addBank(){ 
+      const name=(bName.value||'').trim(); 
+      if(!name) return alert('Bank name is required');
+      try{ 
+        const payload={ name, title:bTitle.value||'', number:bNumber.value||'', openingBalance:parseFloat(bOpen.value||0)||0 };
         await fetchJson('/api/accounting/banks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        bName.value=bTitle.value=bNumber.value=bOpen.value=''; await load();
+        bName.value=bTitle.value=bNumber.value=bOpen.value=''; 
+        await load();
+        alert('✅ Bank added successfully!');
       }catch(err){ console.error(err); alert('Failed to add bank'); }
+    }
+    async function deleteBank(id){
+      if(!confirm('Are you sure you want to delete this bank?')) return;
+      try{
+        await fetchJson('/api/accounting/banks/' + id, { method:'DELETE' });
+        await load();
+        alert('✅ Bank deleted successfully!');
+      }catch(err){ console.error(err); alert('Failed to delete bank'); }
     }
     load();
   </script>
