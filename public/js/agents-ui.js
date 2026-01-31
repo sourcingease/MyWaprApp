@@ -89,7 +89,7 @@
       return;
     }
 
-    let currentTabId = (mod.tabs && mod.tabs[0] && mod.tabs[0].id) || null;
+    let currentTabId = options.initialTabId || (mod.tabs && mod.tabs[0] && mod.tabs[0].id) || null;
 
     const root = document.createElement('div');
     root.className = 'agent-ui-root';
@@ -327,14 +327,12 @@
     // Store state for external tab switching
     currentModuleState = {
       moduleId,
-      currentTabId,
       setTabId: function(tabId) {
         const tab = (mod.tabs || []).find(t => t.id === tabId);
         if (tab) {
           currentTabId = tabId;
           renderTabs();
           renderSidebar();
-          appendSystemMessage('Switched to "' + (tab.name || tab.id) + '".');
         }
       }
     };
