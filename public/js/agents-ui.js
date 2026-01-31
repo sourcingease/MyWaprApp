@@ -44,8 +44,8 @@
       .agent-ui-tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
       .agent-ui-tab{border:1px solid #e2e8f0;border-radius:999px;padding:4px 10px;background:#f8fafc;color:#64748b;cursor:pointer;font-size:12px;line-height:1.4}
       .agent-ui-tab.agent-ui-tab-active{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
-      .agent-ui-body{display:flex;gap:8px;min-height:180px}
-      .agent-ui-sidebar{flex:0 0 180px;border:1px solid #e2e8f0;border-radius:8px;padding:8px;background:#f8fafc;display:flex;flex-direction:column;gap:4px}
+      .agent-ui-body{display:flex;flex-direction:column;gap:8px;min-height:180px}
+      .agent-ui-sidebar{flex:0 0 auto;border:1px solid #e2e8f0;border-radius:8px;padding:8px;background:#f8fafc;display:flex;flex-direction:column;gap:4px}
       .agent-ui-sidebar-title{font-size:11px;font-weight:600;color:#64748b;margin-bottom:2px;text-transform:uppercase}
       .agent-ui-agent{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px}
       .agent-ui-agent span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -149,10 +149,7 @@
 
     function renderSidebar() {
       sidebarEl.innerHTML = '';
-      const title = document.createElement('div');
-      title.className = 'agent-ui-sidebar-title';
-      title.textContent = (mod.name || moduleId) + ' Agents';
-      sidebarEl.appendChild(title);
+      // Title removed - just show agents directly
 
       const supRow = document.createElement('div');
       supRow.className = 'agent-ui-agent agent-ui-agent-main';
