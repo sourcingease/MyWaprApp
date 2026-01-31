@@ -96,6 +96,7 @@
 
     const tabsEl = document.createElement('div');
     tabsEl.className = 'agent-ui-tabs';
+    tabsEl.style.display = 'none'; // Hide the tab buttons - we switch tabs programmatically from the safety module
     root.appendChild(tabsEl);
 
     const bodyEl = document.createElement('div');
