@@ -118,7 +118,7 @@
     const inputRow = document.createElement('div');
     inputRow.className = 'agent-ui-input-row';
     const textarea = document.createElement('textarea');
-    textarea.placeholder = 'Ask the ' + (mod.name || moduleId) + ' agents…';
+    textarea.placeholder = 'Ask';
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.className = 'agent-ui-file';
@@ -320,7 +320,6 @@
     renderTabs();
     renderSidebar();
     messagesEl.innerHTML = '';
-    appendSystemMessage('Supervisor and tab agents are ready for module "' + (mod.name || moduleId) + '".');
 
     container.innerHTML = '';
     container.appendChild(root);
