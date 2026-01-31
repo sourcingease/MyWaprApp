@@ -45,10 +45,14 @@
   </div>
 
   <script>
-    // Track HR module in WIP
-    if (typeof addToWIP === 'function') {
-      addToWIP('hr', 'HR');
-    }
+    // Track HR module in WIP after page loads
+    window.addEventListener('load', function() {
+      if (typeof addToWIP === 'function') {
+        addToWIP('hr', 'HR');
+      } else {
+        console.error('addToWIP function not available');
+      }
+    });
     
     function qp(name){return new URLSearchParams(location.search).get(name)}
     document.getElementById('tenantId').value = qp('tenantId')||'';

@@ -1,9 +1,13 @@
 // WIP (Work in Progress) Tracker - Global Module Tracking
 (function(global) {
   
+  console.log('WIP Tracker loaded');
+  
   // Track when user enters a module/page
   function trackModuleEntry(moduleKey, moduleName) {
     if (!moduleKey || !moduleName) return;
+    
+    console.log('Tracking module:', moduleKey, moduleName);
     
     let wipItems = JSON.parse(localStorage.getItem('safetyWipItems') || '[]');
     
