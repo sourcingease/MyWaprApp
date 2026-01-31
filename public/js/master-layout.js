@@ -1,5 +1,35 @@
 (function(){
   if(document.getElementById('ml-styles')) return;
+  
+  // Helper function for WIP tracking - directly calls the global addToWIP
+  window._mlAddToWIP = function(key, name) {
+    console.log('[master-layout] _mlAddToWIP called:', key, name);
+    console.log('[master-layout] Available functions:', { 
+      addToWIP: typeof window.addToWIP,
+      WIPTracker: typeof window.WIPTracker
+    });
+    
+    try {
+      // Try calling addToWIP directly
+      if (window.addToWIP) {
+        console.log('[master-layout] Calling window.addToWIP');
+        window.addToWIP(key, name);
+        console.log('[master-layout] window.addToWIP completed');
+      } else if (window.WIPTracker && window.WIPTracker.track) {
+        console.log('[master-layout] Calling WIPTracker.track');
+        window.WIPTracker.track(key, name);
+        console.log('[master-layout] WIPTracker.track completed');
+      } else {
+        console.error('[master-layout] WIP tracking functions not found!');
+        console.log('[master-layout] window.addToWIP:', window.addToWIP);
+        console.log('[master-layout] window.WIPTracker:', window.WIPTracker);
+      }
+    } catch (e) {
+      console.error('[master-layout] Error in _mlAddToWIP:', e);
+      console.error('[master-layout] Stack:', e.stack);
+    }
+  };
+  
   const css = `
   .ml-icons{display:flex;align-items:flex-start;gap:10px;margin-right:6px}
   .icon-item{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -124,7 +154,19 @@ window.renderAccountingTabs = function(container, currentUrl){
   container.innerHTML = '';
   tabs.forEach(([label, href])=>{
     const a = document.createElement('button'); a.className='ml-tab'; a.textContent = label; if(uNow===href) a.classList.add('active');
-    a.addEventListener('click', function(){ const url = href + (href.includes('?')?'&':'?')+'embedded=1'; if(window.mlOpenInWorkingArea){ window.mlOpenInWorkingArea(url); } });
+    a.addEventListener('click', function(){ 
+      // Track in WIP with format Acc-{TabName}
+      console.log('[Accounting Tab Click]', label);
+      try{ 
+        if(typeof window._mlAddToWIP === 'function') {
+          window._mlAddToWIP('accounting-'+label.toLowerCase().replace(/[^a-z0-9]+/g,'-'), 'Accounting-'+label);
+        } else {
+          console.warn('[Accounting Tab] _mlAddToWIP not available');
+        }
+      }catch(e){ console.error('[Accounting Tab] WIP error:', e); }
+      const url = href + (href.includes('?')?'&':'?')+'embedded=1'; 
+      if(window.mlOpenInWorkingArea){ window.mlOpenInWorkingArea(url); } 
+    });
     container.appendChild(a);
   });
 };
@@ -287,6 +329,7 @@ window.renderMasterHeader = function(opts){
       return false;
     }
     function openAccountingInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // Ensure tabs are visible above working area/appFrame
       try{ if(window.showAccountingTabs) window.showAccountingTabs(); }catch(e){}
       // Prefer opening the new Accounting Dashboard in the working area/app iframe
@@ -299,6 +342,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/accounting/dashboard.html';
     }
     function openSafetyInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // Re-enable Safety top tabs when the Safety module is active
       try{ window.disableSafetyTopTabs = false; window.activeTopTabs = 'safety'; }catch(e){}
       try{ if(typeof window.showSafetyTabs === 'function'){ window.showSafetyTabs(); return; } }catch(e){}
@@ -310,6 +354,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/masters/safety-office.html';
     }
     function openTasksInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // Prefer embedding the Task Planner in the current working area / app frame
       try{
         if (window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/tasks/planning.html?embedded=1')) return;
@@ -318,6 +363,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/tasks/planning.html';
     }
     function openCRMinPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // When CRM is active from the Safety dashboard (or any shell that
       // reuses the Safety layout), replace the shared top-tabs row just
       // under the header with CRM-specific icon tabs (Add Contact, Search
@@ -377,6 +423,15 @@ window.renderMasterHeader = function(opts){
 
             btn.addEventListener('click', function(ev){
               ev.preventDefault();
+              // Track in WIP with format CRM-{TabName}
+              console.log('[CRM Tab Click]', key, label);
+              try{ 
+                if(typeof window._mlAddToWIP === 'function') {
+                  window._mlAddToWIP('crm-'+key, 'CRM-'+label);
+                } else {
+                  console.warn('[CRM Tab] _mlAddToWIP not available');
+                }
+              }catch(e){ console.error('[CRM Tab] WIP error:', e); }
               try {
                 const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
                 if (window.mlOpenInWorkingArea) {
@@ -439,6 +494,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/crm.html';
     }
     function openHRInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // When HR & Payroll is active, replace the current top tabs row with
       // HR job-flow icons (Job Posting, List of Jobs, etc.) and open the HR
       // workspace in the working area.
@@ -484,6 +540,15 @@ window.renderMasterHeader = function(opts){
             btn.appendChild(box); btn.appendChild(lbl);
             btn.addEventListener('click', function(ev){
               ev.preventDefault();
+              // Track in WIP with format HR-{TabName}
+              console.log('[HR Tab Click]', key, label);
+              try{ 
+                if(typeof window._mlAddToWIP === 'function') {
+                  window._mlAddToWIP('hr-'+key, 'HR-'+label);
+                } else {
+                  console.warn('[HR Tab] _mlAddToWIP not available');
+                }
+              }catch(e){ console.error('[HR Tab] WIP error:', e); }
               try{ if(window.triggerHrTab) window.triggerHrTab(key); }catch(e){}
             });
             bar.appendChild(btn);
@@ -500,6 +565,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/hr/index.html?embedded=1';
     }
     function openAIInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       try{
         const f = document.getElementById('appFrame');
         if(f){ f.src = '/ai/analyst.html?embedded=1'; return; }
@@ -507,6 +573,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/ai/analyst.html';
     }
     function openSupportInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       try{
         const f = document.getElementById('appFrame');
         if(f){ f.src = '/support.html?embedded=1'; return; }
@@ -514,6 +581,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/support.html';
     }
     function openEmailInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // Prefer using Email inbox/sent/drafts/compose tabs
       try{ if(typeof window.showEmailTabs === 'function'){ window.showEmailTabs(); return; } }catch(e){}
       try{
@@ -587,10 +655,12 @@ window.renderMasterHeader = function(opts){
       }catch(e){ /* ignore */ }
     };
     function openChatInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       if(openInWorkingArea('/crm/chat.html')) return;
       location.href = '/app.html#/chat';
     }
     function openReportInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // Prefer embedding reports page and switching agents to Reports module if available
       try{
         if (window.AgentUI) {
@@ -604,6 +674,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/app.html#/report';
     }
     function openTrackingInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       if(openInWorkingArea('/tracking.html?embedded=1')) return;
       location.href = '/app.html#/tracking';
     }
@@ -612,6 +683,7 @@ window.renderMasterHeader = function(opts){
       location.href = '/app.html#/employees-add';
     }
     function openSetupInPlace(){
+      // Note: Main module not tracked in WIP, only sub-tabs are tracked
       // When Setup is active, replace the current top tabs row with
       // Profile/Setup icons in this shell.
       try{
@@ -651,6 +723,15 @@ window.renderMasterHeader = function(opts){
             btn.appendChild(box); btn.appendChild(lbl);
             btn.addEventListener('click', function(ev){
               ev.preventDefault();
+              // Track in WIP with format Setup-{TabName}
+              console.log('[Setup Tab Click]', key, label);
+              try{ 
+                if(typeof window._mlAddToWIP === 'function') {
+                  window._mlAddToWIP('setup-'+key, 'Setup-'+label);
+                } else {
+                  console.warn('[Setup Tab] _mlAddToWIP not available');
+                }
+              }catch(e){ console.error('[Setup Tab] WIP error:', e); }
               try{
                 if(window.mlOpenInWorkingArea){
                   window.mlOpenInWorkingArea('/profile.html?tab='+key+'&embedded=1');

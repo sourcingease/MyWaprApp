@@ -2075,7 +2075,8 @@
           }
 
           wipList.innerHTML = '';
-          wipItems.forEach(item => {
+          // Reverse to show newest first (LIFO)
+          wipItems.slice().reverse().forEach(item => {
             const div = document.createElement('div');
             div.className = 'status-item';
             div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;transition:all 0.2s;';
@@ -2087,17 +2088,142 @@
             label.textContent = item.name;
             label.onclick = function(e) {
               e.stopPropagation();
-              if (item.key === 'safety') {
-                // Already on safety, just switch to overview or default tab
+              
+              // Handle safety sub-tabs (Safety-Fire, Safety-Electrical, etc.)
+              if (item.key.startsWith('safety-')) {
+                const tabKey = item.key.replace('safety-', '');
+                if (typeof switchTab === 'function') switchTab(tabKey);
+              }
+              // Handle accounting sub-tabs (accounting-payable, accounting-receivable, etc.)
+              else if (item.key.startsWith('accounting-')) {
+                const tabName = item.key.replace('accounting-', '');
+                const urlMap = {
+                  'dashboard': '/accounting/dashboard.html',
+                  'receivable': '/accounting/receivables.html',
+                  'payable': '/accounting/payables.html',
+                  'received': '/accounting/received-paid.html?tab=received',
+                  'paid': '/accounting/received-paid.html?tab=paid',
+                  'banks': '/accounting/banks.html',
+                  'transfer': '/accounting/transfer.html',
+                  'petty-cash': '/accounting/petty-cash.html'
+                };
+                const url = urlMap[tabName] || '/accounting/dashboard.html';
+                if (typeof showAccountingTabs === 'function') {
+                  showAccountingTabs(tabName);
+                } else if (typeof loadInWorkingPane === 'function') {
+                  loadInWorkingPane(url + (url.includes('?') ? '&' : '?') + 'embedded=1');
+                } else {
+                  window.location.href = url;
+                }
+              }
+              // Handle HR sub-tabs (hr-jobposting, hr-listjobs, etc.)
+              else if (item.key.startsWith('hr-')) {
+                const tabKey = item.key.replace('hr-', '');
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/hr/index.html?embedded=1');
+                  setTimeout(function() {
+                    if (window.triggerHrTab) window.triggerHrTab(tabKey);
+                  }, 300);
+                } else {
+                  window.location.href = '/hr/index.html';
+                }
+              }
+              // Handle CRM sub-tabs (crm-add, crm-search, etc.)
+              else if (item.key.startsWith('crm-')) {
+                const tabKey = item.key.replace('crm-', '');
+                const urlMap = {
+                  'add': '/crm/add-contact-advanced.html',
+                  'search': '/crm/search-contacts.html',
+                  'add-notes': '/crm/add-phone-notes.html',
+                  'search-notes': '/crm/search-phone-notes.html',
+                  'segments': '/crm/segments.html'
+                };
+                const url = urlMap[tabKey] || '/crm.html';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea(url + (url.includes('?') ? '&' : '?') + 'embedded=1');
+                } else {
+                  window.location.href = url;
+                }
+              }
+              // Handle Setup sub-tabs (setup-profile, setup-company)
+              else if (item.key.startsWith('setup-')) {
+                const tabKey = item.key.replace('setup-', '');
+                const url = '/profile.html?tab=' + tabKey;
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea(url + '&embedded=1');
+                } else {
+                  window.location.href = url;
+                }
+              }
+              // Handle main modules
+              else if (item.key === 'safety') {
                 if (typeof switchTab === 'function') switchTab('usc-safe');
               } else if (item.key === 'hr') {
-                window.location.href = '/employees.html';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/hr/index.html?embedded=1');
+                } else {
+                  window.location.href = '/hr/index.html';
+                }
               } else if (item.key === 'crm') {
-                window.location.href = '/crm.html';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/crm/add-contact-advanced.html?embedded=1');
+                } else {
+                  window.location.href = '/crm.html';
+                }
               } else if (item.key === 'accounting') {
-                window.location.href = '/accounting/dashboard.html';
+                if (typeof showAccountingTabs === 'function') {
+                  showAccountingTabs('dashboard');
+                } else {
+                  window.location.href = '/accounting/dashboard.html';
+                }
               } else if (item.key === 'setup') {
-                window.location.href = '/setup.html';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/profile.html?tab=company&embedded=1');
+                } else {
+                  window.location.href = '/profile.html?tab=company';
+                }
+              } else if (item.key === 'tasks') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/tasks/planning.html?embedded=1');
+                } else {
+                  window.location.href = '/tasks/planning.html';
+                }
+              } else if (item.key === 'ai') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/ai/analyst.html?embedded=1');
+                } else {
+                  window.location.href = '/ai/analyst.html';
+                }
+              } else if (item.key === 'support') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/support.html?embedded=1');
+                } else {
+                  window.location.href = '/support.html';
+                }
+              } else if (item.key === 'email') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/crm/mailbox.html?embedded=1');
+                } else {
+                  window.location.href = '/crm/mailbox.html';
+                }
+              } else if (item.key === 'chat') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/crm/chat.html?embedded=1');
+                } else {
+                  window.location.href = '/crm/chat.html';
+                }
+              } else if (item.key === 'report') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/report.html?embedded=1');
+                } else {
+                  window.location.href = '/report.html';
+                }
+              } else if (item.key === 'tracking') {
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/tracking.html?embedded=1');
+                } else {
+                  window.location.href = '/tracking.html';
+                }
               }
             };
             
@@ -2123,10 +2249,7 @@
         // Initialize WIP on page load
         document.addEventListener('DOMContentLoaded', function() {
           renderWIP();
-          // Add current module to WIP
-          if (typeof addToWIP === 'function') {
-            addToWIP('safety', 'Safety Office');
-          }
+          // Safety Office is added when Safety icon is clicked (in master-layout.js)
         });
       </script>
       <script>
@@ -2506,6 +2629,33 @@
               const agentTabId = agentTabMap[lookupKey];
               if (agentTabId) {
                 window.AgentUI.switchAgentTab(agentTabId);
+              }
+            }
+
+            // Add current safety tab to WIP
+            if (typeof addToWIP === 'function') {
+              const wipTabNames = {
+                'incidents': 'Safety-Incidents',
+                'search-incident': 'Safety-Search Incidents',
+                'grievances': 'Safety-Grievances',
+                'search-grievance': 'Safety-Search Grievances',
+                'fire': 'Safety-Fire',
+                'electrical': 'Safety-Electrical',
+                'structural': 'Safety-Structural',
+                'health': 'Safety-Health',
+                'usc-safe': 'Safety-USC Safe',
+                'gas': 'Safety-Gas',
+                'boiler': 'Safety-Boiler',
+                'consultant': 'Safety-Consultant',
+                'dsa': 'Safety-DSA',
+                'emergency-power': 'Safety-Emergency Power',
+                'audits': 'Safety-Audits',
+                'training': 'Safety-Training',
+                'ungp': 'Safety-UNGP'
+              };
+              const wipName = wipTabNames[lookupKey];
+              if (wipName) {
+                addToWIP('safety-' + lookupKey, wipName);
               }
             }
           } catch (e) {
@@ -7653,14 +7803,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       const embeddedSuffix = '?embedded=1';
       const html = `
         <div class="top-compact-tabs">
-          <button class="ct" onclick="loadInWorkingPane('/accounting/dashboard.html' + embeddedSuffix)">Dashboard</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/receivables.html' + embeddedSuffix)">Receivable</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/payables.html' + embeddedSuffix)">Payable</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/received-paid.html?tab=received&embedded=1')">Received</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/received-paid.html?tab=paid&embedded=1')">Paid</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/banks.html' + embeddedSuffix)">Banks</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/transfer.html' + embeddedSuffix)">Transfer</button>
-          <button class="ct" onclick="loadInWorkingPane('/accounting/petty-cash.html' + embeddedSuffix)">Petty Cash</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-dashboard','Accounting-Dashboard');loadInWorkingPane('/accounting/dashboard.html' + embeddedSuffix)">Dashboard</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-receivable','Accounting-Receivable');loadInWorkingPane('/accounting/receivables.html' + embeddedSuffix)">Receivable</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-payable','Accounting-Payable');loadInWorkingPane('/accounting/payables.html' + embeddedSuffix)">Payable</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-received','Accounting-Received');loadInWorkingPane('/accounting/received-paid.html?tab=received&embedded=1')">Received</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-paid','Accounting-Paid');loadInWorkingPane('/accounting/received-paid.html?tab=paid&embedded=1')">Paid</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-banks','Accounting-Banks');loadInWorkingPane('/accounting/banks.html' + embeddedSuffix)">Banks</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-transfer','Accounting-Transfer');loadInWorkingPane('/accounting/transfer.html' + embeddedSuffix)">Transfer</button>
+          <button class="ct" onclick="if(typeof addToWIP==='function')addToWIP('accounting-petty-cash','Accounting-Petty Cash');loadInWorkingPane('/accounting/petty-cash.html' + embeddedSuffix)">Petty Cash</button>
         </div>
         <div style="margin-top:8px;height:calc(100% - 40px);min-height:580px">
           <iframe id="accountingFrame" src="" style="width:100%;height:100%;border:0;"></iframe>
