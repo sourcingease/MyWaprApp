@@ -496,7 +496,7 @@
       border-bottom: 2px solid #f1f5f9;
     }
 
-    /* Procurement Status */
+    /* WIP (Work in Progress) Panel */
     .status-item {
       display: flex;
       justify-content: space-between;
@@ -1279,38 +1279,16 @@
     <div id="tab-overview" class="tab-content active">
       <!-- Overview Tab Content -->
       <div class="dashboard-content">
-      <!-- Procurement Status (moves to right) -->
+      <!-- WIP (Work in Progress) Panel -->
       <div class="dashboard-card proc-pane">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div class="card-header" style="margin:0">Procurement Status</div>
+          <div class="card-header" style="margin:0">WIP</div>
         </div>
-        <div class="status-item">
-          <div class="status-label">
-            <span class="status-dot-indicator" style="background: #f59e0b;"></span>
-            Pending RFQs
+        <div id="wip-list" style="display:flex;flex-direction:column;gap:8px;">
+          <!-- WIP items will be added dynamically -->
+          <div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">
+            No active tasks
           </div>
-          <div class="status-count">0</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">
-            <span class="status-dot-indicator" style="background: #3b82f6;"></span>
-            Quotes Received
-          </div>
-          <div class="status-count">0</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">
-            <span class="status-dot-indicator" style="background: #8b5cf6;"></span>
-            Orders Approved
-          </div>
-          <div class="status-count">0</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">
-            <span class="status-dot-indicator" style="background: #10b981;"></span>
-            Materials Delivered
-          </div>
-          <div class="status-count">0</div>
         </div>
       </div>
 
@@ -2079,6 +2057,82 @@
           } catch (e) {
             console.warn('Failed to bind text safety tabs', e);
           }
+        });
+      </script>
+      <script>
+        // WIP (Work in Progress) Management
+        let wipItems = JSON.parse(localStorage.getItem('safetyWipItems') || '[]');
+
+        function addToWIP(moduleKey, moduleName) {
+          // Check if already in WIP
+          if (wipItems.some(item => item.key === moduleKey)) return;
+          
+          wipItems.push({ key: moduleKey, name: moduleName, timestamp: Date.now() });
+          localStorage.setItem('safetyWipItems', JSON.stringify(wipItems));
+          renderWIP();
+        }
+
+        function removeFromWIP(moduleKey) {
+          wipItems = wipItems.filter(item => item.key !== moduleKey);
+          localStorage.setItem('safetyWipItems', JSON.stringify(wipItems));
+          renderWIP();
+        }
+
+        function renderWIP() {
+          const wipList = document.getElementById('wip-list');
+          if (!wipList) return;
+
+          if (wipItems.length === 0) {
+            wipList.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">No active tasks</div>';
+            return;
+          }
+
+          wipList.innerHTML = '';
+          wipItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'status-item';
+            div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;transition:all 0.2s;';
+            div.onmouseover = function() { this.style.background = '#f8fafc'; };
+            div.onmouseout = function() { this.style.background = 'transparent'; };
+            
+            const label = document.createElement('div');
+            label.style.cssText = 'flex:1;font-size:13px;color:#334155;font-weight:500;';
+            label.textContent = item.name;
+            label.onclick = function(e) {
+              e.stopPropagation();
+              if (item.key === 'safety') {
+                // Already on safety, just switch to overview or default tab
+                if (typeof switchTab === 'function') switchTab('usc-safe');
+              } else if (item.key === 'hr') {
+                window.location.href = '/employees.html';
+              } else if (item.key === 'crm') {
+                window.location.href = '/crm.html';
+              } else if (item.key === 'accounting') {
+                window.location.href = '/accounting/dashboard.html';
+              } else if (item.key === 'setup') {
+                window.location.href = '/setup.html';
+              }
+            };
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '×';
+            closeBtn.style.cssText = 'width:24px;height:24px;border:none;background:#ef4444;color:white;border-radius:4px;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;';
+            closeBtn.onclick = function(e) {
+              e.stopPropagation();
+              removeFromWIP(item.key);
+            };
+            
+            div.appendChild(label);
+            div.appendChild(closeBtn);
+            wipList.appendChild(div);
+          });
+        }
+
+        // Initialize WIP on page load
+        document.addEventListener('DOMContentLoaded', function() {
+          renderWIP();
+          // Add current module to WIP
+          addToWIP('safety', 'Safety Office');
         });
       </script>
       <script>
