@@ -2441,6 +2441,34 @@
             if (lookupKey === 'gas' && typeof setDefaultRadioButtons === 'function') {
               setDefaultRadioButtons('gasFormData');
             }
+
+            // Switch agent UI tab to match the safety tab
+            if (window.AgentUI && typeof window.AgentUI.switchAgentTab === 'function') {
+              // Map safety tab keys to agent tab IDs
+              const agentTabMap = {
+                'incidents': 'incidents',
+                'search-incident': 'search-incident',
+                'grievances': 'grievances',
+                'search-grievance': 'search-grievance',
+                'fire': 'fire',
+                'electrical': 'electrical',
+                'structural': 'structural',
+                'health': 'health',
+                'usc-safe': 'usc-safe',
+                'gas': 'gas',
+                'boiler': 'boiler',
+                'consultant': 'consultant',
+                'dsa': 'dsa',
+                'emergency-power': 'emergency-power',
+                'audits': 'audits',
+                'training': 'safety-training',
+                'ungp': 'ungp'
+              };
+              const agentTabId = agentTabMap[lookupKey];
+              if (agentTabId) {
+                window.AgentUI.switchAgentTab(agentTabId);
+              }
+            }
           } catch (e) {
             console.warn('switchTab failed', e);
           }

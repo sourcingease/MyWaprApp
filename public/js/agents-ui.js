@@ -1,7 +1,10 @@
 (function (global) {
+  let currentModuleState = null;
+
   const AgentUI = {
     initModuleAgents,
-    sendChat
+    sendChat,
+    switchAgentTab
   };
 
   async function fetchModules() {
@@ -323,6 +326,27 @@
 
     container.innerHTML = '';
     container.appendChild(root);
+
+    // Store state for external tab switching
+    currentModuleState = {
+      moduleId,
+      currentTabId,
+      setTabId: function(tabId) {
+        const tab = (mod.tabs || []).find(t => t.id === tabId);
+        if (tab) {
+          currentTabId = tabId;
+          renderTabs();
+          renderSidebar();
+          appendSystemMessage('Switched to "' + (tab.name || tab.id) + '".');
+        }
+      }
+    };
+  }
+
+  function switchAgentTab(tabId) {
+    if (currentModuleState && typeof currentModuleState.setTabId === 'function') {
+      currentModuleState.setTabId(tabId);
+    }
   }
 
   function escapeHtml(s) {
