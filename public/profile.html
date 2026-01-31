@@ -624,7 +624,11 @@
           bar.className='top-setup-tabs';
           bar.id='topSetupBar';
           const hdr = document.querySelector('.dashboard-header');
-          hdr?.insertAdjacentElement('afterend', bar);
+          if (hdr) {
+            // If embedded, hide the header to avoid duplication
+            if (isEmbedded) hdr.style.display = 'none';
+            hdr.insertAdjacentElement('afterend', bar);
+          }
         }
 
         function addBtn(ico,lbl,fn){ const item=document.createElement('button'); item.className='sm-tab'; const box=document.createElement('div'); box.className='sm-icon-box'; const i=document.createElement('div'); i.className='sm-ico'; i.textContent=ico; box.appendChild(i); item.appendChild(box); const s=document.createElement('div'); s.className='sm-lbl'; s.textContent=lbl; item.appendChild(s); item.onclick=fn; bar.appendChild(item); }

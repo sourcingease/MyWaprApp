@@ -654,6 +654,25 @@ window.renderMasterHeader = function(opts){
               try{
                 if(window.mlOpenInWorkingArea){
                   window.mlOpenInWorkingArea('/profile.html?tab='+key+'&embedded=1');
+                  // After loading, trigger the appropriate sub-tabs view in the embedded frame
+                  setTimeout(function(){
+                    try{
+                      const frame = document.getElementById('ml-embed-frame');
+                      if(frame && frame.contentWindow){
+                        if(key === 'company'){
+                          // Show Setup sub-tabs (Add Space, Assign Role, etc.)
+                          if(typeof frame.contentWindow.showTopBarSetup === 'function'){
+                            frame.contentWindow.showTopBarSetup();
+                          }
+                        } else if(key === 'profile'){
+                          // Show Profile main view
+                          if(typeof frame.contentWindow.showTopBarProfile === 'function'){
+                            frame.contentWindow.showTopBarProfile();
+                          }
+                        }
+                      }
+                    }catch(e){}
+                  }, 300);
                 } else {
                   location.href = '/profile.html?tab='+key;
                 }
@@ -665,7 +684,18 @@ window.renderMasterHeader = function(opts){
       }catch(e){}
       // Prefer embedding the Business Setup page in the working area / app iframe
       try{
-        if(window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/profile.html?tab=company&embedded=1')) return;
+        if(window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/profile.html?tab=company&embedded=1')){
+          // Trigger Setup sub-tabs view after iframe loads
+          setTimeout(function(){
+            try{
+              const frame = document.getElementById('ml-embed-frame');
+              if(frame && frame.contentWindow && typeof frame.contentWindow.showTopBarSetup === 'function'){
+                frame.contentWindow.showTopBarSetup();
+              }
+            }catch(e){}
+          }, 300);
+          return;
+        }
       }catch(e){}
       try{
         const f = document.getElementById('appFrame');

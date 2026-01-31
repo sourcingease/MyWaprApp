@@ -1042,6 +1042,7 @@
     }
   </script>
   <!-- i18n disabled -->
+  <script src="/js/wip-tracker.js"></script>
   <script src="/js/master-layout.js"></script>
   <script src="/js/agents-ui.js"></script>
   <!-- Sidebar Toggle Button -->
@@ -2060,27 +2061,13 @@
         });
       </script>
       <script>
-        // WIP (Work in Progress) Management
-        let wipItems = JSON.parse(localStorage.getItem('safetyWipItems') || '[]');
-
-        function addToWIP(moduleKey, moduleName) {
-          // Check if already in WIP
-          if (wipItems.some(item => item.key === moduleKey)) return;
-          
-          wipItems.push({ key: moduleKey, name: moduleName, timestamp: Date.now() });
-          localStorage.setItem('safetyWipItems', JSON.stringify(wipItems));
-          renderWIP();
-        }
-
-        function removeFromWIP(moduleKey) {
-          wipItems = wipItems.filter(item => item.key !== moduleKey);
-          localStorage.setItem('safetyWipItems', JSON.stringify(wipItems));
-          renderWIP();
-        }
-
+        // WIP (Work in Progress) UI Management
         function renderWIP() {
           const wipList = document.getElementById('wip-list');
           if (!wipList) return;
+
+          // Reload from localStorage
+          const wipItems = JSON.parse(localStorage.getItem('safetyWipItems') || '[]');
 
           if (wipItems.length === 0) {
             wipList.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">No active tasks</div>';
@@ -2119,7 +2106,9 @@
             closeBtn.style.cssText = 'width:24px;height:24px;border:none;background:#ef4444;color:white;border-radius:4px;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;';
             closeBtn.onclick = function(e) {
               e.stopPropagation();
-              removeFromWIP(item.key);
+              if (typeof removeFromWIP === 'function') {
+                removeFromWIP(item.key);
+              }
             };
             
             div.appendChild(label);
@@ -2128,11 +2117,16 @@
           });
         }
 
+        // Listen for WIP updates
+        window.addEventListener('wip-updated', renderWIP);
+
         // Initialize WIP on page load
         document.addEventListener('DOMContentLoaded', function() {
           renderWIP();
           // Add current module to WIP
-          addToWIP('safety', 'Safety Office');
+          if (typeof addToWIP === 'function') {
+            addToWIP('safety', 'Safety Office');
+          }
         });
       </script>
       <script>

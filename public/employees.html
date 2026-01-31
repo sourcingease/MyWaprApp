@@ -6,6 +6,7 @@
   <title>Employees • ComplytEX</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/app.css">
+  <script src="/js/wip-tracker.js"></script>
   <style>
     body{margin:0;font-family:Segoe UI,Inter,Arial;background:#0b1220;color:#e5e7eb}
     .shell{max-width:1100px;margin:0 auto;padding:22px}
@@ -44,6 +45,11 @@
   </div>
 
   <script>
+    // Track HR module in WIP
+    if (typeof addToWIP === 'function') {
+      addToWIP('hr', 'HR');
+    }
+    
     function qp(name){return new URLSearchParams(location.search).get(name)}
     document.getElementById('tenantId').value = qp('tenantId')||'';
 
