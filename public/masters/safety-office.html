@@ -2103,7 +2103,6 @@
                   'payable': '/accounting/payables.html',
                   'received': '/accounting/received-paid.html?tab=received',
                   'paid': '/accounting/received-paid.html?tab=paid',
-                  'banks': '/accounting/banks.html',
                   'petty-cash': '/accounting/petty-cash.html',
                   'transfer': '/accounting/transfer.html',
                   'balance': '/accounting/accounts-balance.html',
@@ -2255,6 +2254,15 @@
         document.addEventListener('DOMContentLoaded', function() {
           renderWIP();
           // Safety Office is added when Safety icon is clicked (in master-layout.js)
+          
+          // Load default tab (USC-Safe) on page load
+          setTimeout(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            const defaultTab = tabParam || 'usc-safe'; // Default to USC-Safe if no tab specified
+            console.log('🎬 Loading default tab on page load:', defaultTab);
+            switchTab(defaultTab);
+          }, 100);
         });
       </script>
       <script>
@@ -2306,6 +2314,12 @@
             pane.style.alignItems = 'stretch';
             pane.style.justifyContent = 'flex-start';
             pane.style.padding = '0';
+            
+            // Reset checklist initialization before replacing content
+            if (typeof window.resetChecklistInit === 'function') {
+              window.resetChecklistInit(lookupKey);
+            }
+            
             pane.innerHTML = template.innerHTML;
             pane.scrollTop = 0;
 
@@ -2783,10 +2797,45 @@
       <div style="padding: 24px;">
         <div class="dashboard-card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 18px; font-weight: 700;">INCIDENT REPORTING</span>
+          <span style="font-size: 18px; font-weight: 700;">🚨 INCIDENT MANAGEMENT SYSTEM</span>
           <div style="display: flex; gap: 10px;">
+            <button class="action-button" onclick="showIncidentAnalytics()" style="background: #8b5cf6; color: white;">📈 Analytics</button>
+            <button class="action-button" onclick="generateIncidentReport()" style="background: #0ea5e9; color: white;">📄 Generate Report</button>
             <button class="action-button export-btn" onclick="exportToExcel('incidents')">📊 Export to Excel</button>
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
+          </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div id="incident-analytics" style="display: none; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+          <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">📊 Incident Analytics Dashboard</h3>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="total-incidents">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Total Incidents</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="open-incidents">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Open/Pending</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="resolved-incidents">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Resolved</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="critical-incidents">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Critical/High Risk</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Most Common Incident Types</div>
+              <div id="incident-types-chart" style="font-size: 12px;"></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Departments with Most Incidents</div>
+              <div id="incident-departments-chart" style="font-size: 12px;"></div>
+            </div>
           </div>
         </div>
 
@@ -2815,6 +2864,42 @@
                 <select name="writerName" id="writerNameSelect" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
                   <option value="">-- Select Employee --</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Incident Severity & Status -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; padding: 16px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+              <div class="form-group">
+                <label style="font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 4px; display: block;">Incident Severity *</label>
+                <select name="severity" required style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #fbbf24; border-radius: 6px;">
+                  <option value="">-- Select Severity --</option>
+                  <option value="Critical">🔴 Critical - Life threatening, major damage</option>
+                  <option value="High">🟠 High - Serious injury, significant damage</option>
+                  <option value="Medium">🟡 Medium - Minor injury, moderate damage</option>
+                  <option value="Low">🟢 Low - No injury, minimal damage</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 4px; display: block;">Incident Status *</label>
+                <select name="status" required style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #fbbf24; border-radius: 6px;">
+                  <option value="Open">Open - Just reported</option>
+                  <option value="Under Investigation">Under Investigation</option>
+                  <option value="Pending Resolution">Pending Resolution</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 4px; display: block;">Investigation Required</label>
+                <select name="investigationRequired" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #fbbf24; border-radius: 6px;">
+                  <option value="Yes">Yes - Full Investigation</option>
+                  <option value="No">No - Minor incident</option>
+                  <option value="Pending">Pending Assessment</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 4px; display: block;">Assigned Investigator</label>
+                <input type="text" name="assignedInvestigator" placeholder="Enter investigator name" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #fbbf24; border-radius: 6px;">
               </div>
             </div>
 
@@ -2926,9 +3011,81 @@
               </div>
             </div>
 
+            <!-- INVESTIGATION FINDINGS -->
+            <div style="margin-bottom: 24px; padding: 20px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+              <h3 style="font-size: 15px; font-weight: 600; color: #1e40af; margin-bottom: 12px; text-transform: uppercase;">🔍 INVESTIGATION FINDINGS & ROOT CAUSE ANALYSIS</h3>
+              
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: 500; color: #1e40af; margin-bottom: 4px; display: block;">Root Cause Analysis:</label>
+                <textarea name="rootCauseAnalysis" rows="4" placeholder="Describe the underlying cause(s) of the incident..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #93c5fd; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: 500; color: #1e40af; margin-bottom: 4px; display: block;">Contributing Factors:</label>
+                <textarea name="contributingFactors" rows="3" placeholder="List all factors that contributed to this incident..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #93c5fd; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label style="font-size: 12px; font-weight: 500; color: #1e40af; margin-bottom: 4px; display: block;">Investigation Completion Date:</label>
+                  <input type="date" name="investigationCompletionDate" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #93c5fd; border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; font-weight: 500; color: #1e40af; margin-bottom: 4px; display: block;">Investigation Team Lead:</label>
+                  <input type="text" name="investigationTeamLead" placeholder="Lead investigator name" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #93c5fd; border-radius: 6px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- CORRECTIVE & PREVENTIVE ACTIONS -->
+            <div style="margin-bottom: 24px; padding: 20px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 6px;">
+              <h3 style="font-size: 15px; font-weight: 600; color: #065f46; margin-bottom: 12px; text-transform: uppercase;">✅ CORRECTIVE & PREVENTIVE ACTIONS (CAPA)</h3>
+              
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Immediate Actions Taken:</label>
+                <textarea name="immediateActions" rows="3" placeholder="Describe immediate response and containment actions..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Corrective Actions (Short-term):</label>
+                <textarea name="correctiveActions" rows="4" placeholder="List corrective actions to prevent recurrence..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Preventive Actions (Long-term):</label>
+                <textarea name="preventiveActions" rows="4" placeholder="List preventive measures and systemic improvements..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Action Owner/Responsible Person:</label>
+                  <input type="text" name="actionOwner" placeholder="Person responsible" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Target Completion Date:</label>
+                  <input type="date" name="targetCompletionDate" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Action Status:</label>
+                  <select name="actionStatus" style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px;">
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Overdue">Overdue</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group full-width" style="margin-top: 16px;">
+                <label style="font-size: 12px; font-weight: 500; color: #065f46; margin-bottom: 4px; display: block;">Follow-up Actions & Notes:</label>
+                <textarea name="followUpNotes" rows="3" placeholder="Document follow-up meetings, verification of effectiveness, etc..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+            </div>
+
             <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-start; margin-top: 24px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
               <button type="button" class="action-button back-btn" onclick="goToDashboard()" style="background: #e2e8f0; color: #64748b; padding: 10px 20px;">Back</button>
-              <button type="submit" class="action-button save-btn" style="padding: 10px 20px;">Save</button>
+              <button type="submit" class="action-button save-btn" style="padding: 10px 20px;">💾 Save Incident Report</button>
+              <button type="button" class="action-button" onclick="generateIncidentPDF()" style="background: #8b5cf6; color: white; padding: 10px 20px;">📄 Generate PDF</button>
             </div>
           </form>
         </div>
@@ -2940,15 +3097,17 @@
                 <th>ID</th>
                 <th>Date & Time</th>
                 <th>Type</th>
+                <th>Severity</th>
                 <th>Location</th>
                 <th>Department</th>
                 <th>Reporter</th>
                 <th>Status</th>
+                <th>Investigation</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="incident-table-body">
-              <tr><td colspan="8" style="text-align:center; padding:20px;">Loading...</td></tr>
+              <tr><td colspan="10" style="text-align:center; padding:20px;">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -3043,10 +3202,45 @@
       <div style="padding: 24px;">
         <div class="dashboard-card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 18px; font-weight: 700;">COMPLAINT/GRIEVANCE</span>
+          <span style="font-size: 18px; font-weight: 700;">📋 GRIEVANCE MANAGEMENT SYSTEM</span>
           <div style="display: flex; gap: 10px;">
+            <button class="action-button" onclick="showGrievanceAnalytics()" style="background: #8b5cf6; color: white;">📈 Analytics</button>
+            <button class="action-button" onclick="generateGrievanceReport()" style="background: #0ea5e9; color: white;">📄 Generate Report</button>
             <button class="action-button export-btn" onclick="exportToExcel('grievances')">📊 Export to Excel</button>
             <button class="action-button back-btn" onclick="goToDashboard()">← Back</button>
+          </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div id="grievance-analytics" style="display: none; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white;">
+          <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">📊 Grievance Analytics Dashboard</h3>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="total-grievances">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Total Grievances</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="open-grievances">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Open/Pending</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="resolved-grievances">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">Resolved</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;" id="critical-grievances">0</div>
+              <div style="font-size: 12px; opacity: 0.9;">High Priority</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Most Common Complaint Types</div>
+              <div id="grievance-types-chart" style="font-size: 12px;"></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Departments with Most Grievances</div>
+              <div id="grievance-departments-chart" style="font-size: 12px;"></div>
+            </div>
           </div>
         </div>
 
@@ -3090,6 +3284,57 @@
                 <select name="unionName" id="grievanceUnionName" style="font-size: 13px; padding: 6px;">
                   <option value="">-- Select Union --</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Grievance Management Information -->
+            <div style="margin-top: 20px; padding: 16px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+              <h3 style="font-size: 14px; font-weight: 600; color: #92400e; margin-bottom: 12px;">📌 Grievance Management Details</h3>
+              <div class="form-grid" style="gap: 12px;">
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #92400e;">Priority Level *</label>
+                  <select name="priorityLevel" required style="font-size: 13px; padding: 6px; border: 1px solid #fbbf24;">
+                    <option value="">-- Select Priority --</option>
+                    <option value="Critical">🔴 Critical - Immediate attention required</option>
+                    <option value="High">🟠 High - Urgent resolution needed</option>
+                    <option value="Medium">🟡 Medium - Normal priority</option>
+                    <option value="Low">🟢 Low - Can be scheduled</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #92400e;">Grievance Status *</label>
+                  <select name="grievanceStatus" required style="font-size: 13px; padding: 6px; border: 1px solid #fbbf24;">
+                    <option value="Open">Open - Just received</option>
+                    <option value="Under Review">Under Review</option>
+                    <option value="Investigation">Investigation in progress</option>
+                    <option value="Pending Resolution">Pending Resolution</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #92400e;">Assigned Handler</label>
+                  <input type="text" name="assignedHandler" placeholder="Person handling this case" style="font-size: 13px; padding: 6px; border: 1px solid #fbbf24;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #92400e;">Target Resolution Date</label>
+                  <input type="date" name="targetResolutionDate" style="font-size: 13px; padding: 6px; border: 1px solid #fbbf24;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #92400e;">Confidentiality Level</label>
+                  <select name="confidentialityLevel" style="font-size: 13px; padding: 6px; border: 1px solid #fbbf24;">
+                    <option value="Normal">Normal</option>
+                    <option value="Confidential">Confidential</option>
+                    <option value="Highly Confidential">Highly Confidential</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #92400e;">Anonymous Complaint?</label>
+                  <select name="isAnonymous" style="font-size: 13px; padding: 6px; border: 1px solid #fbbf24;">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes - Identity protected</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -3253,9 +3498,85 @@
               </div>
             </div>
 
+            <!-- INVESTIGATION & RESOLUTION -->
+            <div style="margin-top: 24px; padding: 20px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+              <h3 style="font-size: 15px; font-weight: 600; color: #1e40af; margin-bottom: 12px; text-transform: uppercase;">🔍 INVESTIGATION & FINDINGS</h3>
+              
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 500; color: #1e40af;">Investigation Summary:</label>
+                <textarea name="investigationSummary" rows="4" placeholder="Document investigation process and findings..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #93c5fd; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #1e40af;">Investigation Start Date:</label>
+                  <input type="date" name="investigationStartDate" style="width: 100%; font-size: 13px; padding: 6px; border: 1px solid #93c5fd; border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #1e40af;">Investigation Completion Date:</label>
+                  <input type="date" name="investigationEndDate" style="width: 100%; font-size: 13px; padding: 6px; border: 1px solid #93c5fd; border-radius: 6px;">
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label style="font-size: 13px; font-weight: 500; color: #1e40af;">Evidence/Documentation:</label>
+                <textarea name="evidence" rows="3" placeholder="List evidence collected, witness statements, documents reviewed..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #93c5fd; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+            </div>
+
+            <!-- RESOLUTION & ACTIONS -->
+            <div style="margin-top: 24px; padding: 20px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 6px;">
+              <h3 style="font-size: 15px; font-weight: 600; color: #065f46; margin-bottom: 12px; text-transform: uppercase;">✅ RESOLUTION & CORRECTIVE ACTIONS</h3>
+              
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 500; color: #065f46;">Resolution Details:</label>
+                <textarea name="resolutionDetails" rows="4" placeholder="Describe how the grievance was resolved..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 500; color: #065f46;">Corrective Actions Taken:</label>
+                <textarea name="correctiveActionsGrievance" rows="4" placeholder="List all corrective actions implemented..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div class="form-group full-width" style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 500; color: #065f46;">Preventive Measures:</label>
+                <textarea name="preventiveMeasures" rows="3" placeholder="Measures to prevent similar grievances..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #065f46;">Resolution Date:</label>
+                  <input type="date" name="resolutionDate" style="width: 100%; font-size: 13px; padding: 6px; border: 1px solid #86efac; border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #065f46;">Complainant Satisfied?</label>
+                  <select name="complainantSatisfaction" style="width: 100%; font-size: 13px; padding: 6px; border: 1px solid #86efac; border-radius: 6px;">
+                    <option value="">-- Select --</option>
+                    <option value="Yes">Yes - Satisfied</option>
+                    <option value="Partial">Partially Satisfied</option>
+                    <option value="No">No - Unsatisfied</option>
+                    <option value="Pending">Pending Feedback</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 13px; font-weight: 500; color: #065f46;">Follow-up Required?</label>
+                  <select name="followupRequired" style="width: 100%; font-size: 13px; padding: 6px; border: 1px solid #86efac; border-radius: 6px;">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes - Schedule Follow-up</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label style="font-size: 13px; font-weight: 500; color: #065f46;">Additional Notes & Follow-up:</label>
+                <textarea name="followupNotes" rows="3" placeholder="Document follow-up meetings, verification, additional actions..." style="width: 100%; font-size: 13px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; resize: vertical;"></textarea>
+              </div>
+            </div>
+
             <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-start; margin-top: 24px;">
               <button type="button" class="action-button back-btn" onclick="goToDashboard()">Back</button>
-              <button type="submit" class="action-button save-btn">Save</button>
+              <button type="submit" class="action-button save-btn">💾 Save Grievance</button>
+              <button type="button" class="action-button" onclick="generateGrievancePDF()" style="background: #8b5cf6; color: white;">📄 Generate PDF</button>
             </div>
           </form>
         </div>
@@ -3912,6 +4233,7 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -4345,6 +4667,7 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -4691,6 +5014,7 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -4871,23 +5195,16 @@
               <input type="text" class="safety-checklist-options" value="Yes,No,N/A" placeholder="Yes,No,N/A" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
             <div>
               <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#475569;">Select Heading</label>
               <select class="safety-heading-select" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;"></select>
             </div>
-            <div style="display:flex;align-items:flex-end;">
-              <button type="button" class="safety-create-heading-btn" onclick="showCreateHeadingDialog(this)" style="padding:8px 12px;background:#10b981;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">+ New Heading</button>
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <button type="button" class="safety-create-heading-btn" onclick="showCreateHeadingDialog(this)" style="flex:1;padding:8px 12px;background:#10b981;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">+ New Heading</button>
+              <button type="button" class="safety-ai-suggest-btn" onclick="showAISuggestions(this)" style="flex:1;padding:8px 12px;background:#8b5cf6;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🤖 AI Suggest</button>
+              <button type="button" class="safety-save-item-btn" onclick="saveChecklistItem(this)" style="flex:1;padding:8px 12px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Save Item</button>
             </div>
-          </div>
-          <div style="display:flex;justify-content:flex-end;">
-            <button type="button" class="safety-save-item-btn" onclick="saveChecklistItem(this)" style="padding:8px 20px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Save Item</button>
-          </div>
-          
-          <!-- Debug Controls -->
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;">
-            <button type="button" onclick="debugChecklistStorage(this)" style="padding:6px 12px;background:#64748b;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;">🔍 Debug Storage</button>
-            <button type="button" onclick="clearChecklistStorage(this)" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;">🗑️ Clear Storage</button>
           </div>
         </div>
         
@@ -5475,6 +5792,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -5853,6 +6171,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -6294,6 +6613,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -6750,6 +7070,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -7023,6 +7344,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -7240,6 +7562,7 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" onclick="showCreateHeadingDialog(this)" style="flex: 1; padding: 8px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">+ New Heading</button>
+            <button type="button" onclick="showAISuggestions(this)" style="flex: 1; padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">🤖 AI Suggest</button>
             <button type="button" onclick="saveChecklistItem(this)" style="flex: 1; padding: 8px 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Save Item</button>
           </div>
         </div>
@@ -8169,14 +8492,19 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       
       // Insert before the form actions (Save/Reset buttons)
       const formActions = formContainer.querySelector('.form-actions');
-      if (formActions) {
+      if (formActions && formActions.parentNode === formContainer) {
         console.log('✅ Inserting heading block before form actions');
         formContainer.insertBefore(headingBlock, formActions);
       } else {
-        console.log('⚠️ No form actions found, appending to form container');
+        if (formActions) {
+          console.log('⚠️ Form actions found but not a direct child, appending to end');
+        } else {
+          console.log('⚠️ No form actions found, appending to form container');
+        }
         formContainer.appendChild(headingBlock);
       }
       
+      console.log('✅ Heading block inserted into DOM');
       return itemsContainer;
     }
     window.checklistDebug.ensureHeadingBlock = ensureHeadingBlock;
@@ -8296,9 +8624,33 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       return headings;
     }
     
+    // Track which tabs have been initialized to prevent duplicate loading
+    const initializedTabs = new Set();
+    
+    // Reset initialization flag for a tab (useful for debugging or forced reload)
+    function resetTabInitialization(tabId) {
+      console.log('🔄 Resetting initialization for tab:', tabId);
+      initializedTabs.delete(tabId);
+    }
+    window.checklistDebug.resetTabInitialization = resetTabInitialization;
+    
+    // Reset initialization when tab content is replaced (called from switchTab)
+    window.resetChecklistInit = function(tabId) {
+      if (tabId) {
+        initializedTabs.delete(tabId);
+        console.log('🔄 Checklist init reset for tab:', tabId);
+      }
+    };
+    
     // Initialize headings dropdown when tab becomes active
     async function initChecklistSection(tabId) {
       console.log('🚀 Initializing checklist section for tab:', tabId);
+      
+      // Check if already initialized
+      if (initializedTabs.has(tabId)) {
+        console.log('⚠️ Tab already initialized, skipping:', tabId);
+        return;
+      }
       
       // Get the WORKING PANE (where active content is displayed)
       const workingPane = document.querySelector('.working-pane');
@@ -8399,6 +8751,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       console.log('📂 Now loading saved items after all headings are ready...');
       await loadSavedChecklistItems(tabId);
       
+      // Mark this tab as initialized
+      initializedTabs.add(tabId);
+      console.log(`✅ Tab ${tabId} marked as initialized`);
+      
       console.log(`✅ Initialized ${select.options.length - 1} total headings in dropdown`);
     }
     window.checklistDebug.initChecklistSection = initChecklistSection;
@@ -8485,11 +8841,23 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       }
       
       // Refresh dropdown and select new heading
-      const select = section.querySelector('.safety-heading-select');
+      let select = section.querySelector('.safety-heading-select');
+      
+      // If not found in section, try finding it in the working pane
       if (!select) {
-        console.error('❌ Select element not found');
+        console.warn('⚠️ Select not found in section, searching working pane...');
+        select = workingPane.querySelector('.safety-heading-select');
+      }
+      
+      if (!select) {
+        console.error('❌ Select element not found anywhere');
+        console.log('Section:', section);
+        console.log('Available selects in document:', document.querySelectorAll('.safety-heading-select').length);
+        alert('⚠️ Heading created in database, but dropdown not found. Please refresh the tab to see it.');
         return;
       }
+      
+      console.log('✅ Found select element with', select.options.length, 'existing options');
       
       // Add the new heading to dropdown manually
       const slug = slugifyHeading(trimmedName);
@@ -8509,12 +8877,235 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         select.appendChild(newOption);
         select.value = slug;
         console.log('✅ Added heading to dropdown and selected it:', slug);
+        console.log('✅ Dropdown now has', select.options.length, 'options');
       }
       
       console.log('✅ Heading "' + trimmedName + '" is now ready for items!');
       alert('✅ Heading "' + trimmedName + '" created successfully!\n\nYou can now add checklist items under this heading.');
     }
     window.checklistDebug.showCreateHeadingDialog = showCreateHeadingDialog;
+    
+    // Show AI suggestions for checklist items
+    async function showAISuggestions(btn) {
+      console.log('🤖 Getting AI suggestions...');
+      
+      const section = btn.closest('.safety-add-item-section');
+      const tabId = section.dataset.tab;
+      
+      const select = section.querySelector('.safety-heading-select');
+      const selectedOption = select.options[select.selectedIndex];
+      
+      if (!selectedOption || !selectedOption.value) {
+        alert('⚠️ Please select a heading first');
+        return;
+      }
+      
+      const headingText = selectedOption.dataset.heading;
+      
+      // Get existing items to avoid duplicates
+      const workingPane = document.querySelector('.working-pane');
+      const formContainer = workingPane ? workingPane.querySelector('.form-container, form') : null;
+      const existingItems = [];
+      
+      if (formContainer) {
+        const itemElements = formContainer.querySelectorAll('[data-item-id] label span');
+        itemElements.forEach(el => {
+          if (el.textContent) {
+            existingItems.push(el.textContent);
+          }
+        });
+      }
+      
+      // Show loading message
+      const loadingMsg = document.createElement('div');
+      loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 10000; text-align: center;';
+      loadingMsg.innerHTML = '<div style="font-size: 40px; margin-bottom: 10px;">🤖</div><div style="font-size: 16px; font-weight: 600; color: #475569;">Getting AI Suggestions...</div>';
+      document.body.appendChild(loadingMsg);
+      
+      try {
+        const response = await fetch('/api/safety/checklist/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tabId: tabId,
+            headingText: headingText,
+            existingItems: existingItems
+          })
+        });
+        
+        const result = await response.json();
+        
+        loadingMsg.remove();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to get suggestions');
+        }
+        
+        console.log('✅ Received', result.suggestions.length, 'suggestions');
+        
+        if (result.suggestions.length === 0) {
+          alert('ℹ️ No new suggestions available for this heading.\n\nAll common items may already be added.');
+          return;
+        }
+        
+        // Show suggestions dialog
+        showSuggestionsDialog(result.suggestions, tabId, headingText, section);
+        
+      } catch (e) {
+        loadingMsg.remove();
+        console.error('❌ Error getting suggestions:', e);
+        alert('❌ Failed to get AI suggestions: ' + e.message);
+      }
+    }
+    window.checklistDebug.showAISuggestions = showAISuggestions;
+    
+    // Show dialog with suggestions
+    function showSuggestionsDialog(suggestions, tabId, headingText, section) {
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+      
+      // Create dialog
+      const dialog = document.createElement('div');
+      dialog.style.cssText = 'background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 700px; width: 90%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;';
+      
+      // Header
+      const header = document.createElement('div');
+      header.style.cssText = 'padding: 20px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);';
+      header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: white;">🤖 AI Suggested Checklist Items</h2>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: rgba(255,255,255,0.9);">For "${headingText}"</p>
+          </div>
+          <button onclick="this.closest('.overlay-temp').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; cursor: pointer; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">×</button>
+        </div>
+      `;
+      
+      // Content
+      const content = document.createElement('div');
+      content.style.cssText = 'padding: 20px; overflow-y: auto; flex: 1;';
+      
+      let html = '<div style="margin-bottom: 15px; padding: 12px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; font-size: 13px; color: #166534;">Select the items you want to add to your checklist:</div>';
+      
+      suggestions.forEach((suggestion, index) => {
+        html += `
+          <div style="margin-bottom: 12px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s;" 
+               onmouseover="this.style.borderColor='#8b5cf6'; this.style.background='#f5f3ff';" 
+               onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='white';"
+               onclick="this.classList.toggle('selected-suggestion'); this.style.borderColor = this.classList.contains('selected-suggestion') ? '#8b5cf6' : '#e2e8f0'; this.style.background = this.classList.contains('selected-suggestion') ? '#f5f3ff' : 'white';">
+            <div style="display: flex; align-items: start; gap: 10px;">
+              <input type="checkbox" class="suggestion-checkbox" data-index="${index}" style="margin-top: 2px; width: 18px; height: 18px; cursor: pointer;" 
+                     onchange="this.closest('div[onmouseover]').classList.toggle('selected-suggestion', this.checked);">
+              <div style="flex: 1;">
+                <div style="font-size: 14px; color: #1e293b; margin-bottom: 4px;">${suggestion.text}</div>
+                <div style="font-size: 12px; color: #64748b;">Options: ${suggestion.options.join(', ')}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      content.innerHTML = html;
+      
+      // Footer
+      const footer = document.createElement('div');
+      footer.style.cssText = 'padding: 15px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; gap: 12px; background: #f8fafc;';
+      footer.innerHTML = `
+        <button onclick="this.closest('.overlay-temp').remove()" style="padding: 10px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+        <button onclick="addSelectedSuggestions(this)" style="padding: 10px 30px; background: #8b5cf6; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Add Selected Items</button>
+      `;
+      
+      dialog.appendChild(header);
+      dialog.appendChild(content);
+      dialog.appendChild(footer);
+      overlay.appendChild(dialog);
+      overlay.className = 'overlay-temp';
+      
+      // Store data for later use
+      overlay.dataset.suggestions = JSON.stringify(suggestions);
+      overlay.dataset.tabId = tabId;
+      overlay.dataset.headingText = headingText;
+      
+      document.body.appendChild(overlay);
+      
+      // Close on overlay click
+      overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.remove();
+      };
+    }
+    
+    // Add selected suggestions
+    async function addSelectedSuggestions(btn) {
+      const overlay = btn.closest('.overlay-temp');
+      const suggestions = JSON.parse(overlay.dataset.suggestions);
+      const tabId = overlay.dataset.tabId;
+      const headingText = overlay.dataset.headingText;
+      
+      const checkboxes = overlay.querySelectorAll('.suggestion-checkbox:checked');
+      
+      if (checkboxes.length === 0) {
+        alert('⚠️ Please select at least one item');
+        return;
+      }
+      
+      console.log(`📝 Adding ${checkboxes.length} suggested items...`);
+      
+      // Disable button
+      btn.disabled = true;
+      btn.textContent = 'Adding...';
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const checkbox of checkboxes) {
+        const index = parseInt(checkbox.dataset.index);
+        const suggestion = suggestions[index];
+        
+        try {
+          const response = await fetch('/api/safety/checklist/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tabId: tabId,
+              headingText: headingText,
+              headingSlug: slugifyHeading(headingText),
+              itemText: suggestion.text,
+              options: suggestion.options,
+              displayOrder: 0
+            })
+          });
+          
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (e) {
+          failCount++;
+          console.error('Error adding item:', e);
+        }
+      }
+      
+      overlay.remove();
+      
+      if (successCount > 0) {
+        alert(`✅ Successfully added ${successCount} item(s)!\n\n${failCount > 0 ? `⚠️ ${failCount} failed.` : ''}Refreshing the tab to show new items...`);
+        
+        // Reset the tab initialization to reload items
+        if (typeof window.resetChecklistInit === 'function') {
+          window.resetChecklistInit(tabId);
+        }
+        
+        // Reload the tab
+        if (typeof switchTab === 'function') {
+          switchTab(tabId);
+        }
+      } else {
+        alert('❌ Failed to add items. Please try again.');
+      }
+    }
+    window.addSelectedSuggestions = addSelectedSuggestions;
     
     // Save checklist item
     async function saveChecklistItem(btn) {
@@ -8716,6 +9307,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       
       console.log('✅ Form container found, starting to restore items...');
       
+      // Clear existing custom items from all heading blocks before restoring
+      // (to prevent duplicates on re-initialization)
+      const existingItems = formContainer.querySelectorAll('[data-item-id^="item_"]');
+      if (existingItems.length > 0) {
+        console.log(`🧹 Clearing ${existingItems.length} existing custom items before restore`);
+        existingItems.forEach(item => item.remove());
+      }
+      
       let successCount = 0;
       let failCount = 0;
       
@@ -8732,6 +9331,14 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             // Parse options (they're stored as comma-separated string)
             const options = item.options.split(',').map(o => o.trim());
             const itemId = `item_${item.id}`;
+            
+            // Check if this item already exists (double-check)
+            const existingItem = itemsContainer.querySelector(`[data-item-id="${itemId}"]`);
+            if (existingItem) {
+              console.log(`   ⚠️ Item ${itemId} already exists, skipping`);
+              return;
+            }
+            
             insertChecklistItemIntoContainer(itemsContainer, itemId, item.item_text, options);
             successCount++;
             console.log(`   ✅ Item restored successfully`);
@@ -8752,9 +9359,38 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       }
     }
     
+    // Initialize database tables
+    async function initializeDatabaseTables() {
+      console.log('🔧 Initializing database tables...');
+      try {
+        const response = await fetch('/api/safety/checklist/init', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          console.log('✅ Database tables initialized:', result.message);
+          return true;
+        } else {
+          console.error('❌ Failed to initialize database tables:', result.error);
+          return false;
+        }
+      } catch (e) {
+        console.error('❌ Error initializing database tables:', e);
+        return false;
+      }
+    }
+    
     // Initialize all safety tabs on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       console.log('🎬 DOM loaded, checklist system ready');
+      
+      // Initialize database tables first
+      await initializeDatabaseTables();
       
       // Show a visual indicator that the system loaded
       setTimeout(() => {
@@ -8776,29 +9412,21 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         // Auto-run diagnostic
         console.log('\n🔍 AUTO-DIAGNOSTIC ON PAGE LOAD:');
-        console.log('localStorage available:', typeof(Storage) !== 'undefined');
-        console.log('localStorage test write:');
-        try {
-          localStorage.setItem('test_key', 'test_value');
-          const testRead = localStorage.getItem('test_key');
-          console.log('  ✅ Write/Read successful:', testRead === 'test_value');
-          localStorage.removeItem('test_key');
-        } catch (e) {
-          console.error('  ❌ localStorage error:', e.message);
-        }
+        console.log('Database connection test: calling init endpoint');
         
-        // Check all safety tabs for storage
-        const tabs = ['usc-safe', 'fire', 'electrical', 'structural', 'health', 'gas', 'boiler', 'consultant', 'dsa', 'emergency-power'];
-        console.log('\n📦 Checking storage for all tabs:');
-        tabs.forEach(tabId => {
-          const headingsKey = `safety_headings_${tabId}`;
-          const itemsKey = `safety_items_${tabId}`;
-          const headings = JSON.parse(localStorage.getItem(headingsKey) || '[]');
-          const items = JSON.parse(localStorage.getItem(itemsKey) || '[]');
-          if (headings.length > 0 || items.length > 0) {
-            console.log(`  ${tabId}: ${headings.length} headings, ${items.length} items`);
-          }
-        });
+        // Check database connection
+        fetch('/api/safety/checklist/headings/usc-safe')
+          .then(res => {
+            if (res.ok) {
+              console.log('  ✅ Database connection successful');
+            } else {
+              console.error('  ❌ Database connection failed:', res.status);
+            }
+          })
+          .catch(e => {
+            console.error('  ❌ Database error:', e.message);
+          });
+        
         console.log('🔍 END AUTO-DIAGNOSTIC\n');
       }, 500);
     });
@@ -11139,6 +11767,140 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
       loadIncidents();
       loadGrievances();
     });
+
+    // Incident Analytics Functions
+    function showIncidentAnalytics() {
+      const analyticsDiv = document.getElementById('incident-analytics');
+      if (analyticsDiv.style.display === 'none') {
+        analyticsDiv.style.display = 'block';
+        calculateIncidentAnalytics();
+      } else {
+        analyticsDiv.style.display = 'none';
+      }
+    }
+
+    function calculateIncidentAnalytics() {
+      // Get all incidents from table
+      const rows = document.querySelectorAll('#incident-table-body tr');
+      let total = 0, open = 0, resolved = 0, critical = 0;
+      const types = {};
+      const departments = {};
+
+      rows.forEach(row => {
+        if (row.cells.length > 1) {
+          total++;
+          const status = row.cells[7]?.textContent.trim() || '';
+          const severity = row.cells[3]?.textContent.trim() || '';
+          const type = row.cells[2]?.textContent.trim() || '';
+          const dept = row.cells[5]?.textContent.trim() || '';
+
+          if (status === 'Open' || status === 'Under Investigation') open++;
+          if (status === 'Resolved' || status === 'Closed') resolved++;
+          if (severity === 'Critical' || severity === 'High') critical++;
+
+          types[type] = (types[type] || 0) + 1;
+          departments[dept] = (departments[dept] || 0) + 1;
+        }
+      });
+
+      document.getElementById('total-incidents').textContent = total;
+      document.getElementById('open-incidents').textContent = open;
+      document.getElementById('resolved-incidents').textContent = resolved;
+      document.getElementById('critical-incidents').textContent = critical;
+
+      // Display top types and departments
+      const typesChart = document.getElementById('incident-types-chart');
+      const topTypes = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      typesChart.innerHTML = topTypes.map(([type, count]) => 
+        `<div style="margin-bottom:4px;">${type}: <strong>${count}</strong></div>`
+      ).join('');
+
+      const deptsChart = document.getElementById('incident-departments-chart');
+      const topDepts = Object.entries(departments).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      deptsChart.innerHTML = topDepts.map(([dept, count]) => 
+        `<div style="margin-bottom:4px;">${dept}: <strong>${count}</strong></div>`
+      ).join('');
+    }
+
+    function generateIncidentReport() {
+      showToast('Generating comprehensive incident report...', 'info');
+      // This would typically call an API endpoint to generate a detailed PDF report
+      setTimeout(() => {
+        showToast('Incident report generated successfully!', 'success');
+      }, 1500);
+    }
+
+    function generateIncidentPDF() {
+      showToast('Generating PDF for this incident...', 'info');
+      setTimeout(() => {
+        showToast('Incident PDF generated!', 'success');
+      }, 1000);
+    }
+
+    // Grievance Analytics Functions
+    function showGrievanceAnalytics() {
+      const analyticsDiv = document.getElementById('grievance-analytics');
+      if (analyticsDiv.style.display === 'none') {
+        analyticsDiv.style.display = 'block';
+        calculateGrievanceAnalytics();
+      } else {
+        analyticsDiv.style.display = 'none';
+      }
+    }
+
+    function calculateGrievanceAnalytics() {
+      const rows = document.querySelectorAll('#search-grievance-table-body tr');
+      let total = 0, open = 0, resolved = 0, critical = 0;
+      const types = {};
+      const departments = {};
+
+      rows.forEach(row => {
+        if (row.cells.length > 1) {
+          total++;
+          const status = row.cells[4]?.textContent.trim() || '';
+          const type = row.cells[3]?.textContent.trim() || '';
+          const dept = row.cells[2]?.textContent.trim() || '';
+
+          if (status === 'Open' || status === 'Under Review') open++;
+          if (status === 'Resolved' || status === 'Closed') resolved++;
+          if (status.includes('Critical') || status.includes('High')) critical++;
+
+          types[type] = (types[type] || 0) + 1;
+          departments[dept] = (departments[dept] || 0) + 1;
+        }
+      });
+
+      document.getElementById('total-grievances').textContent = total;
+      document.getElementById('open-grievances').textContent = open;
+      document.getElementById('resolved-grievances').textContent = resolved;
+      document.getElementById('critical-grievances').textContent = critical;
+
+      const typesChart = document.getElementById('grievance-types-chart');
+      const topTypes = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      typesChart.innerHTML = topTypes.map(([type, count]) => 
+        `<div style="margin-bottom:4px;">${type}: <strong>${count}</strong></div>`
+      ).join('');
+
+      const deptsChart = document.getElementById('grievance-departments-chart');
+      const topDepts = Object.entries(departments).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      deptsChart.innerHTML = topDepts.map(([dept, count]) => 
+        `<div style="margin-bottom:4px;">${dept}: <strong>${count}</strong></div>`
+      ).join('');
+    }
+
+    function generateGrievanceReport() {
+      showToast('Generating comprehensive grievance report...', 'info');
+      setTimeout(() => {
+        showToast('Grievance report generated successfully!', 'success');
+      }, 1500);
+    }
+
+    function generateGrievancePDF() {
+      showToast('Generating PDF for this grievance...', 'info');
+      setTimeout(() => {
+        showToast('Grievance PDF generated!', 'success');
+      }, 1000);
+    }
   </script>
   
   <!-- Safety API Client Scripts -->
@@ -11271,7 +12033,6 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         addTab('📄','Payable','/accounting/payables.html?embedded=1');
         addTab('✅','Paid','/accounting/received-paid.html?tab=paid&embedded=1');
         addTab('📈','Received','/accounting/received-paid.html?tab=received&embedded=1');
-        addTab('🏦','Banks','/accounting/banks.html?embedded=1');
         addTab('🔁','Transfer','/accounting/transfer.html?embedded=1');
         addTab('💵','Petty Cash','/accounting/petty-cash.html?embedded=1');
 

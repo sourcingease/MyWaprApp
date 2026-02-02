@@ -4443,6 +4443,12 @@ initSafetyPool()
       const { setupChecklistRoutes } = require('./routes/checklist-api');
       setupChecklistRoutes(app, pool);
     } catch (e) { console.warn('Safety Checklist API not loaded:', e.message); }
+    // Safety Checklist AI Suggestions
+    try {
+      const { setupChecklistSuggestionsRoutes } = require('./routes/checklist-suggestions');
+      setupChecklistSuggestionsRoutes(app, pool);
+      console.log('✅ Safety Checklist AI Suggestions loaded');
+    } catch (e) { console.warn('Safety Checklist Suggestions API not loaded:', e.message); }
     return autoSeedDemoIfNeeded();
   })
   .then(() => {

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Database Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .test-section h2 { margin-top: 0; color: #0ea5e9; }
+        button { padding: 10px 20px; margin: 5px; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0284c7; }
+        .result { margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+        th { background: #f1f5f9; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Checklist Database Test Page</h1>
+    <p>Use this page to test if headings and items are being saved and loaded from the database correctly.</p>
+
+    <div class="test-section">
+        <h2>1. Initialize Database Tables</h2>
+        <button onclick="initDatabase()">Initialize Database</button>
+        <div id="initResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Heading Operations</h2>
+        <div>
+            <input type="text" id="testTabId" placeholder="Tab ID (e.g., usc-safe)" value="usc-safe" style="padding: 8px; margin: 5px; width: 200px;">
+            <input type="text" id="testHeading" placeholder="Heading name" value="Test Heading" style="padding: 8px; margin: 5px; width: 200px;">
+            <button onclick="createTestHeading()">Create Heading</button>
+            <button onclick="loadHeadings()">Load Headings</button>
+        </div>
+        <div id="headingResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Item Operations</h2>
+        <div>
+            <input type="text" id="itemTabId" placeholder="Tab ID" value="usc-safe" style="padding: 8px; margin: 5px; width: 150px;">
+            <input type="text" id="itemHeading" placeholder="Heading name" value="Test Heading" style="padding: 8px; margin: 5px; width: 150px;">
+            <input type="text" id="itemText" placeholder="Item text" value="Is this test working?" style="padding: 8px; margin: 5px; width: 300px;">
+            <button onclick="createTestItem()">Create Item</button>
+            <button onclick="loadItems()">Load Items</button>
+        </div>
+        <div id="itemResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. View All Data</h2>
+        <button onclick="viewAllData()">View All Data</button>
+        <div id="allDataResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        function slugify(text) {
+            return text.toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
+        async function initDatabase() {
+            const resultDiv = document.getElementById('initResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '⏳ Initializing database...';
+            
+            try {
+                const response = await fetch('/api/safety/checklist/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = '✅ SUCCESS:\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ ERROR:\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ EXCEPTION:\n' + e.message;
+            }
+        }
+
+        async function createTestHeading() {
+            const resultDiv = document.getElementById('headingResult');
+            resultDiv.style.display = 'block';
+            
+            const tabId = document.getElementById('testTabId').value;
+            const headingText = document.getElementById('testHeading').value;
+            const headingSlug = slugify(headingText);
+            
+            resultDiv.textContent = `⏳ Creating heading "${headingText}" for tab "${tabId}"...`;
+            
+            try {
+                const response = await fetch('/api/safety/checklist/headings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tabId: tabId,
+                        headingText: headingText,
+                        headingSlug: headingSlug,
+                        displayOrder: 0
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = '✅ HEADING CREATED:\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ ERROR:\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ EXCEPTION:\n' + e.message;
+            }
+        }
+
+        async function loadHeadings() {
+            const resultDiv = document.getElementById('headingResult');
+            resultDiv.style.display = 'block';
+            
+            const tabId = document.getElementById('testTabId').value;
+            resultDiv.textContent = `⏳ Loading headings for tab "${tabId}"...`;
+            
+            try {
+                const response = await fetch(`/api/safety/checklist/headings/${tabId}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    if (result.length === 0) {
+                        resultDiv.textContent = '⚠️ No headings found for this tab.';
+                    } else {
+                        let html = `✅ FOUND ${result.length} HEADING(S):\n\n`;
+                        html += '<table><tr><th>ID</th><th>Heading Text</th><th>Slug</th><th>Tab ID</th><th>Created</th></tr>';
+                        result.forEach(h => {
+                            html += `<tr><td>${h.id}</td><td>${h.heading_text}</td><td>${h.heading_slug}</td><td>${h.tab_id}</td><td>${new Date(h.created_at).toLocaleString()}</td></tr>`;
+                        });
+                        html += '</table>';
+                        resultDiv.innerHTML = html;
+                    }
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ ERROR:\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ EXCEPTION:\n' + e.message;
+            }
+        }
+
+        async function createTestItem() {
+            const resultDiv = document.getElementById('itemResult');
+            resultDiv.style.display = 'block';
+            
+            const tabId = document.getElementById('itemTabId').value;
+            const headingText = document.getElementById('itemHeading').value;
+            const headingSlug = slugify(headingText);
+            const itemText = document.getElementById('itemText').value;
+            
+            resultDiv.textContent = `⏳ Creating item under heading "${headingText}"...`;
+            
+            try {
+                const response = await fetch('/api/safety/checklist/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tabId: tabId,
+                        headingText: headingText,
+                        headingSlug: headingSlug,
+                        itemText: itemText,
+                        options: ['Yes', 'No', 'N/A'],
+                        displayOrder: 0
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = '✅ ITEM CREATED:\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ ERROR:\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ EXCEPTION:\n' + e.message;
+            }
+        }
+
+        async function loadItems() {
+            const resultDiv = document.getElementById('itemResult');
+            resultDiv.style.display = 'block';
+            
+            const tabId = document.getElementById('itemTabId').value;
+            resultDiv.textContent = `⏳ Loading items for tab "${tabId}"...`;
+            
+            try {
+                const response = await fetch(`/api/safety/checklist/items/${tabId}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    if (result.length === 0) {
+                        resultDiv.textContent = '⚠️ No items found for this tab.';
+                    } else {
+                        let html = `✅ FOUND ${result.length} ITEM(S):\n\n`;
+                        html += '<table><tr><th>ID</th><th>Heading</th><th>Item Text</th><th>Options</th><th>Created</th></tr>';
+                        result.forEach(item => {
+                            html += `<tr><td>${item.id}</td><td>${item.heading_text}</td><td>${item.item_text}</td><td>${item.options}</td><td>${new Date(item.created_at).toLocaleString()}</td></tr>`;
+                        });
+                        html += '</table>';
+                        resultDiv.innerHTML = html;
+                    }
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ ERROR:\n' + JSON.stringify(result, null, 2);
+                }
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ EXCEPTION:\n' + e.message;
+            }
+        }
+
+        async function viewAllData() {
+            const resultDiv = document.getElementById('allDataResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '⏳ Loading all data...';
+            
+            try {
+                // Load headings
+                const headingsRes = await fetch('/api/safety/checklist/headings/usc-safe');
+                const headings = await headingsRes.json();
+                
+                // Load items
+                const itemsRes = await fetch('/api/safety/checklist/items/usc-safe');
+                const items = await itemsRes.json();
+                
+                let html = '<div style="text-align:left;">';
+                html += `<h3>📋 All Headings (${headings.length})</h3>`;
+                if (headings.length > 0) {
+                    html += '<table><tr><th>ID</th><th>Tab</th><th>Heading</th><th>Slug</th></tr>';
+                    headings.forEach(h => {
+                        html += `<tr><td>${h.id}</td><td>${h.tab_id}</td><td>${h.heading_text}</td><td>${h.heading_slug}</td></tr>`;
+                    });
+                    html += '</table>';
+                } else {
+                    html += '<p>No headings found.</p>';
+                }
+                
+                html += `<h3>📝 All Items (${items.length})</h3>`;
+                if (items.length > 0) {
+                    html += '<table><tr><th>ID</th><th>Heading</th><th>Item Text</th><th>Options</th></tr>';
+                    items.forEach(item => {
+                        html += `<tr><td>${item.id}</td><td>${item.heading_text}</td><td>${item.item_text}</td><td>${item.options}</td></tr>`;
+                    });
+                    html += '</table>';
+                } else {
+                    html += '<p>No items found.</p>';
+                }
+                html += '</div>';
+                
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = html;
+            } catch (e) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ EXCEPTION:\n' + e.message;
+            }
+        }
+
+        // Auto-run on page load
+        window.addEventListener('DOMContentLoaded', async function() {
+            console.log('🧪 Test page loaded');
+            
+            // Try to initialize database on load
+            try {
+                const response = await fetch('/api/safety/checklist/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                console.log('✅ Database initialized:', result);
+            } catch (e) {
+                console.error('❌ Failed to initialize database:', e);
+            }
+        });
+    </script>
+</body>
+</html>

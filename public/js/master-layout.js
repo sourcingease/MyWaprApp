@@ -325,7 +325,6 @@ window.renderMasterHeader = function(opts){
             ['payable',        '📤', 'Payable',          '/accounting/payables.html'],
             ['received',       '✅', 'Received',         '/accounting/received-paid.html?tab=received'],
             ['paid',           '💸', 'Paid',             '/accounting/received-paid.html?tab=paid'],
-            ['banks',          '🏦', 'Banks',            '/accounting/banks.html'],
             ['petty-cash',     '💵', 'Petty Cash',       '/accounting/petty-cash.html'],
             ['transfer',       '🔄', 'Transfer',         '/accounting/transfer.html'],
             ['balance',        '⚖️', 'Accounts Balance', '/accounting/accounts-balance.html'],
@@ -761,8 +760,7 @@ window.renderMasterHeader = function(opts){
 
           const tabs = [
             ['profile','🏢','Profile', '/profile.html?tab=profile'],
-            ['company','⚙️','Setup', '/profile.html?tab=company'],
-            ['banks','🏦','Bank Setup', '/setup/banks.html']
+            ['company','⚙️','Setup', '/profile.html?tab=company']
           ];
           tabs.forEach(function([key, emoji, label, href]){
             const btn = document.createElement('button');

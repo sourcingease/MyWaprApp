@@ -70,6 +70,8 @@ function setupChecklistRoutes(app, pool) {
     try {
       const { tabId } = req.params;
       
+      console.log('📖 Loading headings for tab:', tabId);
+      
       const result = await pool.request()
         .input('tabId', sql.NVarChar, tabId)
         .query(`
@@ -79,9 +81,10 @@ function setupChecklistRoutes(app, pool) {
           ORDER BY display_order, id
         `);
       
+      console.log(`✅ Found ${result.recordset.length} headings for tab ${tabId}:`, result.recordset.map(h => h.heading_text));
       res.json(result.recordset);
     } catch (err) {
-      console.error('Error fetching checklist headings:', err);
+      console.error('❌ Error fetching checklist headings:', err.message);
       res.status(500).json({ error: err.message });
     }
   });
@@ -91,7 +94,10 @@ function setupChecklistRoutes(app, pool) {
     try {
       const { tabId, headingText, headingSlug, displayOrder } = req.body;
       
+      console.log('📝 Creating heading:', { tabId, headingText, headingSlug, displayOrder });
+      
       if (!tabId || !headingText || !headingSlug) {
+        console.error('❌ Missing required fields for heading');
         return res.status(400).json({ error: 'Missing required fields' });
       }
       
@@ -106,13 +112,16 @@ function setupChecklistRoutes(app, pool) {
           SELECT SCOPE_IDENTITY() AS id;
         `);
       
+      const newId = result.recordset[0].id;
+      console.log('✅ Heading created successfully with ID:', newId);
+      
       res.json({ 
         success: true, 
-        id: result.recordset[0].id,
+        id: newId,
         message: 'Heading created successfully' 
       });
     } catch (err) {
-      console.error('Error creating heading:', err);
+      console.error('❌ Error creating heading:', err.message);
       if (err.number === 2627) { // Unique constraint violation
         res.status(409).json({ error: 'Heading already exists' });
       } else {
@@ -142,6 +151,8 @@ function setupChecklistRoutes(app, pool) {
     try {
       const { tabId } = req.params;
       
+      console.log('📖 Loading items for tab:', tabId);
+      
       const result = await pool.request()
         .input('tabId', sql.NVarChar, tabId)
         .query(`
@@ -152,9 +163,13 @@ function setupChecklistRoutes(app, pool) {
           ORDER BY heading_slug, display_order, id
         `);
       
+      console.log(`✅ Found ${result.recordset.length} items for tab ${tabId}`);
+      if (result.recordset.length > 0) {
+        console.log('   Items:', result.recordset.map(i => ({ heading: i.heading_text, text: i.item_text.substring(0, 50) })));
+      }
       res.json(result.recordset);
     } catch (err) {
-      console.error('Error fetching checklist items:', err);
+      console.error('❌ Error fetching checklist items:', err.message);
       res.status(500).json({ error: err.message });
     }
   });
@@ -164,7 +179,10 @@ function setupChecklistRoutes(app, pool) {
     try {
       const { tabId, headingText, headingSlug, itemText, options, displayOrder } = req.body;
       
+      console.log('📝 Creating item:', { tabId, headingText, itemText, options });
+      
       if (!tabId || !headingText || !headingSlug || !itemText || !options) {
+        console.error('❌ Missing required fields for item');
         return res.status(400).json({ error: 'Missing required fields' });
       }
       
@@ -184,13 +202,16 @@ function setupChecklistRoutes(app, pool) {
           SELECT SCOPE_IDENTITY() AS id;
         `);
       
+      const newId = result.recordset[0].id;
+      console.log('✅ Item created successfully with ID:', newId);
+      
       res.json({ 
         success: true, 
-        id: result.recordset[0].id,
+        id: newId,
         message: 'Item created successfully' 
       });
     } catch (err) {
-      console.error('Error creating item:', err);
+      console.error('❌ Error creating item:', err.message);
       res.status(500).json({ error: err.message });
     }
   });
