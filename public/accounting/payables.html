@@ -26,7 +26,9 @@
 </head>
 <body>
   <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Accounts Payable</div></div><div class="header-right"></div></div>
+  <div id="accounting-agents-panel" style="margin:0 auto;max-width:1200px;padding:8px 16px 0;"></div>
   <div class="shell">
+    <h2 style="font-size:20px;font-weight:700;margin:0 0 16px 0;color:#0f172a">Payable</h2>
     <div class="card">
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="ct" onclick="loadAP('Pending')" id="btnPending">Pending</button>
@@ -60,6 +62,16 @@
 
   <script src="/js/master-layout.js"></script>
   <script>
+    // Initialize Accounting Agent
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.AgentUI) {
+        window.AgentUI.initModuleAgents({
+          containerSelector: '#accounting-agents-panel',
+          moduleId: 'payable'
+        });
+      }
+    });
+    
     async function fetchJson(url, options){ const res=await fetch(url, { credentials:'include', ...(options||{}) }); if(!res.ok) throw new Error(await res.text()); return res.json(); }
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
     

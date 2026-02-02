@@ -351,6 +351,7 @@
                 <th data-s="AssetName" style="cursor:pointer">Asset Name</th>
                 <th data-s="Quantity" style="cursor:pointer">Qty</th>
                 <th data-s="AssetType" style="cursor:pointer">Asset Type</th>
+                <th data-s="Location" style="cursor:pointer">Location</th>
                 <th data-s="PurchaseDate" style="cursor:pointer">Purchase Date</th>
                 <th data-s="PurchasePrice" style="cursor:pointer">Purchase Price</th>
                 <th data-s="Supplier" style="cursor:pointer">Supplier</th>
@@ -359,7 +360,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="assetsTBody"><tr><td colspan="9" style="text-align:center;padding:12px;color:#94a3b8">Loading...</td></tr></tbody>
+            <tbody id="assetsTBody"><tr><td colspan="10" style="text-align:center;padding:12px;color:#94a3b8">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -514,6 +515,12 @@
                 <label>Supplier</label>
                 <input id="asSupplier">
                 <div style="font-size:11px;color:#64748b;margin-top:2px">Required for Payable entry</div>
+              </div>
+              <div>
+                <label>Space/Location</label>
+                <select id="asSpace" style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff">
+                  <option value="">Select Space</option>
+                </select>
               </div>
               <!-- New fields -->
               <div><label>Weight</label><input id="asWeight" type="number" step="0.01" placeholder="0.00"></div>
@@ -1305,20 +1312,46 @@
 
     // Assets JS
     let _assets=[], _asSortField='AssetName', _asSortDir='asc';
+    let _spacesMap={};
     function renderAssets(){
       const q=(document.getElementById('asSearch')?.value||'').toLowerCase();
       const rows=_assets.filter(s=>{ const hay=`${s.AssetName||''} ${s.AssetType||''} ${s.Supplier||''}`.toLowerCase(); return !q || hay.includes(q); }).sort((a,b)=>{ const av=a[_asSortField]; const bv=b[_asSortField]; if(['Quantity','PurchasePrice'].includes(_asSortField)) return _asSortDir==='asc'? (Number(av||0)-Number(bv||0)):(Number(bv||0)-Number(av||0)); if(_asSortField==='PurchaseDate' || _asSortField==='SavedOn'){ const da=new Date(av||0); const db=new Date(bv||0); return _asSortDir==='asc'? (da-db):(db-da); } return _asSortDir==='asc'? String(av||'').localeCompare(String(bv||'')):String(bv||'').localeCompare(String(av||'')); });
-      const tbody=document.getElementById('assetsTBody'); if(!tbody) return; if(rows.length===0){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:12px;color:#94a3b8">No assets</td></tr>'; return; }
+      const tbody=document.getElementById('assetsTBody'); if(!tbody) return; if(rows.length===0){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:12px;color:#94a3b8">No assets</td></tr>'; return; }
       tbody.innerHTML = rows.map(s=>`<tr>
         <td>${s.AssetName||''}</td><td>${s.Quantity??''}</td><td>${s.AssetType||''}</td>
+        <td>${s.SpaceId ? (_spacesMap[s.SpaceId]||'Unknown') : '-'}</td>
         <td>${s.PurchaseDate? new Date(s.PurchaseDate).toLocaleDateString(): ''}</td>
         <td>${s.PurchasePrice??''}</td><td>${s.Supplier||''}</td><td>${s.Notes||''}</td>
         <td>${s.SavedOn? new Date(s.SavedOn).toLocaleDateString(): ''}</td>
         <td><button class='btn' onclick='editAsset(${s.Id})'>Edit</button> <button class='btn' onclick='deleteAsset(${s.Id})'>Delete</button></td>
       </tr>`).join('');
     }
-    async function loadAssets(){ try{ const r=await fetch('/api/company/assets',{credentials:'include'}); const j=await r.json(); if(j.success){ _assets=j.data||[]; renderAssets(); const head=document.querySelectorAll('#assetsTable thead th[data-s]'); head.forEach(th=>th.onclick=()=>{ const f=th.getAttribute('data-s'); if(_asSortField===f){ _asSortDir=_asSortDir==='asc'?'desc':'asc'; } else { _asSortField=f; _asSortDir='asc'; } renderAssets(); }); const inp=document.getElementById('asSearch'); if(inp) inp.oninput=()=>renderAssets(); } }catch(e){}
-      const e1=document.getElementById('asExportCsv'); if(e1) e1.onclick=()=>{ const rows=[['Asset Name','Qty','Asset Type','Purchase Date','Purchase Price','Supplier','Notes','Saved On']].concat((_assets||[]).map(s=>[s.AssetName||'',s.Quantity||'',s.AssetType||'',(s.PurchaseDate? new Date(s.PurchaseDate).toLocaleDateString(): ''),s.PurchasePrice||'',s.Supplier||'',s.Notes||'',(s.SavedOn? new Date(s.SavedOn).toLocaleDateString(): '')])); const csv=rows.map(r=>r.map(v=>`\"${String(v).replace(/\"/g,'\"\"')}\"`).join(',')).join('\\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='assets.csv'; a.click(); URL.revokeObjectURL(url); };
+    async function loadAssets(){ try{ 
+      const [assetsRes, spacesRes] = await Promise.all([
+        fetch('/api/company/assets',{credentials:'include'}),
+        fetch('/api/company/spaces',{credentials:'include'})
+      ]);
+      const assetsJson = await assetsRes.json();
+      const spacesJson = await spacesRes.json();
+      
+      if(assetsJson.success){ _assets=assetsJson.data||[]; }
+      
+      if(spacesJson.success){
+        const spaces = spacesJson.data||[];
+        _spacesMap = {};
+        spaces.forEach(sp=>{ _spacesMap[sp.Id] = sp.Name; });
+        
+        const spaceDropdown = document.getElementById('asSpace');
+        if(spaceDropdown){
+          spaceDropdown.innerHTML = '<option value="">Select Space</option>' + 
+            spaces.map(sp=>`<option value="${sp.Id}">${sp.Name}</option>`).join('');
+        }
+      }
+      
+      renderAssets(); 
+      const head=document.querySelectorAll('#assetsTable thead th[data-s]'); head.forEach(th=>th.onclick=()=>{ const f=th.getAttribute('data-s'); if(_asSortField===f){ _asSortDir=_asSortDir==='asc'?'desc':'asc'; } else { _asSortField=f; _asSortDir='asc'; } renderAssets(); }); const inp=document.getElementById('asSearch'); if(inp) inp.oninput=()=>renderAssets(); 
+    }catch(e){console.error('Load assets error:', e);}
+      const e1=document.getElementById('asExportCsv'); if(e1) e1.onclick=()=>{ const rows=[['Asset Name','Qty','Asset Type','Location','Purchase Date','Purchase Price','Supplier','Notes','Saved On']].concat((_assets||[]).map(s=>[s.AssetName||'',s.Quantity||'',s.AssetType||'',s.SpaceId?(_spacesMap[s.SpaceId]||''):'',(s.PurchaseDate? new Date(s.PurchaseDate).toLocaleDateString(): ''),s.PurchasePrice||'',s.Supplier||'',s.Notes||'',(s.SavedOn? new Date(s.SavedOn).toLocaleDateString(): '')])); const csv=rows.map(r=>r.map(v=>`\"${String(v).replace(/\"/g,'\"\"')}\"`).join(',')).join('\\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='assets.csv'; a.click(); URL.revokeObjectURL(url); };
       const e2=document.getElementById('asExportPdf'); if(e2) e2.onclick=()=>{ const w=window.open(''); const tableHtml=document.getElementById('assetsTable').outerHTML; w.document.write(`<html><head><meta name='viewport' content='width=device-width, initial-scale=1'><title>Assets</title><style>body{font-family:Inter,Segoe UI,system-ui,Arial} table{width:100%;border-collapse:collapse} th,td{border:1px solid #e2e8f0;padding:8px} th{background:#f8fafc;text-transform:uppercase;font-size:12px}</style></head><body><h3>Assets</h3>${tableHtml}</body></html>`); w.document.close(); w.focus(); w.print(); w.close(); };
       const btn=document.getElementById('asNewBtn'); if(btn) btn.onclick=()=>{ document.getElementById('asModal').classList.add('open'); setTimeout(()=>document.getElementById('asName')?.focus(),0); };
     }
@@ -1584,7 +1617,7 @@
     (function(){ const close=()=>document.getElementById('unModal').classList.remove('open'); const c1=document.getElementById('unClose'); if(c1) c1.onclick=close; const c2=document.getElementById('unCancel'); if(c2) c2.onclick=close; const modal=document.getElementById('unModal'); if(modal) modal.addEventListener('click',(e)=>{ if(e.target.id==='unModal') close(); }); const save=document.getElementById('unSave'); if(save) save.onclick=async ()=>{ if(save.disabled) return; const id=document.getElementById('unId').value.trim(); const payload={ name:unName.value.trim(), description:unDesc.value.trim()||null }; if(!payload.name){ alert('Union Name required'); return; } save.disabled=true; const origText=save.textContent; save.textContent='Saving...'; try{ if(id){ await fetch('/api/company/unions/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); } else { await fetch('/api/company/unions',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)}); } close(); loadUnions(); }finally{ save.disabled=false; save.textContent=origText; } }; })();
 
     // Assets modal handlers
-    (function(){ const close=()=>document.getElementById('asModal').classList.remove('open'); const c1=document.getElementById('asClose'); if(c1) c1.onclick=close; const c2=document.getElementById('asCancel'); if(c2) c2.onclick=close; const modal=document.getElementById('asModal'); if(modal) modal.addEventListener('click',(e)=>{ if(e.target.id==='asModal') close(); }); const save=document.getElementById('asSave'); if(save) save.onclick=async ()=>{ if(save.disabled) return; const paymentDueDate=document.getElementById('asPaymentDueDate')?.value||null; const payload={ assetName:asName.value.trim(), assetType:asType.value.trim(), quantity:parseInt(asQty.value||'0'), purchaseDate:asDate.value||null, purchasePrice:parseFloat(asPrice.value||'0'), supplier:asSupplier.value.trim(), notes:asNotes.value.trim() }; if(!payload.assetName){ alert('Asset Name required'); return; } 
+    (function(){ const close=()=>document.getElementById('asModal').classList.remove('open'); const c1=document.getElementById('asClose'); if(c1) c1.onclick=close; const c2=document.getElementById('asCancel'); if(c2) c2.onclick=close; const modal=document.getElementById('asModal'); if(modal) modal.addEventListener('click',(e)=>{ if(e.target.id==='asModal') close(); }); const save=document.getElementById('asSave'); if(save) save.onclick=async ()=>{ if(save.disabled) return; const paymentDueDate=document.getElementById('asPaymentDueDate')?.value||null; const spaceId=parseInt(document.getElementById('asSpace')?.value||'0')||null; const payload={ assetName:asName.value.trim(), assetType:asType.value.trim(), quantity:parseInt(asQty.value||'0'), purchaseDate:asDate.value||null, purchasePrice:parseFloat(asPrice.value||'0'), supplier:asSupplier.value.trim(), notes:asNotes.value.trim(), spaceId:spaceId }; if(!payload.assetName){ alert('Asset Name required'); return; } 
       // Disable button and show saving state
       save.disabled=true; const origText=save.textContent; save.textContent='Saving...';
       try{

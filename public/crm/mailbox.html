@@ -11,7 +11,8 @@
     .shell{max-width:1100px;margin:0 auto;padding:16px}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
     .folder-tabs{display:flex;gap:6px;flex-wrap:wrap}
-    .tab{padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;background:#fff;font-size:13px;cursor:pointer}
+    .tab{padding:8px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:13px;cursor:pointer;font-weight:500;transition:all 0.2s}
+    .tab:hover{background:#f8fafc;border-color:#cbd5e1}
     .tab.active{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}
@@ -26,16 +27,7 @@
     <div class="header-right"></div>
   </div>
   <div class="shell">
-    <div class="toolbar">
-      <div class="folder-tabs">
-        <button class="tab active" data-folder="Inbox">Inbox</button>
-        <button class="tab" data-folder="Sent">Sent Items</button>
-        <button class="tab" data-folder="Drafts">Draft Items</button>
-      </div>
-      <div style="flex:1"></div>
-      <button class="btn" onclick="openCompose()">Compose New</button>
-      <a class="ct" href="/crm/dashboard.html?embedded=1">Back</a>
-    </div>
+    <h2 id="folderHeading" style="font-size:20px;font-weight:700;margin:0 0 16px 0;color:#0f172a">Inbox</h2>
     <div style="overflow:auto;border-radius:12px;border:1px solid #e2e8f0;background:#fff">
       <table>
         <thead>
@@ -57,7 +49,19 @@
     if(new URL(location.href).searchParams.get('embedded')==='1'){ const h=document.getElementById('hdr'); if(h) h.style.display='none'; }
     async function j(u,o){ const r=await fetch(u,{credentials:'include', ...(o||{})}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
     const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
-    let currentFolder='Inbox';
+    
+    // Get folder from URL parameter or default to Inbox
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentFolder = urlParams.get('folder') || 'Inbox';
+    
+    // Update heading based on folder
+    const heading = document.getElementById('folderHeading');
+    if(heading) {
+      let headingText = 'Inbox';
+      if(currentFolder === 'Sent') headingText = 'Sent Items';
+      else if(currentFolder === 'Drafts') headingText = 'Draft Items';
+      heading.textContent = headingText;
+    }
     async function load(){
       try{
         const r=await j('/api/crm/email?folder='+encodeURIComponent(currentFolder));
@@ -83,7 +87,6 @@
           </tr>`; }).join('');
       }catch(e){ console.error(e); alert('Failed to load mailbox'); }
     }
-    function setFolder(f){ currentFolder=f; document.querySelectorAll('.tab').forEach(t=>{ t.classList.toggle('active', t.getAttribute('data-folder')===f); }); load(); }
     function openCompose(){ location.href='/crm/mailbox-compose.html?embedded=1'; }
     function reply(id){ location.href='/crm/mailbox-compose.html?embedded=1&replyTo='+id; }
     function forwardMail(id){ location.href='/crm/mailbox-compose.html?embedded=1&forwardFrom='+id; }
@@ -97,7 +100,6 @@
       }catch(e){ console.error(e); alert('Failed to open attachments'); }
     }
     async function delMail(id){ if(!confirm('Delete this email?')) return; try{ await j('/api/crm/email/'+id,{ method:'DELETE' }); load(); }catch(e){ console.error(e); alert('Failed to delete'); } }
-    document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setFolder(t.getAttribute('data-folder'))));
     load();
   </script>
 </body>

@@ -21,6 +21,7 @@
 <body>
   <div class="dashboard-header"><div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Received / Paid</div></div><div class="header-right"></div></div>
   <div class="shell">
+    <h2 style="font-size:20px;font-weight:700;margin:0 0 16px 0;color:#0f172a" id="pageHeading">Received</h2>
     <div class="card">
       <div class="tabs">
         <button id="tReceived" class="tab">Received</button>
@@ -42,7 +43,14 @@
     async function render(kind){ const [banksResp, listResp]=await Promise.all([ fetchJson('/api/accounting/banks'), fetchJson(`/api/accounting/ledger?type=${kind==='received'?'CR':'DR'}&limit=500`) ]);
       const map=new Map((banksResp.data||[]).map(x=>[x.BankId, x])); const list=(listResp.data||[]); _lastList = list; const rows=document.getElementById('rows');
       rows.innerHTML = list.length? list.slice(0,50).map(x=>`<tr><td>${new Date(x.EntryDate).toLocaleString()}</td><td>${esc(x.Reference||'')}</td><td>${esc((map.get(x.BankId)||{}).Name||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="4">No data</td></tr>'; }
-    function activate(kind){ _currentKind = kind; document.getElementById('tReceived').classList.toggle('active', kind==='received'); document.getElementById('tPaid').classList.toggle('active', kind==='paid'); render(kind); }
+    function activate(kind){ 
+      _currentKind = kind; 
+      document.getElementById('tReceived').classList.toggle('active', kind==='received'); 
+      document.getElementById('tPaid').classList.toggle('active', kind==='paid'); 
+      const heading = document.getElementById('pageHeading');
+      if(heading) heading.textContent = kind === 'received' ? 'Received' : 'Paid';
+      render(kind); 
+    }
     function exportCSV(){ const lines = [['Date','Ref','Type','Amount']]; _lastList.sort((a,b)=> new Date(a.EntryDate)-new Date(b.EntryDate)).forEach(x=>{ lines.push([new Date(x.EntryDate).toISOString(), x.Reference||'', _currentKind==='received'?'CR':'DR', String(x.Amount||0)]); }); const csv = lines.map(r=> r.map(v=> '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download = _currentKind==='received'? 'received.csv':'paid.csv'; a.click(); }
     document.getElementById('tReceived').onclick=()=>activate('received'); document.getElementById('tPaid').onclick=()=>activate('paid');
     const tab=qs('tab')||'received'; activate(tab);

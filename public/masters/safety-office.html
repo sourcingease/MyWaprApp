@@ -501,10 +501,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 16px;
-      margin-bottom: 10px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
       background: #f8fafc;
-      border-radius: 10px;
+      border-radius: 6px;
       transition: all 0.2s;
       cursor: pointer;
     }
@@ -1045,6 +1045,26 @@
   <script src="/js/wip-tracker.js"></script>
   <script src="/js/master-layout.js"></script>
   <script src="/js/agents-ui.js"></script>
+  <script>
+    // Mark Safety module as active on page load
+    (function(){
+      function markSafetyActive(){
+        try{
+          document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+          const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\uddfa'); });
+          if(safetyBtn) safetyBtn.classList.add('primary');
+          window.activeTopTabs = 'safety';
+        }catch(e){}
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', function(){
+          setTimeout(markSafetyActive, 100);
+        });
+      } else {
+        setTimeout(markSafetyActive, 100);
+      }
+    })();
+  </script>
   <!-- Sidebar Toggle Button -->
   <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
   
@@ -1285,7 +1305,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div class="card-header" style="margin:0">WIP</div>
         </div>
-        <div id="wip-list" style="display:flex;flex-direction:column;gap:8px;">
+        <div id="wip-list" style="display:flex;flex-direction:column;gap:4px;">
           <!-- WIP items will be added dynamically -->
           <div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">
             No active tasks
@@ -2079,7 +2099,7 @@
           wipItems.slice().reverse().forEach(item => {
             const div = document.createElement('div');
             div.className = 'status-item';
-            div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;transition:all 0.2s;';
+            div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;transition:all 0.2s;';
             div.onmouseover = function() { this.style.background = '#f8fafc'; };
             div.onmouseout = function() { this.style.background = 'transparent'; };
             

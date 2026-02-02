@@ -35,6 +35,7 @@
   .icon-item{display:flex;flex-direction:column;align-items:center;gap:2px}
   .icon-btn{width:36px;height:36px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:18px}
   .icon-btn:hover{background:#f1f5f9;border-color:#0ea5e9;color:#0ea5e9}
+  .icon-btn.primary{background:#eff6ff;border-color:#0ea5e9;color:#0ea5e9}
   .icon-label{font-size:10px;color:#64748b;line-height:1;text-align:center;white-space:nowrap}
   .user-badge{width:36px;height:36px;background:#0ea5e9;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(14,165,233,.25)}
   .user-menu{position:absolute;right:0;top:100%;margin-top:8px;width:280px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 12px 24px rgba(0,0,0,.12);display:none;z-index:1100}
@@ -88,10 +89,20 @@ window.mlOpenInWorkingArea = function(url){
       // If accounting or setup URL, render module tabs above iframe inside pane
       const pathname = new URL(url, location.origin).pathname || '';
       const isAcct = /^\/accounting\//.test(pathname);
-      if(isAcct){
+      // Only render tabs in working pane if accounting is NOT already open in place
+      const acctInPlace = window.activeTopTabs === 'accounting';
+      if(isAcct && !acctInPlace){
         pane.innerHTML = '<div class="ml-tabs" id="ml-acct-tabs"></div><iframe id="ml-embed-frame" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe>';
         window.renderAccountingTabs && window.renderAccountingTabs(document.getElementById('ml-acct-tabs'), url);
         const frame = document.getElementById('ml-embed-frame'); frame.src = url;
+      } else if(isAcct && acctInPlace){
+        // Update header tabs to show active state based on current URL
+        const bar = document.getElementById('safety-top-tabs');
+        if(bar && typeof window.renderAccountingTabs === 'function'){
+          window.renderAccountingTabs(bar, url);
+        }
+        // Just update the iframe without recreating tabs
+        pane.innerHTML = '<iframe id="ml-embed-frame" src="'+url+'" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe>';
       } else {
         // For Setup (/profile.html) and all other modules, just render the
         // iframe; the module page itself is responsible for its own top
@@ -181,6 +192,88 @@ window.showAccountingTabs = function(){
       window.renderAccountingTabs(bar, (f.contentWindow && f.contentWindow.location)? f.contentWindow.location.href : '/accounting/dashboard.html');
     }
   }catch(e){}
+};
+
+// Render Accounting tabs with active state detection
+window.renderAccountingTabs = function(container, currentUrl){
+  if(!container) return;
+  container.innerHTML = '';
+  
+  const tabs = [
+    ['dashboard',      '📊', 'Dashboard',        '/accounting/dashboard.html'],
+    ['receivable',     '📥', 'Receivable',       '/accounting/receivables.html'],
+    ['payable',        '📤', 'Payable',          '/accounting/payables.html'],
+    ['received',       '✅', 'Received',         '/accounting/received-paid.html?tab=received'],
+    ['paid',           '💸', 'Paid',             '/accounting/received-paid.html?tab=paid'],
+    ['petty-cash',     '💵', 'Petty Cash',       '/accounting/petty-cash.html'],
+    ['transfer',       '🔄', 'Transfer',         '/accounting/transfer.html'],
+    ['balance',        '⚖️', 'Accounts Balance', '/accounting/accounts-balance.html'],
+    ['summary',        '📋', 'Summary',          '/accounting/bank-deposit-summary.html']
+  ];
+  
+  // Detect current page from URL
+  let currentPath = '';
+  try{
+    const url = new URL(currentUrl, location.origin);
+    currentPath = url.pathname;
+  }catch(e){}
+  
+  tabs.forEach(function([key, emoji, label, href]){
+    const btn = document.createElement('button');
+    btn.className = 'sm-tab';
+    btn.setAttribute('data-accounting-tab', key);
+    
+    // Check if this tab is active
+    const tabPath = href.split('?')[0];
+    if(currentPath && currentPath.includes(tabPath.replace('/accounting/', ''))){
+      btn.classList.add('active');
+    }
+    
+    const iconBox = document.createElement('div');
+    iconBox.className = 'sm-icon-box';
+    const span = document.createElement('span');
+    span.className = 'sm-ico';
+    span.textContent = emoji;
+    iconBox.appendChild(span);
+    
+    const lbl = document.createElement('div');
+    lbl.className = 'sm-lbl';
+    lbl.textContent = label;
+    
+    btn.appendChild(iconBox);
+    btn.appendChild(lbl);
+    
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      
+      // Remove active class from all tabs
+      container.querySelectorAll('.sm-tab').forEach(function(t){ t.classList.remove('active'); });
+      // Add active class to clicked tab
+      btn.classList.add('active');
+      
+      // Track in WIP
+      console.log('[Accounting Tab Click]', key, label);
+      try{ 
+        if(typeof window._mlAddToWIP === 'function') {
+          window._mlAddToWIP('accounting-'+key, 'Accounting-'+label);
+        }
+      }catch(e){ console.error('[Accounting Tab] WIP error:', e); }
+      
+      // Navigate
+      try {
+        const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
+        if (window.mlOpenInWorkingArea) {
+          window.mlOpenInWorkingArea(url);
+        } else {
+          location.href = href;
+        }
+      } catch (e) {
+        console.error('[Accounting Tab] Navigation error:', e);
+      }
+    });
+    
+    container.appendChild(btn);
+  });
 };
 
 window.renderMasterHeader = function(opts){
@@ -295,6 +388,13 @@ window.renderMasterHeader = function(opts){
     function openAccountingInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
       
+      // Mark Accounting button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const accountingBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('💰'); });
+        if(accountingBtn) accountingBtn.classList.add('primary');
+      }catch(e){}
+      
       // Create iconic tabs bar under the header for Accounting
       try{
         window.disableSafetyTopTabs = true;
@@ -316,66 +416,11 @@ window.renderMasterHeader = function(opts){
             hdrEl.insertAdjacentElement('afterend', bar);
           }
           bar.style.display = '';
-          bar.innerHTML = '';
-
-          // All Accounting tabs with icons
-          const tabs = [
-            ['dashboard',      '📊', 'Dashboard',        '/accounting/dashboard.html'],
-            ['receivable',     '📥', 'Receivable',       '/accounting/receivables.html'],
-            ['payable',        '📤', 'Payable',          '/accounting/payables.html'],
-            ['received',       '✅', 'Received',         '/accounting/received-paid.html?tab=received'],
-            ['paid',           '💸', 'Paid',             '/accounting/received-paid.html?tab=paid'],
-            ['petty-cash',     '💵', 'Petty Cash',       '/accounting/petty-cash.html'],
-            ['transfer',       '🔄', 'Transfer',         '/accounting/transfer.html'],
-            ['balance',        '⚖️', 'Accounts Balance', '/accounting/accounts-balance.html'],
-            ['summary',        '📋', 'Summary',          '/accounting/bank-deposit-summary.html']
-          ];
           
-          tabs.forEach(function([key, emoji, label, href]){
-            const btn = document.createElement('button');
-            btn.className = 'sm-tab';
-            btn.setAttribute('data-accounting-tab', key);
-            
-            const iconBox = document.createElement('div');
-            iconBox.className = 'sm-icon-box';
-            const span = document.createElement('span');
-            span.className = 'sm-ico';
-            span.textContent = emoji;
-            iconBox.appendChild(span);
-            
-            const lbl = document.createElement('div');
-            lbl.className = 'sm-lbl';
-            lbl.textContent = label;
-            
-            btn.appendChild(iconBox);
-            btn.appendChild(lbl);
-            
-            btn.addEventListener('click', function(ev){
-              ev.preventDefault();
-              // Track in WIP with format Accounting-{TabName}
-              console.log('[Accounting Tab Click]', key, label);
-              try{ 
-                if(typeof window._mlAddToWIP === 'function') {
-                  window._mlAddToWIP('accounting-'+key, 'Accounting-'+label);
-                } else {
-                  console.warn('[Accounting Tab] _mlAddToWIP not available');
-                }
-              }catch(e){ console.error('[Accounting Tab] WIP error:', e); }
-              
-              try {
-                const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
-                if (window.mlOpenInWorkingArea) {
-                  window.mlOpenInWorkingArea(url);
-                } else {
-                  location.href = href;
-                }
-              } catch (e) {
-                console.error('[Accounting Tab] Navigation error:', e);
-              }
-            });
-            
-            bar.appendChild(btn);
-          });
+          // Use the renderAccountingTabs function to create tabs with active state
+          if(typeof window.renderAccountingTabs === 'function'){
+            window.renderAccountingTabs(bar, '/accounting/dashboard.html');
+          }
         }
       }catch(e){
         console.error('Error creating Accounting tabs:', e);
@@ -392,6 +437,14 @@ window.renderMasterHeader = function(opts){
     }
     function openSafetyInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
+      
+      // Mark Safety button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\uddfa'); });
+        if(safetyBtn) safetyBtn.classList.add('primary');
+      }catch(e){}
+      
       // Re-enable Safety top tabs when the Safety module is active
       try{ window.disableSafetyTopTabs = false; window.activeTopTabs = 'safety'; }catch(e){}
       try{ if(typeof window.showSafetyTabs === 'function'){ window.showSafetyTabs(); return; } }catch(e){}
@@ -413,6 +466,14 @@ window.renderMasterHeader = function(opts){
     }
     function openCRMinPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
+      
+      // Mark CRM button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const crmBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\udde9'); });
+        if(crmBtn) crmBtn.classList.add('primary');
+      }catch(e){}
+      
       // When CRM is active from the Safety dashboard (or any shell that
       // reuses the Safety layout), replace the shared top-tabs row just
       // under the header with CRM-specific icon tabs (Add Contact, Search
@@ -451,10 +512,24 @@ window.renderMasterHeader = function(opts){
             ['segments',     '🏷️', 'Segments',        '/crm/segments.html']
           ];
 
+          // Detect current page from iframe URL
+          let currentPath = '';
+          try{
+            const frame = document.getElementById('ml-embed-frame');
+            if(frame && frame.contentWindow && frame.contentWindow.location){
+              currentPath = frame.contentWindow.location.pathname;
+            }
+          }catch(e){}
+
           tabs.forEach(function([key, emoji, label, href]){
             const btn = document.createElement('button');
             btn.className = 'sm-tab';
             btn.setAttribute('data-crm-tab', key);
+            
+            // Check if this tab is active based on current URL
+            if(currentPath && href && currentPath.includes(href.replace('/crm/', ''))){
+              btn.classList.add('active');
+            }
 
             const iconBox = document.createElement('div');
             iconBox.className = 'sm-icon-box';
@@ -472,6 +547,11 @@ window.renderMasterHeader = function(opts){
 
             btn.addEventListener('click', function(ev){
               ev.preventDefault();
+              
+              // Remove active class from all tabs
+              bar.querySelectorAll('.sm-tab').forEach(function(t){ t.classList.remove('active'); });
+              // Add active class to clicked tab
+              btn.classList.add('active');
               // Track in WIP with format CRM-{TabName}
               console.log('[CRM Tab Click]', key, label);
               try{ 
@@ -544,6 +624,14 @@ window.renderMasterHeader = function(opts){
     }
     function openHRInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
+      
+      // Mark HR button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const hrBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83d\udc65'); });
+        if(hrBtn) hrBtn.classList.add('primary');
+      }catch(e){}
+      
       // When HR & Payroll is active, replace the current top tabs row with
       // HR job-flow icons (Job Posting, List of Jobs, etc.) and open the HR
       // workspace in the working area.
@@ -570,18 +658,35 @@ window.renderMasterHeader = function(opts){
           bar.innerHTML = '';
 
           const tabs = [
-            ['jobposting','📄','Job Posting'],
-            ['listjobs','📋','List of Jobs'],
-            ['search','🔍','Search Applicants'],
-            ['shortlist','⭐','Shortlisted'],
-            ['addemp','➕','Add New Employee'],
-            ['gensalary','💵','Generate Salary'],
-            ['attendance','🕒','Attendance'],
-            ['advance','💳','Advance Salary']
+            ['jobposting','📄','Job Posting','/hr/job-posting.html'],
+            ['listjobs','📋','List of Jobs','/hr/job-postings-list.html'],
+            ['search','🔍','Search Applicants','/hr/search-applicants.html'],
+            ['shortlist','⭐','Shortlisted','/hr/shortlisted.html'],
+            ['addemp','➕','Add New Employee','/hr/index.html'],
+            ['gensalary','💵','Generate Salary','/hr/generate-salary.html'],
+            ['attendance','🕒','Attendance','/hr/attendance.html'],
+            ['advance','💳','Advance Salary','/hr/advance-salary.html']
           ];
-          tabs.forEach(function([key, emoji, label]){
+          
+          // Detect current page from iframe URL
+          let currentPath = '';
+          try{
+            const frame = document.getElementById('ml-embed-frame');
+            if(frame && frame.contentWindow && frame.contentWindow.location){
+              currentPath = frame.contentWindow.location.pathname;
+            }
+          }catch(e){}
+          
+          tabs.forEach(function([key, emoji, label, href]){
             const btn = document.createElement('button');
             btn.className = 'sm-tab';
+            btn.setAttribute('data-hr-tab', key);
+            
+            // Check if this tab is active based on current URL
+            if(currentPath && href && currentPath.includes(href.replace('/hr/', ''))){
+              btn.classList.add('active');
+            }
+            
             const box = document.createElement('div'); box.className='sm-icon-box';
             const span = document.createElement('span'); span.className='sm-ico'; span.textContent=emoji;
             box.appendChild(span);
@@ -589,6 +694,12 @@ window.renderMasterHeader = function(opts){
             btn.appendChild(box); btn.appendChild(lbl);
             btn.addEventListener('click', function(ev){
               ev.preventDefault();
+              
+              // Remove active class from all tabs
+              bar.querySelectorAll('.sm-tab').forEach(function(t){ t.classList.remove('active'); });
+              // Add active class to clicked tab
+              btn.classList.add('active');
+              
               // Track in WIP with format HR-{TabName}
               console.log('[HR Tab Click]', key, label);
               try{ 
@@ -598,7 +709,15 @@ window.renderMasterHeader = function(opts){
                   console.warn('[HR Tab] _mlAddToWIP not available');
                 }
               }catch(e){ console.error('[HR Tab] WIP error:', e); }
-              try{ if(window.triggerHrTab) window.triggerHrTab(key); }catch(e){}
+              // Navigate to the HR page
+              try{ 
+                if(href && window.mlOpenInWorkingArea){
+                  const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
+                  window.mlOpenInWorkingArea(url);
+                } else if(window.triggerHrTab) {
+                  window.triggerHrTab(key); 
+                }
+              }catch(e){}
             });
             bar.appendChild(btn);
           });
@@ -615,6 +734,25 @@ window.renderMasterHeader = function(opts){
     }
     function openAIInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
+      
+      // Mark AI button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const aiBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\udd16'); });
+        if(aiBtn) aiBtn.classList.add('primary');
+      }catch(e){}
+      
+      // Hide any existing top tabs (Safety, CRM, HR, etc.)
+      try{
+        const bar = document.getElementById('safety-top-tabs');
+        if(bar) bar.style.display = 'none';
+      }catch(e){}
+      
+      window.disableSafetyTopTabs = true;
+      window.activeTopTabs = 'ai';
+      
+      // Use working area to open AI module
+      if(window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/ai/analyst.html?embedded=1')) return;
       try{
         const f = document.getElementById('appFrame');
         if(f){ f.src = '/ai/analyst.html?embedded=1'; return; }
@@ -623,6 +761,25 @@ window.renderMasterHeader = function(opts){
     }
     function openSupportInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
+      
+      // Mark Support button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const supportBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83d\udcac'); });
+        if(supportBtn) supportBtn.classList.add('primary');
+      }catch(e){}
+      
+      // Hide any existing top tabs (Safety, CRM, HR, etc.)
+      try{
+        const bar = document.getElementById('safety-top-tabs');
+        if(bar) bar.style.display = 'none';
+      }catch(e){}
+      
+      window.disableSafetyTopTabs = true;
+      window.activeTopTabs = 'support';
+      
+      // Use working area to open Support module
+      if(window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/support.html?embedded=1')) return;
       try{
         const f = document.getElementById('appFrame');
         if(f){ f.src = '/support.html?embedded=1'; return; }
@@ -631,11 +788,121 @@ window.renderMasterHeader = function(opts){
     }
     function openEmailInPlace(){
       // Note: Main module not tracked in WIP, only sub-tabs are tracked
-      // Prefer using Email inbox/sent/drafts/compose tabs
-      try{ if(typeof window.showEmailTabs === 'function'){ window.showEmailTabs(); return; } }catch(e){}
+      
+      // Mark Email button as active
+      try{
+        document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+        const emailBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\u2709\ufe0f'); });
+        if(emailBtn) emailBtn.classList.add('primary');
+      }catch(e){}
+      
+      // Create iconic tabs bar under the header for Email
+      try{
+        window.disableSafetyTopTabs = true;
+        window.activeTopTabs = 'email';
+        const hdrEl = document.querySelector('.dashboard-header');
+        if(hdrEl){
+          let bar = document.getElementById('safety-top-tabs');
+          if(!bar){
+            const sibling = hdrEl.nextElementSibling;
+            if(sibling && sibling.querySelector('button')){
+              bar = sibling;
+            }
+          }
+          if(!bar){
+            bar = document.createElement('div');
+            bar.id = 'safety-top-tabs';
+            bar.className = 'top-safety-tabs';
+            hdrEl.insertAdjacentElement('afterend', bar);
+          }
+          bar.style.display = '';
+          bar.innerHTML = '';
+
+          const tabs = [
+            ['inbox',    '📥', 'Inbox',      '/crm/mailbox.html'],
+            ['sent',     '📤', 'Sent',       '/crm/mailbox.html?folder=Sent'],
+            ['drafts',   '📋', 'Drafts',     '/crm/mailbox.html?folder=Drafts'],
+            ['compose',  '✉️', 'Compose',    '/crm/mailbox-compose.html']
+          ];
+          
+          // Detect current page from iframe URL
+          let currentPath = '';
+          let currentFolder = '';
+          try{
+            const frame = document.getElementById('ml-embed-frame');
+            if(frame && frame.contentWindow && frame.contentWindow.location){
+              currentPath = frame.contentWindow.location.pathname;
+              const urlParams = new URLSearchParams(frame.contentWindow.location.search);
+              currentFolder = urlParams.get('folder') || 'inbox';
+            }
+          }catch(e){}
+          
+          tabs.forEach(function([key, emoji, label, href]){
+            const btn = document.createElement('button');
+            btn.className = 'sm-tab';
+            btn.setAttribute('data-email-tab', key);
+            
+            // Check if this tab is active
+            const isCompose = key === 'compose' && currentPath.includes('mailbox-compose');
+            const isFolder = key === currentFolder.toLowerCase() || (key === 'inbox' && !currentFolder);
+            if(isCompose || (currentPath.includes('mailbox.html') && isFolder)){
+              btn.classList.add('active');
+            }
+            
+            const iconBox = document.createElement('div');
+            iconBox.className = 'sm-icon-box';
+            const span = document.createElement('span');
+            span.className = 'sm-ico';
+            span.textContent = emoji;
+            iconBox.appendChild(span);
+            
+            const lbl = document.createElement('div');
+            lbl.className = 'sm-lbl';
+            lbl.textContent = label;
+            
+            btn.appendChild(iconBox);
+            btn.appendChild(lbl);
+            
+            btn.addEventListener('click', function(ev){
+              ev.preventDefault();
+              
+              // Remove active class from all tabs
+              bar.querySelectorAll('.sm-tab').forEach(function(t){ t.classList.remove('active'); });
+              // Add active class to clicked tab
+              btn.classList.add('active');
+              
+              // Track in WIP
+              console.log('[Email Tab Click]', key, label);
+              try{ 
+                if(typeof window._mlAddToWIP === 'function') {
+                  window._mlAddToWIP('email-'+key, 'Email-'+label);
+                }
+              }catch(e){ console.error('[Email Tab] WIP error:', e); }
+              
+              // Navigate
+              try {
+                const url = href + (href.includes('?') ? '&' : '?') + 'embedded=1';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea(url);
+                } else {
+                  location.href = href;
+                }
+              } catch (e) {
+                console.error('[Email Tab] Navigation error:', e);
+              }
+            });
+            
+            bar.appendChild(btn);
+          });
+        }
+      }catch(e){
+        console.error('Error creating Email tabs:', e);
+      }
+      
+      // Open default inbox view
+      if(window.mlOpenInWorkingArea && window.mlOpenInWorkingArea('/crm/mailbox.html?embedded=1')) return;
       try{
         const f = document.getElementById('appFrame');
-        if(f && f.contentWindow && typeof f.contentWindow.showEmailTabs === 'function'){ f.contentWindow.showEmailTabs(); return; }
         if(f){ f.src = '/crm/mailbox.html?embedded=1'; return; }
       }catch(e){}
       // Fallback: open standalone mailbox page
@@ -849,7 +1116,22 @@ window.renderMasterHeader = function(opts){
 };
 
 // Auto-render if a dashboard header exists
-window.addEventListener('DOMContentLoaded', ()=>{ if(document.querySelector('.dashboard-header')) renderMasterHeader({}); });
+window.addEventListener('DOMContentLoaded', ()=>{ 
+  if(document.querySelector('.dashboard-header')) {
+    renderMasterHeader({});
+    // Set Safety as the default active module if no other module is already set
+    setTimeout(function(){
+      try{
+        if(!window.activeTopTabs || window.activeTopTabs === 'safety'){
+          document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
+          const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\uddfa'); });
+          if(safetyBtn) safetyBtn.classList.add('primary');
+          window.activeTopTabs = 'safety';
+        }
+      }catch(e){}
+    }, 50);
+  }
+});
 
 // Global helper to render Profile/Setup tabs directly under any dashboard header.
 // This is used when the Setup module is clicked from the master icon row.
