@@ -80,6 +80,10 @@ async function saveUSCSafeTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveUSCSafe(formData);
     SafetyAPI.showSuccessMessage('USC-Safe data saved successfully!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-usc-safe');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save USC-Safe data: ' + error.message);
   }
@@ -123,6 +127,10 @@ async function saveFireSafetyTab(e) {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveFireSafety(formData);
     SafetyAPI.showSuccessMessage('Fire Safety data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-fire');
+    }
     loadFireSafetyTab(); // Reload the list
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
@@ -193,6 +201,10 @@ async function saveElectricalSafetyTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveElectricalSafety(formData);
     SafetyAPI.showSuccessMessage('Electrical Safety data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-electrical');
+    }
     loadElectricalSafetyTab();
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
@@ -262,6 +274,10 @@ async function saveStructuralSafetyTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveStructuralSafety(formData);
     SafetyAPI.showSuccessMessage('Structural Safety data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-structural');
+    }
     loadStructuralSafetyTab();
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
@@ -331,6 +347,10 @@ async function saveHealthHazardsTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveHealthHazards(formData);
     SafetyAPI.showSuccessMessage('Health Hazards data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-health');
+    }
     loadHealthHazardsTab();
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
@@ -396,6 +416,10 @@ async function saveGasSafetyTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveGasSafety(formData);
     SafetyAPI.showSuccessMessage('Gas Safety data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-gas');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -429,6 +453,10 @@ async function saveBoilerSafetyTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveBoilerSafety(formData);
     SafetyAPI.showSuccessMessage('Boiler Safety data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-boiler');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -462,6 +490,10 @@ async function saveConsultantTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveConsultant(formData);
     SafetyAPI.showSuccessMessage('Consultant data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-consultant');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -495,6 +527,10 @@ async function saveDSATab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveDSA(formData);
     SafetyAPI.showSuccessMessage('DSA data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-dsa');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -528,6 +564,10 @@ async function saveEmergencyPowerTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveEmergencyPower(formData);
     SafetyAPI.showSuccessMessage('Emergency Power data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-emergency-power');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -561,6 +601,10 @@ async function saveSafetyTrainingTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveSafetyTraining(formData);
     SafetyAPI.showSuccessMessage('Safety Training data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-training');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -594,6 +638,10 @@ async function saveUNGPTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveUNGP(formData);
     SafetyAPI.showSuccessMessage('UNGP data saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-ungp');
+    }
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
   }
@@ -621,6 +669,10 @@ async function saveIncidentTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveIncident(formData);
     SafetyAPI.showSuccessMessage('Incident saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-incidents');
+    }
     loadIncidentsTab();
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);
@@ -681,6 +733,10 @@ async function saveGrievanceTab() {
     const formData = SafetyAPI.collectFormData(form);
     await SafetyAPI.saveGrievance(formData);
     SafetyAPI.showSuccessMessage('Grievance saved!');
+    // Remove from WIP list
+    if (typeof removeFromWIP === 'function') {
+      removeFromWIP('safety-grievances');
+    }
     loadGrievancesTab();
   } catch (error) {
     SafetyAPI.showErrorMessage('Failed to save: ' + error.message);

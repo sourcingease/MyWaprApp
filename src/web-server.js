@@ -3831,6 +3831,275 @@ app.delete('/api/crm/email/:id', requireAuth, async (req, res)=>{
   }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
 });
 
+// ==================== CRM LEADS & ORDERS ====================
+async function ensureCrmLeadsOrdersTables(connector){
+  await connector.pool.request().query(`
+    IF OBJECT_ID('dbo.CrmLeads','U') IS NULL BEGIN
+      CREATE TABLE dbo.CrmLeads(
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        TenantId INT NOT NULL,
+        LeadName NVARCHAR(200) NOT NULL,
+        Company NVARCHAR(200) NOT NULL,
+        Email NVARCHAR(200) NOT NULL,
+        Phone NVARCHAR(50) NULL,
+        Status NVARCHAR(50) NOT NULL DEFAULT('New'),
+        EstimatedValue DECIMAL(18,2) NOT NULL DEFAULT(0),
+        Source NVARCHAR(100) NULL,
+        Notes NVARCHAR(MAX) NULL,
+        CreatedBy INT NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
+        UpdatedAt DATETIME2 NULL
+      );
+      CREATE INDEX IX_CrmLeads_Tenant_Status ON dbo.CrmLeads(TenantId, Status);
+    END;
+    IF OBJECT_ID('dbo.CrmOrders','U') IS NULL BEGIN
+      CREATE TABLE dbo.CrmOrders(
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        TenantId INT NOT NULL,
+        OrderNumber NVARCHAR(50) NULL,
+        OrderType NVARCHAR(50) NOT NULL,
+        PartyName NVARCHAR(200) NOT NULL,
+        ContactPerson NVARCHAR(200) NULL,
+        Email NVARCHAR(200) NULL,
+        Address NVARCHAR(MAX) NULL,
+        Items NVARCHAR(MAX) NULL,
+        Subtotal DECIMAL(18,2) NOT NULL DEFAULT(0),
+        Tax DECIMAL(18,2) NOT NULL DEFAULT(0),
+        TotalAmount DECIMAL(18,2) NOT NULL DEFAULT(0),
+        Status NVARCHAR(50) NOT NULL DEFAULT('Draft'),
+        Notes NVARCHAR(MAX) NULL,
+        LeadId INT NULL,
+        CreatedBy INT NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT(GETDATE()),
+        UpdatedAt DATETIME2 NULL,
+        ShippedAt DATETIME2 NULL
+      );
+      CREATE INDEX IX_CrmOrders_Tenant_Type ON dbo.CrmOrders(TenantId, OrderType);
+      CREATE INDEX IX_CrmOrders_Status ON dbo.CrmOrders(Status);
+    END;`);
+}
+
+// CRM Leads CRUD
+app.get('/api/crm/leads', requireAuth, async (req, res)=>{
+  try{
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    const r = await connector.pool.request().input('tid', req.auth.tid||0)
+      .query('SELECT * FROM dbo.CrmLeads WHERE TenantId=@tid ORDER BY CreatedAt DESC');
+    await connector.disconnect();
+    return res.json({ success:true, data:r.recordset });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.post('/api/crm/leads', requireAuth, async (req, res)=>{
+  try{
+    const p = req.body||{};
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    const r = await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('leadName', p.leadName||'')
+      .input('company', p.company||'')
+      .input('email', p.email||'')
+      .input('phone', p.phone||null)
+      .input('status', p.status||'New')
+      .input('estimatedValue', Number(p.estimatedValue||0))
+      .input('source', p.source||null)
+      .input('notes', p.notes||null)
+      .input('uid', req.auth.uid||null)
+      .query(`INSERT INTO dbo.CrmLeads(TenantId,LeadName,Company,Email,Phone,Status,EstimatedValue,Source,Notes,CreatedBy)
+              VALUES(@tid,@leadName,@company,@email,@phone,@status,@estimatedValue,@source,@notes,@uid);
+              SELECT SCOPE_IDENTITY() AS Id`);
+    await connector.disconnect();
+    return res.json({ success:true, id:r.recordset[0].Id });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.put('/api/crm/leads/:id', requireAuth, async (req, res)=>{
+  try{
+    const id = parseInt(req.params.id||'');
+    const p = req.body||{};
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('id', id)
+      .input('leadName', p.leadName||'')
+      .input('company', p.company||'')
+      .input('email', p.email||'')
+      .input('phone', p.phone||null)
+      .input('status', p.status||'New')
+      .input('estimatedValue', Number(p.estimatedValue||0))
+      .input('source', p.source||null)
+      .input('notes', p.notes||null)
+      .query(`UPDATE dbo.CrmLeads SET LeadName=@leadName, Company=@company, Email=@email, Phone=@phone,
+              Status=@status, EstimatedValue=@estimatedValue, Source=@source, Notes=@notes, UpdatedAt=GETDATE()
+              WHERE TenantId=@tid AND Id=@id`);
+    await connector.disconnect();
+    return res.json({ success:true });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// CRM Orders CRUD
+app.get('/api/crm/orders', requireAuth, async (req, res)=>{
+  try{
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    const r = await connector.pool.request().input('tid', req.auth.tid||0)
+      .query('SELECT * FROM dbo.CrmOrders WHERE TenantId=@tid ORDER BY CreatedAt DESC');
+    await connector.disconnect();
+    return res.json({ success:true, data:r.recordset });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.post('/api/crm/orders', requireAuth, async (req, res)=>{
+  try{
+    const p = req.body||{};
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    const r = await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('orderType', p.orderType||'Sales')
+      .input('partyName', p.partyName||'')
+      .input('contactPerson', p.contactPerson||null)
+      .input('email', p.email||null)
+      .input('address', p.address||null)
+      .input('items', p.items||null)
+      .input('subtotal', Number(p.subtotal||0))
+      .input('tax', Number(p.tax||0))
+      .input('totalAmount', Number(p.totalAmount||0))
+      .input('status', p.status||'Draft')
+      .input('notes', p.notes||null)
+      .input('uid', req.auth.uid||null)
+      .query(`INSERT INTO dbo.CrmOrders(TenantId,OrderType,PartyName,ContactPerson,Email,Address,Items,Subtotal,Tax,TotalAmount,Status,Notes,CreatedBy)
+              VALUES(@tid,@orderType,@partyName,@contactPerson,@email,@address,@items,@subtotal,@tax,@totalAmount,@status,@notes,@uid);
+              SELECT SCOPE_IDENTITY() AS Id`);
+    const orderId = r.recordset[0].Id;
+    // Generate order number
+    const orderNum = (p.orderType==='Sales'? 'SALE-' : 'PO-') + orderId;
+    await connector.pool.request().input('tid', req.auth.tid||0).input('id', orderId).input('num', orderNum)
+      .query('UPDATE dbo.CrmOrders SET OrderNumber=@num WHERE TenantId=@tid AND Id=@id');
+    await connector.disconnect();
+    return res.json({ success:true, id:orderId, orderNumber:orderNum });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+app.put('/api/crm/orders/:id', requireAuth, async (req, res)=>{
+  try{
+    const id = parseInt(req.params.id||'');
+    const p = req.body||{};
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('id', id)
+      .input('orderType', p.orderType||'Sales')
+      .input('partyName', p.partyName||'')
+      .input('contactPerson', p.contactPerson||null)
+      .input('email', p.email||null)
+      .input('address', p.address||null)
+      .input('items', p.items||null)
+      .input('subtotal', Number(p.subtotal||0))
+      .input('tax', Number(p.tax||0))
+      .input('totalAmount', Number(p.totalAmount||0))
+      .input('status', p.status||'Draft')
+      .input('notes', p.notes||null)
+      .query(`UPDATE dbo.CrmOrders SET OrderType=@orderType, PartyName=@partyName, ContactPerson=@contactPerson,
+              Email=@email, Address=@address, Items=@items, Subtotal=@subtotal, Tax=@tax, TotalAmount=@totalAmount,
+              Status=@status, Notes=@notes, UpdatedAt=GETDATE()
+              WHERE TenantId=@tid AND Id=@id`);
+    await connector.disconnect();
+    return res.json({ success:true });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// Mark order as shipped
+app.post('/api/crm/orders/:id/ship', requireAuth, async (req, res)=>{
+  try{
+    const id = parseInt(req.params.id||'');
+    const connector=new AzureSQLConnector(); await connector.connect(); await ensureCrmLeadsOrdersTables(connector);
+    await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('id', id)
+      .query(`UPDATE dbo.CrmOrders SET Status='Shipped', ShippedAt=GETDATE(), UpdatedAt=GETDATE()
+              WHERE TenantId=@tid AND Id=@id AND OrderType='Sales'`);
+    await connector.disconnect();
+    return res.json({ success:true });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// Create AR Invoice from Sales Order
+app.post('/api/crm/orders/:id/create-ar', requireAuth, async (req, res)=>{
+  try{
+    const id = parseInt(req.params.id||'');
+    const connector=new AzureSQLConnector(); await connector.connect();
+    await ensureCrmLeadsOrdersTables(connector);
+    await ensureApArTables(connector);
+    
+    // Load order
+    const orderRes = await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('id', id)
+      .query('SELECT * FROM dbo.CrmOrders WHERE TenantId=@tid AND Id=@id AND OrderType=\'Sales\'');
+    const order = orderRes.recordset[0];
+    if(!order){ await connector.disconnect(); return res.status(404).json({ success:false, error:'order not found' }); }
+    
+    // Create AR Invoice
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30); // 30 days payment terms
+    
+    const arRes = await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('orderId', order.OrderNumber)
+      .input('productName', 'Sales Order ' + order.OrderNumber)
+      .input('dueDate', dueDate)
+      .input('customerName', order.PartyName)
+      .input('amount', order.TotalAmount)
+      .input('docUrl', null)
+      .input('notes', order.Notes||null)
+      .input('uid', req.auth.uid||null)
+      .query(`INSERT INTO dbo.ARInvoices(TenantId,OrderId,ProductName,DueDate,CustomerName,Amount,DocUrl,Notes,CreatedBy)
+              VALUES(@tid,@orderId,@productName,@dueDate,@customerName,@amount,@docUrl,@notes,@uid);
+              SELECT SCOPE_IDENTITY() AS Id`);
+    
+    await connector.disconnect();
+    return res.json({ success:true, invoiceId:arRes.recordset[0].Id });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
+// Create AP Invoice from Procurement Order
+app.post('/api/crm/orders/:id/create-ap', requireAuth, async (req, res)=>{
+  try{
+    const id = parseInt(req.params.id||'');
+    const connector=new AzureSQLConnector(); await connector.connect();
+    await ensureCrmLeadsOrdersTables(connector);
+    await ensureApArTables(connector);
+    
+    // Load order
+    const orderRes = await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('id', id)
+      .query('SELECT * FROM dbo.CrmOrders WHERE TenantId=@tid AND Id=@id AND OrderType=\'Procurement\'');
+    const order = orderRes.recordset[0];
+    if(!order){ await connector.disconnect(); return res.status(404).json({ success:false, error:'order not found' }); }
+    
+    // Create AP Invoice
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30); // 30 days payment terms
+    
+    const apRes = await connector.pool.request()
+      .input('tid', req.auth.tid||0)
+      .input('orderId', order.OrderNumber)
+      .input('productName', 'Purchase Order ' + order.OrderNumber)
+      .input('dueDate', dueDate)
+      .input('supplierName', order.PartyName)
+      .input('amount', order.TotalAmount)
+      .input('docUrl', null)
+      .input('notes', order.Notes||null)
+      .input('uid', req.auth.uid||null)
+      .query(`INSERT INTO dbo.APInvoices(TenantId,OrderId,ProductName,DueDate,SupplierName,Amount,DocUrl,Notes,CreatedBy)
+              VALUES(@tid,@orderId,@productName,@dueDate,@supplierName,@amount,@docUrl,@notes,@uid);
+              SELECT SCOPE_IDENTITY() AS Id`);
+    
+    await connector.disconnect();
+    return res.json({ success:true, invoiceId:apRes.recordset[0].Id });
+  }catch(e){ return res.status(500).json({ success:false, error:e.message }); }
+});
+
 // ==================== ACCOUNTING (Banks & Ledger) ====================
 async function ensureAccountingTables(connector){
   await connector.pool.request().query(`

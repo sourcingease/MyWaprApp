@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Management • ComplytEX CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f8fafc;color:#0f172a}
+    .shell{max-width:1400px;margin:0 auto;padding:24px}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .btn{padding:10px 16px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s}
+    .btn:hover{background:#6d28d9;transform:translateY(-1px)}
+    .btn-success{background:#10b981}
+    .btn-success:hover{background:#059669}
+    .btn-danger{background:#ef4444}
+    .btn-danger:hover{background:#dc2626}
+    .card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:24px}
+    .section-title{font-size:18px;font-weight:700;margin-bottom:16px;color:#1e293b}
+    .tabs{display:flex;gap:4px;border-bottom:2px solid #e2e8f0;margin-bottom:20px}
+    .tab{padding:10px 16px;cursor:pointer;font-weight:600;font-size:14px;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s}
+    .tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
+    .tab:hover{color:#7c3aed}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
+    th{background:#f8fafc;font-weight:600;color:#475569;text-transform:uppercase;font-size:12px}
+    .status-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600}
+    .status-draft{background:#e2e8f0;color:#475569}
+    .status-pending{background:#fef3c7;color:#92400e}
+    .status-approved{background:#dbeafe;color:#1e40af}
+    .status-in-production{background:#e0e7ff;color:#3730a3}
+    .status-ready-to-ship{background:#d1fae5;color:#065f46}
+    .status-shipped{background:#10b981;color:#fff}
+    .status-delivered{background:#6366f1;color:#fff}
+    .status-cancelled{background:#fee2e2;color:#991b1b}
+    .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center}
+    .modal.open{display:flex}
+    .modal-content{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:800px;max-height:90vh;overflow-y:auto}
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;color:#374151}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit}
+    .form-textarea{min-height:80px;resize:vertical}
+    .order-items{background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px}
+    .item-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 40px;gap:12px;margin-bottom:12px;align-items:center}
+    .item-input{padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px}
+    .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .metric-card{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:20px;border-radius:12px}
+    .metric-value{font-size:32px;font-weight:700;margin-bottom:4px}
+    .metric-label{font-size:14px;opacity:0.9}
+    .integration-badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;margin-left:8px}
+    .badge-ap{background:#fef3c7;color:#92400e}
+    .badge-ar{background:#d1fae5;color:#065f46}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Order Management</div></div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="shell">
+    <div class="header">
+      <h1 style="margin:0;font-size:24px">Orders</h1>
+      <button class="btn" onclick="openAddOrderModal()">➕ Create New Order</button>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-value" id="totalOrders">0</div>
+        <div class="metric-label">Total Orders</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#10b981,#059669)">
+        <div class="metric-value" id="totalRevenue">$0</div>
+        <div class="metric-label">Total Revenue</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+        <div class="metric-value" id="pendingOrders">0</div>
+        <div class="metric-label">Pending Orders</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+        <div class="metric-value" id="avgOrderValue">$0</div>
+        <div class="metric-label">Avg Order Value</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="filterOrders('all')">All Orders</div>
+      <div class="tab" onclick="filterOrders('sales')">Sales Orders <span class="integration-badge badge-ar">→ AR</span></div>
+      <div class="tab" onclick="filterOrders('procurement')">Procurement Orders <span class="integration-badge badge-ap">→ AP</span></div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card">
+      <div class="section-title">Order List</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Type</th>
+            <th>Customer/Vendor</th>
+            <th>Items</th>
+            <th>Total Amount</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTable">
+          <tr><td colspan="8" style="text-align:center;color:#64748b">No orders yet. Click "Create New Order" to get started.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add/Edit Order Modal -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <h2 style="margin:0 0 20px 0" id="modalTitle">Create New Order</h2>
+      <form id="orderForm" onsubmit="saveOrder(event)">
+        <input type="hidden" id="orderId">
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Order Type *</label>
+            <select id="orderType" class="form-select" required onchange="toggleOrderType()">
+              <option value="Sales">Sales Order (→ AR)</option>
+              <option value="Procurement">Procurement Order (→ AP)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" id="partyLabel">Customer *</label>
+            <input id="orderParty" class="form-input" required>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Contact Person</label>
+            <input id="orderContact" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input id="orderEmail" type="email" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Delivery/Billing Address</label>
+          <textarea id="orderAddress" class="form-textarea"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Order Items *</label>
+          <div class="order-items">
+            <div class="item-row" style="font-weight:600;font-size:12px;color:#475569">
+              <div>Item Description</div>
+              <div>Quantity</div>
+              <div>Unit Price</div>
+              <div>Total</div>
+              <div></div>
+            </div>
+            <div id="itemsList"></div>
+            <button type="button" class="btn" style="margin-top:8px" onclick="addItemRow()">+ Add Item</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Subtotal</label>
+            <input id="orderSubtotal" class="form-input" readonly value="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tax (%)</label>
+            <input id="orderTax" type="number" step="0.01" class="form-input" value="0" onchange="calculateTotal()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Amount</label>
+            <input id="orderTotal" class="form-input" readonly value="0.00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="orderStatus" class="form-select">
+            <option value="Draft">Draft</option>
+            <option value="Pending">Pending Approval</option>
+            <option value="Approved">Approved</option>
+            <option value="In Production">In Production</option>
+            <option value="Ready to Ship">Ready to Ship</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea id="orderNotes" class="form-textarea"></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn" style="background:#64748b" onclick="closeOrderModal()">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let orders = [];
+    let currentFilter = 'all';
+    let itemCounter = 0;
+
+    async function loadOrders() {
+      try {
+        const response = await fetch('/api/crm/orders');
+        const result = await response.json();
+        orders = result.data || [];
+        renderOrders();
+        updateMetrics();
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+      }
+    }
+
+    function filterOrders(type) {
+      currentFilter = type;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.closest('.tab').classList.add('active');
+      renderOrders();
+    }
+
+    function renderOrders() {
+      let filtered = orders;
+      if (currentFilter === 'sales') filtered = orders.filter(o => o.OrderType === 'Sales');
+      if (currentFilter === 'procurement') filtered = orders.filter(o => o.OrderType === 'Procurement');
+
+      const tbody = document.getElementById('ordersTable');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#64748b">No orders found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(order => {
+        const items = JSON.parse(order.Items || '[]');
+        const itemCount = items.length;
+        const badge = order.OrderType === 'Sales' ? '<span class="integration-badge badge-ar">AR</span>' : '<span class="integration-badge badge-ap">AP</span>';
+        
+        return `
+          <tr>
+            <td><strong>${escapeHtml(order.OrderNumber || 'ORDER-' + order.Id)}</strong></td>
+            <td>${escapeHtml(order.OrderType)} ${badge}</td>
+            <td>${escapeHtml(order.PartyName)}</td>
+            <td>${itemCount} item(s)</td>
+            <td><strong>$${Number(order.TotalAmount || 0).toLocaleString()}</strong></td>
+            <td><span class="status-badge status-${(order.Status || 'draft').toLowerCase().replace(/ /g, '-')}">${order.Status}</span></td>
+            <td>${new Date(order.CreatedAt).toLocaleDateString()}</td>
+            <td>
+              <button class="btn" style="padding:6px 12px;font-size:12px" onclick="viewOrder(${order.Id})">View</button>
+              ${order.Status === 'Approved' && order.OrderType === 'Sales' ? `<button class="btn btn-success" style="padding:6px 12px;font-size:12px" onclick="markAsShipped(${order.Id})">Ship</button>` : ''}
+              ${order.Status === 'Shipped' && order.OrderType === 'Sales' ? `<button class="btn btn-success" style="padding:6px 12px;font-size:12px" onclick="createARInvoice(${order.Id})">Create AR Invoice</button>` : ''}
+              ${order.Status === 'Approved' && order.OrderType === 'Procurement' ? `<button class="btn" style="padding:6px 12px;font-size:12px;background:#f59e0b" onclick="createAPInvoice(${order.Id})">Create AP Invoice</button>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateMetrics() {
+      const total = orders.length;
+      const totalRevenue = orders.reduce((sum, o) => sum + Number(o.TotalAmount || 0), 0);
+      const pending = orders.filter(o => o.Status === 'Pending' || o.Status === 'Approved').length;
+      const avgValue = total > 0 ? (totalRevenue / total).toFixed(0) : 0;
+
+      document.getElementById('totalOrders').textContent = total;
+      document.getElementById('totalRevenue').textContent = '$' + totalRevenue.toLocaleString();
+      document.getElementById('pendingOrders').textContent = pending;
+      document.getElementById('avgOrderValue').textContent = '$' + Number(avgValue).toLocaleString();
+    }
+
+    function openAddOrderModal() {
+      document.getElementById('modalTitle').textContent = 'Create New Order';
+      document.getElementById('orderForm').reset();
+      document.getElementById('orderId').value = '';
+      itemCounter = 0;
+      document.getElementById('itemsList').innerHTML = '';
+      addItemRow();
+      
+      // Check if coming from lead
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromLead = localStorage.getItem('newOrderFromLead');
+      if (fromLead) {
+        const lead = JSON.parse(fromLead);
+        document.getElementById('orderParty').value = lead.Company;
+        document.getElementById('orderContact').value = lead.LeadName;
+        document.getElementById('orderEmail').value = lead.Email;
+        localStorage.removeItem('newOrderFromLead');
+      }
+      
+      document.getElementById('orderModal').classList.add('open');
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').classList.remove('open');
+    }
+
+    function toggleOrderType() {
+      const type = document.getElementById('orderType').value;
+      const label = document.getElementById('partyLabel');
+      label.textContent = type === 'Sales' ? 'Customer *' : 'Vendor *';
+    }
+
+    function addItemRow() {
+      itemCounter++;
+      const itemsList = document.getElementById('itemsList');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.id = 'item-' + itemCounter;
+      row.innerHTML = `
+        <input class="item-input" placeholder="Item description" data-field="description">
+        <input class="item-input" type="number" placeholder="Qty" data-field="quantity" value="1" onchange="calculateItemTotal(${itemCounter})">
+        <input class="item-input" type="number" step="0.01" placeholder="Price" data-field="price" value="0" onchange="calculateItemTotal(${itemCounter})">
+        <input class="item-input" type="number" step="0.01" placeholder="0.00" data-field="total" readonly>
+        <button type="button" onclick="removeItemRow(${itemCounter})" style="background:transparent;border:0;color:#ef4444;cursor:pointer;font-size:18px">×</button>
+      `;
+      itemsList.appendChild(row);
+    }
+
+    function removeItemRow(id) {
+      document.getElementById('item-' + id)?.remove();
+      calculateTotal();
+    }
+
+    function calculateItemTotal(id) {
+      const row = document.getElementById('item-' + id);
+      if (!row) return;
+      
+      const qty = parseFloat(row.querySelector('[data-field="quantity"]').value) || 0;
+      const price = parseFloat(row.querySelector('[data-field="price"]').value) || 0;
+      const total = qty * price;
+      
+      row.querySelector('[data-field="total"]').value = total.toFixed(2);
+      calculateTotal();
+    }
+
+    function calculateTotal() {
+      const items = document.querySelectorAll('#itemsList .item-row');
+      let subtotal = 0;
+      
+      items.forEach(item => {
+        const total = parseFloat(item.querySelector('[data-field="total"]').value) || 0;
+        subtotal += total;
+      });
+      
+      const taxRate = parseFloat(document.getElementById('orderTax').value) || 0;
+      const tax = subtotal * (taxRate / 100);
+      const total = subtotal + tax;
+      
+      document.getElementById('orderSubtotal').value = subtotal.toFixed(2);
+      document.getElementById('orderTotal').value = total.toFixed(2);
+    }
+
+    async function saveOrder(event) {
+      event.preventDefault();
+      
+      const items = [];
+      document.querySelectorAll('#itemsList .item-row').forEach(row => {
+        const description = row.querySelector('[data-field="description"]').value;
+        const quantity = parseFloat(row.querySelector('[data-field="quantity"]').value) || 0;
+        const price = parseFloat(row.querySelector('[data-field="price"]').value) || 0;
+        const total = parseFloat(row.querySelector('[data-field="total"]').value) || 0;
+        
+        if (description && quantity > 0) {
+          items.push({ description, quantity, price, total });
+        }
+      });
+
+      if (items.length === 0) {
+        alert('Please add at least one item');
+        return;
+      }
+
+      const id = document.getElementById('orderId').value;
+      const data = {
+        orderType: document.getElementById('orderType').value,
+        partyName: document.getElementById('orderParty').value,
+        contactPerson: document.getElementById('orderContact').value,
+        email: document.getElementById('orderEmail').value,
+        address: document.getElementById('orderAddress').value,
+        items: JSON.stringify(items),
+        subtotal: parseFloat(document.getElementById('orderSubtotal').value),
+        tax: parseFloat(document.getElementById('orderTax').value),
+        totalAmount: parseFloat(document.getElementById('orderTotal').value),
+        status: document.getElementById('orderStatus').value,
+        notes: document.getElementById('orderNotes').value
+      };
+
+      try {
+        const url = id ? `/api/crm/orders/${id}` : '/api/crm/orders';
+        const method = id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          closeOrderModal();
+          loadOrders();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error saving order:', error);
+        alert('Failed to save order');
+      }
+    }
+
+    function viewOrder(id) {
+      const order = orders.find(o => o.Id === id);
+      if (!order) return;
+      
+      document.getElementById('modalTitle').textContent = 'View/Edit Order';
+      document.getElementById('orderId').value = order.Id;
+      document.getElementById('orderType').value = order.OrderType;
+      document.getElementById('orderParty').value = order.PartyName;
+      document.getElementById('orderContact').value = order.ContactPerson || '';
+      document.getElementById('orderEmail').value = order.Email || '';
+      document.getElementById('orderAddress').value = order.Address || '';
+      document.getElementById('orderStatus').value = order.Status;
+      document.getElementById('orderNotes').value = order.Notes || '';
+      document.getElementById('orderSubtotal').value = order.Subtotal;
+      document.getElementById('orderTax').value = order.Tax || 0;
+      document.getElementById('orderTotal').value = order.TotalAmount;
+      
+      toggleOrderType();
+      
+      // Load items
+      itemCounter = 0;
+      document.getElementById('itemsList').innerHTML = '';
+      const items = JSON.parse(order.Items || '[]');
+      items.forEach(item => {
+        itemCounter++;
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.id = 'item-' + itemCounter;
+        row.innerHTML = `
+          <input class="item-input" value="${escapeHtml(item.description)}" data-field="description">
+          <input class="item-input" type="number" value="${item.quantity}" data-field="quantity" onchange="calculateItemTotal(${itemCounter})">
+          <input class="item-input" type="number" step="0.01" value="${item.price}" data-field="price" onchange="calculateItemTotal(${itemCounter})">
+          <input class="item-input" type="number" step="0.01" value="${item.total}" data-field="total" readonly>
+          <button type="button" onclick="removeItemRow(${itemCounter})" style="background:transparent;border:0;color:#ef4444;cursor:pointer;font-size:18px">×</button>
+        `;
+        document.getElementById('itemsList').appendChild(row);
+      });
+      
+      document.getElementById('orderModal').classList.add('open');
+    }
+
+    async function markAsShipped(orderId) {
+      if (!confirm('Mark this order as shipped?')) return;
+      
+      try {
+        const response = await fetch(`/api/crm/orders/${orderId}/ship`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Order marked as shipped!');
+          loadOrders();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error shipping order:', error);
+        alert('Failed to ship order');
+      }
+    }
+
+    async function createARInvoice(orderId) {
+      if (!confirm('Create AR Invoice for this shipped order?')) return;
+      
+      const order = orders.find(o => o.Id === orderId);
+      if (!order) return;
+      
+      try {
+        const response = await fetch('/api/crm/orders/' + orderId + '/create-ar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('AR Invoice created successfully! Invoice ID: ' + result.invoiceId);
+          window.open('/accounting/accounts-receivable.html', '_blank');
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error creating AR invoice:', error);
+        alert('Failed to create AR invoice');
+      }
+    }
+
+    async function createAPInvoice(orderId) {
+      if (!confirm('Create AP Invoice for this procurement order?')) return;
+      
+      const order = orders.find(o => o.Id === orderId);
+      if (!order) return;
+      
+      try {
+        const response = await fetch('/api/crm/orders/' + orderId + '/create-ap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('AP Invoice created successfully! Invoice ID: ' + result.invoiceId);
+          window.open('/accounting/accounts-payable.html', '_blank');
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error creating AP invoice:', error);
+        alert('Failed to create AP invoice');
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load orders on page load
+    window.addEventListener('load', loadOrders);
+  </script>
+</body>
+</html>

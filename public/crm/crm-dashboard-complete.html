@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM End-to-End Dashboard • ComplytEX</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f8fafc;color:#0f172a}
+    .shell{max-width:1400px;margin:0 auto;padding:24px}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .btn{padding:10px 16px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s}
+    .btn:hover{background:#6d28d9;transform:translateY(-1px)}
+    .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:32px}
+    .metric-card{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+    .metric-value{font-size:36px;font-weight:700;margin-bottom:4px}
+    .metric-label{font-size:14px;opacity:0.9}
+    .metric-change{font-size:12px;margin-top:8px;opacity:0.8}
+    .card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:24px}
+    .section-title{font-size:18px;font-weight:700;margin-bottom:16px;color:#1e293b;display:flex;justify-content:space-between;align-items:center}
+    .flow-chart{display:flex;gap:16px;align-items:center;margin-bottom:32px;overflow-x:auto;padding:16px 0}
+    .flow-step{flex:1;min-width:200px;background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 4px rgba(0,0,0,0.1);position:relative}
+    .flow-step::after{content:'→';position:absolute;right:-24px;top:50%;transform:translateY(-50%);font-size:24px;color:#94a3b8;font-weight:700}
+    .flow-step:last-child::after{display:none}
+    .flow-icon{font-size:32px;margin-bottom:8px}
+    .flow-title{font-size:14px;font-weight:700;color:#1e293b;margin-bottom:4px}
+    .flow-count{font-size:24px;font-weight:700;color:#7c3aed;margin-bottom:4px}
+    .flow-desc{font-size:12px;color:#64748b}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
+    th{background:#f8fafc;font-weight:600;color:#475569;text-transform:uppercase;font-size:12px}
+    .status-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600}
+    .status-new{background:#dbeafe;color:#1e40af}
+    .status-qualified{background:#d1fae5;color:#065f46}
+    .status-pending{background:#fef3c7;color:#92400e}
+    .status-approved{background:#d1fae5;color:#065f46}
+    .status-shipped{background:#10b981;color:#fff}
+    .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+    .action-card{background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s;text-align:center}
+    .action-card:hover{border-color:#7c3aed;background:#fff;transform:translateY(-2px);box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+    .action-icon{font-size:32px;margin-bottom:8px}
+    .action-title{font-size:14px;font-weight:600;color:#1e293b}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div class="header-left">
+      <img src="/logo.png" class="logo-small">
+      <div class="dashboard-title">CRM Complete Flow Dashboard</div>
+    </div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="shell">
+    <div class="header">
+      <h1 style="margin:0;font-size:24px">Complete End-to-End Business Flow</h1>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-value" id="totalLeads">0</div>
+        <div class="metric-label">Total Leads</div>
+        <div class="metric-change">↑ Pipeline Value: $<span id="pipelineValue">0</span></div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#10b981,#059669)">
+        <div class="metric-value" id="totalOrders">0</div>
+        <div class="metric-label">Active Orders</div>
+        <div class="metric-change">Sales: <span id="salesOrders">0</span> | Procurement: <span id="procOrders">0</span></div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+        <div class="metric-value" id="pendingAP">$0</div>
+        <div class="metric-label">Pending Payables (AP)</div>
+        <div class="metric-change"><span id="apCount">0</span> invoices awaiting payment</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+        <div class="metric-value" id="pendingAR">$0</div>
+        <div class="metric-label">Pending Receivables (AR)</div>
+        <div class="metric-change"><span id="arCount">0</span> invoices awaiting receipt</div>
+      </div>
+    </div>
+
+    <!-- Business Flow Visualization -->
+    <div class="card">
+      <div class="section-title">End-to-End Business Flow: Lead → Order → Procurement/Sales → AP/AR</div>
+      <div class="flow-chart">
+        <div class="flow-step">
+          <div class="flow-icon">🎯</div>
+          <div class="flow-title">Lead Management</div>
+          <div class="flow-count" id="flowLeads">0</div>
+          <div class="flow-desc">Capture & Qualify</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">📝</div>
+          <div class="flow-title">Order Management</div>
+          <div class="flow-count" id="flowOrders">0</div>
+          <div class="flow-desc">Sales & Procurement</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">🏭</div>
+          <div class="flow-title">Production/Purchase</div>
+          <div class="flow-count" id="flowProduction">0</div>
+          <div class="flow-desc">In Progress</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">🚚</div>
+          <div class="flow-title">Shipped</div>
+          <div class="flow-count" id="flowShipped">0</div>
+          <div class="flow-desc">Delivered</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">💰</div>
+          <div class="flow-title">Accounting</div>
+          <div class="flow-count" id="flowAccounting">0</div>
+          <div class="flow-desc">AP & AR Settlement</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="section-title">Quick Actions</div>
+      <div class="quick-actions">
+        <div class="action-card" onclick="location.href='/crm/lead-management.html'">
+          <div class="action-icon">➕</div>
+          <div class="action-title">Add New Lead</div>
+        </div>
+        <div class="action-card" onclick="location.href='/crm/order-management.html'">
+          <div class="action-icon">📋</div>
+          <div class="action-title">Create Order</div>
+        </div>
+        <div class="action-card" onclick="location.href='/accounting/accounts-payable.html'">
+          <div class="action-icon">💳</div>
+          <div class="action-title">Process Payments (AP)</div>
+        </div>
+        <div class="action-card" onclick="location.href='/accounting/accounts-receivable.html'">
+          <div class="action-icon">💵</div>
+          <div class="action-title">Receive Payments (AR)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Leads -->
+    <div class="card">
+      <div class="section-title">
+        <span>Recent Leads</span>
+        <button class="btn" style="font-size:13px;padding:8px 14px" onclick="location.href='/crm/lead-management.html'">View All</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Lead Name</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Estimated Value</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="recentLeadsTable">
+          <tr><td colspan="5" style="text-align:center;color:#64748b">No leads yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="card">
+      <div class="section-title">
+        <span>Recent Orders</span>
+        <button class="btn" style="font-size:13px;padding:8px 14px" onclick="location.href='/crm/order-management.html'">View All</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Type</th>
+            <th>Customer/Vendor</th>
+            <th>Total Amount</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="recentOrdersTable">
+          <tr><td colspan="6" style="text-align:center;color:#64748b">No orders yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- AP/AR Summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div class="card">
+        <div class="section-title">
+          <span>AP (Accounts Payable)</span>
+          <button class="btn" style="font-size:13px;padding:8px 14px" onclick="location.href='/accounting/accounts-payable.html'">View All</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="apTable">
+            <tr><td colspan="3" style="text-align:center;color:#64748b">No AP invoices</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <span>AR (Accounts Receivable)</span>
+          <button class="btn" style="font-size:13px;padding:8px 14px" onclick="location.href='/accounting/accounts-receivable.html'">View All</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="arTable">
+            <tr><td colspan="3" style="text-align:center;color:#64748b">No AR invoices</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let leads = [];
+    let orders = [];
+    let apInvoices = [];
+    let arInvoices = [];
+
+    async function loadData() {
+      try {
+        const [leadsRes, ordersRes, apRes, arRes] = await Promise.all([
+          fetch('/api/crm/leads'),
+          fetch('/api/crm/orders'),
+          fetch('/api/accounting/ap'),
+          fetch('/api/accounting/ar')
+        ]);
+
+        const leadsData = await leadsRes.json();
+        const ordersData = await ordersRes.json();
+        const apData = await apRes.json();
+        const arData = await arRes.json();
+
+        leads = leadsData.data || [];
+        orders = ordersData.data || [];
+        apInvoices = apData.data || [];
+        arInvoices = arData.data || [];
+
+        updateMetrics();
+        updateFlow();
+        renderRecentLeads();
+        renderRecentOrders();
+        renderAP();
+        renderAR();
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      }
+    }
+
+    function updateMetrics() {
+      // Leads metrics
+      const totalLeads = leads.length;
+      const pipelineValue = leads.reduce((sum, l) => sum + Number(l.EstimatedValue || 0), 0);
+      document.getElementById('totalLeads').textContent = totalLeads;
+      document.getElementById('pipelineValue').textContent = pipelineValue.toLocaleString();
+
+      // Orders metrics
+      const totalOrders = orders.filter(o => o.Status !== 'Delivered' && o.Status !== 'Cancelled').length;
+      const salesOrders = orders.filter(o => o.OrderType === 'Sales' && o.Status !== 'Delivered').length;
+      const procOrders = orders.filter(o => o.OrderType === 'Procurement' && o.Status !== 'Delivered').length;
+      document.getElementById('totalOrders').textContent = totalOrders;
+      document.getElementById('salesOrders').textContent = salesOrders;
+      document.getElementById('procOrders').textContent = procOrders;
+
+      // AP metrics
+      const pendingAP = apInvoices.filter(i => i.Status === 'Pending' || i.Status === 'Approved');
+      const apTotal = pendingAP.reduce((sum, i) => sum + Number(i.Amount || 0), 0);
+      document.getElementById('pendingAP').textContent = '$' + apTotal.toLocaleString();
+      document.getElementById('apCount').textContent = pendingAP.length;
+
+      // AR metrics
+      const pendingAR = arInvoices.filter(i => i.Status === 'Pending');
+      const arTotal = pendingAR.reduce((sum, i) => sum + Number(i.Amount || 0), 0);
+      document.getElementById('pendingAR').textContent = '$' + arTotal.toLocaleString();
+      document.getElementById('arCount').textContent = pendingAR.length;
+    }
+
+    function updateFlow() {
+      const flowLeads = leads.filter(l => l.Status !== 'Won' && l.Status !== 'Lost').length;
+      const flowOrders = orders.filter(o => o.Status === 'Pending' || o.Status === 'Approved').length;
+      const flowProduction = orders.filter(o => o.Status === 'In Production' || o.Status === 'Ready to Ship').length;
+      const flowShipped = orders.filter(o => o.Status === 'Shipped').length;
+      const flowAccounting = apInvoices.filter(i => i.Status !== 'Paid').length + arInvoices.filter(i => i.Status !== 'Received').length;
+
+      document.getElementById('flowLeads').textContent = flowLeads;
+      document.getElementById('flowOrders').textContent = flowOrders;
+      document.getElementById('flowProduction').textContent = flowProduction;
+      document.getElementById('flowShipped').textContent = flowShipped;
+      document.getElementById('flowAccounting').textContent = flowAccounting;
+    }
+
+    function renderRecentLeads() {
+      const recent = leads.slice(0, 5);
+      const tbody = document.getElementById('recentLeadsTable');
+      
+      if (recent.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#64748b">No leads yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = recent.map(lead => `
+        <tr>
+          <td>${escapeHtml(lead.LeadName)}</td>
+          <td>${escapeHtml(lead.Company)}</td>
+          <td><span class="status-badge status-${lead.Status.toLowerCase()}">${lead.Status}</span></td>
+          <td>$${Number(lead.EstimatedValue || 0).toLocaleString()}</td>
+          <td>${new Date(lead.CreatedAt).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRecentOrders() {
+      const recent = orders.slice(0, 5);
+      const tbody = document.getElementById('recentOrdersTable');
+      
+      if (recent.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">No orders yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = recent.map(order => `
+        <tr>
+          <td><strong>${escapeHtml(order.OrderNumber || 'ORDER-' + order.Id)}</strong></td>
+          <td>${escapeHtml(order.OrderType)}</td>
+          <td>${escapeHtml(order.PartyName)}</td>
+          <td><strong>$${Number(order.TotalAmount || 0).toLocaleString()}</strong></td>
+          <td><span class="status-badge status-${(order.Status || 'draft').toLowerCase().replace(/ /g, '-')}">${order.Status}</span></td>
+          <td>${new Date(order.CreatedAt).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAP() {
+      const pending = apInvoices.filter(i => i.Status === 'Pending' || i.Status === 'Approved').slice(0, 5);
+      const tbody = document.getElementById('apTable');
+      
+      if (pending.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#64748b">No pending AP invoices</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pending.map(inv => `
+        <tr>
+          <td>${escapeHtml(inv.SupplierName || 'Unknown')}</td>
+          <td><strong>$${Number(inv.Amount || 0).toLocaleString()}</strong></td>
+          <td><span class="status-badge status-${inv.Status.toLowerCase()}">${inv.Status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAR() {
+      const pending = arInvoices.filter(i => i.Status === 'Pending').slice(0, 5);
+      const tbody = document.getElementById('arTable');
+      
+      if (pending.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#64748b">No pending AR invoices</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pending.map(inv => `
+        <tr>
+          <td>${escapeHtml(inv.CustomerName || 'Unknown')}</td>
+          <td><strong>$${Number(inv.Amount || 0).toLocaleString()}</strong></td>
+          <td><span class="status-badge status-${inv.Status.toLowerCase()}">${inv.Status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load data on page load
+    window.addEventListener('load', loadData);
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadData, 30000);
+  </script>
+</body>
+</html>

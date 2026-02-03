@@ -2179,6 +2179,40 @@
                   window.location.href = url;
                 }
               }
+              // Handle Email sub-tabs (email-inbox, email-sent, email-drafts, email-compose)
+              else if (item.key.startsWith('email-')) {
+                const tabKey = item.key.replace('email-', '');
+                const urlMap = {
+                  'inbox': '/crm/mailbox.html',
+                  'sent': '/crm/mailbox.html?folder=Sent',
+                  'drafts': '/crm/mailbox.html?folder=Drafts',
+                  'compose': '/crm/mailbox-compose.html'
+                };
+                const url = urlMap[tabKey] || '/crm/mailbox.html';
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea(url + (url.includes('?') ? '&' : '?') + 'embedded=1');
+                } else {
+                  window.location.href = url;
+                }
+              }
+              // Handle Tasks sub-tabs (if any)
+              else if (item.key.startsWith('tasks-')) {
+                const tabKey = item.key.replace('tasks-', '');
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/tasks/planning.html?embedded=1');
+                } else {
+                  window.location.href = '/tasks/planning.html';
+                }
+              }
+              // Handle AI sub-tabs (if any)
+              else if (item.key.startsWith('ai-')) {
+                const tabKey = item.key.replace('ai-', '');
+                if (window.mlOpenInWorkingArea) {
+                  window.mlOpenInWorkingArea('/ai/analyst.html?embedded=1');
+                } else {
+                  window.location.href = '/ai/analyst.html';
+                }
+              }
               // Handle main modules
               else if (item.key === 'safety') {
                 if (typeof switchTab === 'function') switchTab('usc-safe');
@@ -9545,6 +9579,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const result = await response.json();
         if (result.success) {
           showToast('✅ Grievance saved successfully!', 'info');
+          // Remove from WIP list
+          if (typeof removeFromWIP === 'function') {
+            removeFromWIP('safety-grievances');
+          }
           resetForm('grievanceFormData');
           loadGrievances();
         } else {
@@ -9630,6 +9668,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         
         if (result.success) {
           showToast('✅ Fire safety data saved successfully!', 'info');
+          // Remove from WIP list
+          if (typeof removeFromWIP === 'function') {
+            removeFromWIP('safety-fire');
+          }
           // Don't reset form - keep values visible
           // resetForm('fireFormData');
           loadFireSafety();
@@ -9777,6 +9819,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ Electrical safety checklist saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-electrical');
+        }
+
         // Do not reset form; leave saved values visible. The latest values
         // are also reloaded on page load via SafetyAPI.loadElectricalSafety.
       } catch (error) {
@@ -9865,6 +9912,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             throw new Error(result.error || 'Failed to save structural safety checklist');
           }
           showToast('✅ Structural safety checklist saved successfully!', 'info');
+        }
+
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-structural');
         }
 
         // Do not reset form; leave saved values visible. The latest values
@@ -9957,6 +10009,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ Health hazard checklist saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-health');
+        }
+
         // Do not reset form; leave saved values visible. The latest values
         // are also reloaded via SafetyAPI.loadHealthHazards.
       } catch (error) {
@@ -10044,6 +10101,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ USC-Safe checklist saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-usc-safe');
+        }
+
         // Do NOT reset the form; keep the saved values visible. The
         // latest values will also be reloaded on next visit via
         // loadFormFromSafetyAPI(SafetyAPI.loadUSCSafe, 'uscSafeFormData').
@@ -10081,6 +10143,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             throw new Error(result.error || 'Failed to save gas safety checklist');
           }
           showToast('✅ Gas safety checklist saved successfully!', 'info');
+        }
+
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-gas');
         }
 
         form.reset();
@@ -10121,6 +10188,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             throw new Error(result.error || 'Failed to save boiler safety data');
           }
           showToast('✅ Boiler safety data saved successfully!', 'info');
+        }
+
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-boiler');
         }
 
         form.reset();
@@ -10201,6 +10273,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const result = await response.json();
         if (result.success) {
           showToast('✅ DSA checklist saved successfully!', 'info');
+          // Remove from WIP list
+          if (typeof removeFromWIP === 'function') {
+            removeFromWIP('safety-dsa');
+          }
           resetForm('dsaFormData');
         } else {
           alert('❌ Error: ' + result.error);
@@ -10229,6 +10305,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const result = await response.json();
         if (result.success) {
           showToast('✅ Emergency Power checklist saved successfully!', 'info');
+          // Remove from WIP list
+          if (typeof removeFromWIP === 'function') {
+            removeFromWIP('safety-emergency-power');
+          }
           resetForm('emergencyPowerFormData');
         } else {
           alert('❌ Error: ' + result.error);
@@ -10525,6 +10605,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ USC-Safe checklist saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-usc-safe');
+        }
+
         form.reset();
         setDefaultRadioButtons(form.id);
       } catch (err) {
@@ -10627,6 +10712,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ Health hazards data saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-health');
+        }
+
         form.reset();
         setDefaultRadioButtons(form.id);
         if (typeof loadHealth === 'function') {
@@ -10662,6 +10752,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ Gas safety data saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-gas');
+        }
+
         form.reset();
         setDefaultRadioButtons(form.id);
       } catch (err) {
@@ -10692,6 +10787,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             body: JSON.stringify({ formData: data })
           });
           showToast('✅ Boiler safety data saved successfully!', 'info');
+        }
+
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-boiler');
         }
 
         form.reset();
@@ -10772,6 +10872,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ DSA data saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-dsa');
+        }
+
         form.reset();
         setDefaultRadioButtons(form.id);
       } catch (err) {
@@ -10809,6 +10914,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ Emergency power data saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-emergency-power');
+        }
+
         form.reset();
         setDefaultRadioButtons(form.id);
       } catch (err) {
@@ -10841,6 +10951,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
           showToast('✅ Safety training data saved successfully!', 'info');
         }
 
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-training');
+        }
+
         form.reset();
         setDefaultRadioButtons(form.id);
       } catch (err) {
@@ -10871,6 +10986,11 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
             body: JSON.stringify({ formData: data })
           });
           showToast('✅ UNGP checklist saved successfully!', 'info');
+        }
+
+        // Remove from WIP list
+        if (typeof removeFromWIP === 'function') {
+          removeFromWIP('safety-ungp');
         }
 
         form.reset();
@@ -11315,6 +11435,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const result = await response.json();
         if (result.success) {
           showToast('✅ Incident saved successfully!', 'info');
+          // Remove from WIP list
+          if (typeof removeFromWIP === 'function') {
+            removeFromWIP('safety-incidents');
+          }
           form.reset();
           // After saving, ensure the visible incident list (in the
           // working pane) is refreshed so "Loading..." is replaced.
@@ -11360,6 +11484,10 @@ As per UL Fire Test file Rated fire list by UL recognized fire rated certificati
         const result = await response.json();
         if (result.success) {
           showToast('✅ Grievance saved successfully!', 'info');
+          // Remove from WIP list
+          if (typeof removeFromWIP === 'function') {
+            removeFromWIP('safety-grievances');
+          }
           form.reset();
           loadGrievances(); // Reload the tables
         } else {

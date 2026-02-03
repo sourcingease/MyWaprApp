@@ -8,13 +8,25 @@
   <link rel="stylesheet" href="/app.css" />
   <style>
     body{margin:0;background:#f5f7fa;font-family:Inter,Segoe UI,Arial;color:#0f172a}
-    .shell{max-width:1200px;margin:0 auto;padding:16px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:16px}
-    .section-title{font-weight:800;font-size:16px;margin-bottom:12px;color:#0f172a;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
+    .shell{max-width:1400px;margin:0 auto;padding:20px}
+    .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+    .metric-card{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+    .metric-card.ap-pending{background:linear-gradient(135deg,#f59e0b,#d97706)}
+    .metric-card.ap-approved{background:linear-gradient(135deg,#10b981,#059669)}
+    .metric-card.ap-paid{background:linear-gradient(135deg,#6366f1,#4f46e5)}
+    .metric-card.ar-pending{background:linear-gradient(135deg,#ec4899,#db2777)}
+    .metric-card.ar-received{background:linear-gradient(135deg,#14b8a6,#0d9488)}
+    .metric-icon{font-size:24px;margin-bottom:6px;opacity:0.9}
+    .metric-value{font-size:22px;font-weight:700;margin-bottom:2px}
+    .metric-label{font-size:13px;opacity:0.9;font-weight:500}
+    .metric-count{font-size:11px;margin-top:4px;opacity:0.8}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,.08);padding:18px}
+    .section-title{font-weight:700;font-size:16px;margin-bottom:14px;color:#0f172a;padding-bottom:10px;border-bottom:2px solid #e2e8f0;display:flex;align-items:center;gap:8px}
+    .section-title .icon{font-size:20px}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}
-    th{background:#f8fafc;text-transform:uppercase;font-size:12px;color:#475569}
+    th,td{padding:10px 8px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}
+    th{background:#f8fafc;text-transform:uppercase;font-size:11px;color:#475569;font-weight:600}
     .topnav{display:flex;gap:8px}
   </style>
 </head>
@@ -32,49 +44,108 @@
   </div>
   <div id="accounting-agents-panel"></div>
   <div class="shell">
-    <h2 style="font-size:20px;font-weight:700;margin:0 0 16px 0;color:#0f172a">Dashboard</h2>
+    <h2 style="font-size:22px;font-weight:700;margin:0 0 20px 0;color:#0f172a">Accounting Dashboard</h2>
+    
+    <!-- Today's Report -->
+    <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+      <h3 style="font-size:15px;font-weight:700;margin:0 0 10px 0;color:#0f172a;display:flex;align-items:center;gap:6px">
+        <span style="font-size:18px">📊</span> Today's Report
+      </h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+        <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:12px;border-radius:8px">
+          <div style="font-size:12px;opacity:0.9;margin-bottom:4px">Today's AP</div>
+          <div style="font-size:20px;font-weight:700" id="todayApTotal">$0</div>
+          <div style="font-size:11px;opacity:0.8;margin-top:4px"><span id="todayApCount">0</span> invoices</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;padding:12px;border-radius:8px">
+          <div style="font-size:12px;opacity:0.9;margin-bottom:4px">Today's AR</div>
+          <div style="font-size:20px;font-weight:700" id="todayArTotal">$0</div>
+          <div style="font-size:11px;opacity:0.8;margin-top:4px"><span id="todayArCount">0</span> invoices</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px;border-radius:8px">
+          <div style="font-size:12px;opacity:0.9;margin-bottom:4px">Total Bank Balance</div>
+          <div style="font-size:20px;font-weight:700" id="todayBankTotal">$0</div>
+          <div style="font-size:11px;opacity:0.8;margin-top:4px"><span id="todayBankCount">0</span> accounts</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Visual Metrics -->
+    <div class="metrics">
+      <div class="metric-card ap-pending">
+        <div class="metric-icon">💳</div>
+        <div class="metric-value" id="apPendingTotal">$0</div>
+        <div class="metric-label">AP Pending</div>
+        <div class="metric-count"><span id="apPendingCount">0</span> invoices</div>
+      </div>
+      <div class="metric-card ap-approved">
+        <div class="metric-icon">✅</div>
+        <div class="metric-value" id="apApprovedTotal">$0</div>
+        <div class="metric-label">AP (Approved)</div>
+        <div class="metric-count"><span id="apApprovedCount">0</span> invoices</div>
+      </div>
+      <div class="metric-card ap-paid">
+        <div class="metric-icon">✔️</div>
+        <div class="metric-value" id="apPaidTotal">$0</div>
+        <div class="metric-label">AP Paid</div>
+        <div class="metric-count"><span id="apPaidCount">0</span> invoices</div>
+      </div>
+      <div class="metric-card ar-pending">
+        <div class="metric-icon">📄</div>
+        <div class="metric-value" id="arPendingTotal">$0</div>
+        <div class="metric-label">AR Pending</div>
+        <div class="metric-count"><span id="arPendingCount">0</span> invoices</div>
+      </div>
+      <div class="metric-card ar-received">
+        <div class="metric-icon">💰</div>
+        <div class="metric-value" id="arReceivedTotal">$0</div>
+        <div class="metric-label">AR Received</div>
+        <div class="metric-count"><span id="arReceivedCount">0</span> invoices</div>
+      </div>
+    </div>
+
     <div class="grid">
       <div class="card">
-        <div class="section-title">Accounts Payable (Pending)</div>
-        <div style="margin-bottom:6px"><button class="ct" onclick="openApModal()">New AP Invoice</button></div>
+        <div class="section-title"><span class="icon">💳</span> AP (Pending)</div>
+        <div style="margin-bottom:8px"><button class="ct" onclick="openApModal()">New AP Invoice</button></div>
         <table>
           <thead><tr><th>Order</th><th>Supplier</th><th>Amount</th><th>Due</th><th></th></tr></thead>
           <tbody id="apPending"><tr><td colspan="5">No data</td></tr></tbody>
         </table>
       </div>
       <div class="card">
-        <div class="section-title">AP Approved</div>
+        <div class="section-title"><span class="icon">✅</span> AP (Approved)</div>
         <table>
           <thead><tr><th>Order</th><th>Supplier</th><th>Amount</th><th>Due</th><th></th></tr></thead>
           <tbody id="apApproved"><tr><td colspan="5">No data</td></tr></tbody>
         </table>
       </div>
       <div class="card">
-        <div class="section-title">Accounts Paid</div>
+        <div class="section-title"><span class="icon">✔️</span> AP Paid</div>
         <table>
           <thead><tr><th>Order</th><th>Supplier</th><th>Amount</th><th>Paid At</th></tr></thead>
           <tbody id="apPaid"><tr><td colspan="4">No data</td></tr></tbody>
         </table>
       </div>
       <div class="card">
-        <div class="section-title">Accounts Receivable (Pending)</div>
-        <div style="margin-bottom:6px"><button class="ct" onclick="openArModal()">New AR Invoice</button></div>
+        <div class="section-title"><span class="icon">📄</span> AR (Pending)</div>
+        <div style="margin-bottom:8px"><button class="ct" onclick="openArModal()">New AR Invoice</button></div>
         <table>
           <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Due</th><th></th></tr></thead>
           <tbody id="arPending"><tr><td colspan="5">No data</td></tr></tbody>
         </table>
       </div>
       <div class="card">
-        <div class="section-title">Accounts Received</div>
+        <div class="section-title"><span class="icon">💰</span> AR Received</div>
         <table>
           <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Received At</th></tr></thead>
           <tbody id="arReceived"><tr><td colspan="4">No data</td></tr></tbody>
         </table>
       </div>
       <div class="card">
-        <div class="section-title">Accounts Balance</div>
+        <div class="section-title"><span class="icon">🏦</span> Bank Balance</div>
         <div id="balances">Loading...</div>
-        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
           <a class="ct" href="/accounting/accounts-balance.html?embedded=1">Bank Deposit</a>
           <a class="ct" href="/accounting/bank-deposit-summary.html?embedded=1">Summary</a>
         </div>
@@ -146,11 +217,69 @@
         fetchJson('/api/accounting/ar?status=Received'),
         fetchJson('/api/accounting/bank-summary')
       ]);
-      document.getElementById('apPending').innerHTML = (apP.data||[]).slice(0,10).map(x=> rowAP(x, `<button class='ct' data-id='${x.Id}' onclick='approveAP(${x.Id})'>Send for approval</button>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
-      document.getElementById('apApproved').innerHTML = (apA.data||[]).slice(0,10).map(x=> rowAP(x, `<a class='ct' href='/accounting/ap-pay.html?id=${x.Id}${embedded()?"&embedded=1":""}'>Pay</a>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
-      document.getElementById('apPaid').innerHTML = (apPd.data||[]).slice(0,10).map(x=> `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.SupplierName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.PaidAt? new Date(x.PaidAt).toLocaleString(): ''}</td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
-      document.getElementById('arPending').innerHTML = (arP.data||[]).slice(0,10).map(x=> rowAR(x, `<button class='ct' onclick='receiveAR(${x.Id})'>Receive</button>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
-      document.getElementById('arReceived').innerHTML = (arR.data||[]).slice(0,10).map(x=> `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.CustomerName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.ReceivedAt? new Date(x.ReceivedAt).toLocaleString(): ''}</td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
+      
+      // Get today's date (start and end of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+      
+      // Calculate today's AP (created today)
+      const allApData = [...(apP.data || []), ...(apA.data || []), ...(apPd.data || [])];
+      const todayAp = allApData.filter(x => {
+        const createdDate = new Date(x.CreatedAt);
+        return createdDate >= today && createdDate <= todayEnd;
+      });
+      const todayApTotal = todayAp.reduce((sum, x) => sum + Number(x.Amount || 0), 0);
+      
+      // Calculate today's AR (created today)
+      const allArData = [...(arP.data || []), ...(arR.data || [])];
+      const todayAr = allArData.filter(x => {
+        const createdDate = new Date(x.CreatedAt);
+        return createdDate >= today && createdDate <= todayEnd;
+      });
+      const todayArTotal = todayAr.reduce((sum, x) => sum + Number(x.Amount || 0), 0);
+      
+      // Calculate total bank balance
+      const bankData = banks.data || [];
+      const totalBankBalance = bankData.reduce((sum, b) => sum + Number(b.Balance || 0), 0);
+      
+      // Update Today's Report
+      document.getElementById('todayApTotal').textContent = '$' + todayApTotal.toLocaleString();
+      document.getElementById('todayApCount').textContent = todayAp.length;
+      document.getElementById('todayArTotal').textContent = '$' + todayArTotal.toLocaleString();
+      document.getElementById('todayArCount').textContent = todayAr.length;
+      document.getElementById('todayBankTotal').textContent = '$' + totalBankBalance.toLocaleString();
+      document.getElementById('todayBankCount').textContent = bankData.length;
+      
+      // Update visual metrics
+      const apPendingData = apP.data || [];
+      const apApprovedData = apA.data || [];
+      const apPaidData = apPd.data || [];
+      const arPendingData = arP.data || [];
+      const arReceivedData = arR.data || [];
+      
+      document.getElementById('apPendingTotal').textContent = '$' + apPendingData.reduce((sum, x) => sum + Number(x.Amount || 0), 0).toLocaleString();
+      document.getElementById('apPendingCount').textContent = apPendingData.length;
+      
+      document.getElementById('apApprovedTotal').textContent = '$' + apApprovedData.reduce((sum, x) => sum + Number(x.Amount || 0), 0).toLocaleString();
+      document.getElementById('apApprovedCount').textContent = apApprovedData.length;
+      
+      document.getElementById('apPaidTotal').textContent = '$' + apPaidData.reduce((sum, x) => sum + Number(x.Amount || 0), 0).toLocaleString();
+      document.getElementById('apPaidCount').textContent = apPaidData.length;
+      
+      document.getElementById('arPendingTotal').textContent = '$' + arPendingData.reduce((sum, x) => sum + Number(x.Amount || 0), 0).toLocaleString();
+      document.getElementById('arPendingCount').textContent = arPendingData.length;
+      
+      document.getElementById('arReceivedTotal').textContent = '$' + arReceivedData.reduce((sum, x) => sum + Number(x.Amount || 0), 0).toLocaleString();
+      document.getElementById('arReceivedCount').textContent = arReceivedData.length;
+      
+      // Update tables
+      document.getElementById('apPending').innerHTML = apPendingData.slice(0,10).map(x=> rowAP(x, `<button class='ct' data-id='${x.Id}' onclick='approveAP(${x.Id})'>Send for approval</button>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
+      document.getElementById('apApproved').innerHTML = apApprovedData.slice(0,10).map(x=> rowAP(x, `<a class='ct' href='/accounting/ap-pay.html?id=${x.Id}${embedded()?"&embedded=1":""}'>Pay</a>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
+      document.getElementById('apPaid').innerHTML = apPaidData.slice(0,10).map(x=> `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.SupplierName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.PaidAt? new Date(x.PaidAt).toLocaleString(): ''}</td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
+      document.getElementById('arPending').innerHTML = arPendingData.slice(0,10).map(x=> rowAR(x, `<button class='ct' onclick='receiveAR(${x.Id})'>Receive</button>`)).join('') || '<tr><td colspan="5">No data</td></tr>';
+      document.getElementById('arReceived').innerHTML = arReceivedData.slice(0,10).map(x=> `<tr><td>${esc(x.OrderId||'')}</td><td>${esc(x.CustomerName||'')}</td><td>$${Number(x.Amount||0).toFixed(2)}</td><td>${x.ReceivedAt? new Date(x.ReceivedAt).toLocaleString(): ''}</td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
       const bal = (banks.data||[]);
       document.getElementById('balances').innerHTML = bal.length? `<table><thead><tr><th>Bank</th><th>Account</th><th>Branch</th><th>Balance</th><th></th></tr></thead><tbody>`+bal.map(b=>`<tr><td>${esc(b.Name)}</td><td>${esc(b.AccountNumber||'')}</td><td>${esc(b.BranchName||'')}</td><td>$${Number(b.Balance||0).toFixed(2)}</td><td><a class='ct' href='/accounting/bank-statement.html?bankId=${b.BankId}${embedded()?"&embedded=1":""}'>Statement</a></td></tr>`).join('')+`</tbody></table>`:'No banks';
     }

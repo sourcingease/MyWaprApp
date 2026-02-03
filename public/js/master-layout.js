@@ -441,12 +441,20 @@ window.renderMasterHeader = function(opts){
       // Mark Safety button as active
       try{
         document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
-        const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\uddfa'); });
-        if(safetyBtn) safetyBtn.classList.add('primary');
-      }catch(e){}
+        const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('🦺'); });
+        if(safetyBtn) {
+          safetyBtn.classList.add('primary');
+          console.log('Safety icon marked as active');
+        }
+      }catch(e){
+        console.error('Error marking Safety icon as active:', e);
+      }
       
       // Re-enable Safety top tabs when the Safety module is active
-      try{ window.disableSafetyTopTabs = false; window.activeTopTabs = 'safety'; }catch(e){}
+      try{ 
+        window.disableSafetyTopTabs = false; 
+        window.activeTopTabs = 'safety';
+      }catch(e){}
       try{ if(typeof window.showSafetyTabs === 'function'){ window.showSafetyTabs(); return; } }catch(e){}
       try{
         const f = document.getElementById('appFrame');
@@ -1124,11 +1132,16 @@ window.addEventListener('DOMContentLoaded', ()=>{
       try{
         if(!window.activeTopTabs || window.activeTopTabs === 'safety'){
           document.querySelectorAll('.icon-btn').forEach(function(btn){ btn.classList.remove('primary'); });
-          const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('\ud83e\uddfa'); });
-          if(safetyBtn) safetyBtn.classList.add('primary');
+          const safetyBtn = Array.from(document.querySelectorAll('.icon-btn')).find(function(btn){ return btn.textContent.includes('🦺'); });
+          if(safetyBtn) {
+            safetyBtn.classList.add('primary');
+            console.log('Default Safety icon marked as active on load');
+          }
           window.activeTopTabs = 'safety';
         }
-      }catch(e){}
+      }catch(e){
+        console.error('Error setting default Safety active state:', e);
+      }
     }, 50);
   }
 });

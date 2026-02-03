@@ -498,13 +498,20 @@
           <div class="modal-body">
             <div class="row" style="grid-template-columns:1fr 1fr;gap:12px">
               <div><label>Asset Name *</label><input id="asName"></div>
-              <div><label>Asset Type</label><input id="asType"></div>
+              <div>
+                <label>Asset Type</label>
+                <select id="asType">
+                  <option value="">Select Type</option>
+                  <option value="Consumable">Consumable</option>
+                  <option value="Non-Consumable">Non-Consumable</option>
+                </select>
+              </div>
               <div><label>Quantity</label><input id="asQty" type="number" value="1"></div>
               <div><label>Purchase Date</label><input id="asDate" type="date"></div>
               <div>
                 <label>Purchase Price</label>
                 <input id="asPrice" type="number" step="0.01" value="0">
-                <div style="font-size:11px;color:#64748b;margin-top:2px">Creates Account Payable if > 0</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px">Creates AP (Account Payable) if > 0</div>
               </div>
               <div>
                 <label>Payment Due Date</label>
@@ -1638,7 +1645,7 @@
             const apRes = await fetch('/api/accounting/ap', {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(apPayload)});
             const apJson = await apRes.json();
             if(apJson.success){
-              alert(`Asset saved successfully!\n\nAccount Payable entry created:\n- Invoice ID: AP#${apJson.id}\n- Amount: $${payload.purchasePrice.toFixed(2)}\n- Supplier: ${payload.supplier}\n- Status: Pending\n\nView in Accounting > Payable`);
+              alert(`Asset saved successfully!\n\nAP (Account Payable) entry created:\n- Invoice ID: AP#${apJson.id}\n- Amount: $${payload.purchasePrice.toFixed(2)}\n- Supplier: ${payload.supplier}\n- Status: Pending\n\nView in Accounting > Payable`);
             } else {
               alert('Asset saved, but failed to create payable entry: ' + (apJson.error||'Unknown error'));
             }

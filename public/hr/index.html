@@ -195,7 +195,7 @@
             <button class="ct" type="button" onclick="loadPayrollPreview()">Preview Payroll</button>
           </div>
         </div>
-        <div class="muted" style="margin-bottom:6px">Preview shows what will be posted to Accounts Payable for the selected month.</div>
+        <div class="muted" style="margin-bottom:6px">Preview shows what will be posted to AP (Accounts Payable) for the selected month.</div>
         <table>
           <thead>
             <tr>
@@ -709,7 +709,7 @@
       const period = yearEl.value + '-' + monthEl.value;
       try{
         await j('/api/hr/payroll/generate',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ period }) });
-        alert('Payroll generated and posted to Accounts Payable (if configured on server).');
+        alert('Payroll generated and posted to AP (Accounts Payable) if configured on server.');
       }catch(e){ console.error(e); alert('Failed to generate payroll'); }
     }
 

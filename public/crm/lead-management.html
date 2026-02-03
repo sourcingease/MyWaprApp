@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lead Management • ComplytEX CRM</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Arial;background:#f8fafc;color:#0f172a}
+    .shell{max-width:1400px;margin:0 auto;padding:24px}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .btn{padding:10px 16px;border-radius:8px;border:0;background:#7c3aed;color:#fff;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s}
+    .btn:hover{background:#6d28d9;transform:translateY(-1px)}
+    .btn-success{background:#10b981}
+    .btn-success:hover{background:#059669}
+    .card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:24px}
+    .section-title{font-size:18px;font-weight:700;margin-bottom:16px;color:#1e293b}
+    .pipeline{display:flex;gap:16px;overflow-x:auto;margin-bottom:24px}
+    .pipeline-stage{flex:1;min-width:280px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+    .stage-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid #e2e8f0}
+    .stage-title{font-weight:700;font-size:14px;color:#475569}
+    .stage-count{background:#f1f5f9;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#64748b}
+    .lead-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;cursor:move;transition:all 0.2s}
+    .lead-card:hover{box-shadow:0 4px 6px rgba(0,0,0,0.1);border-color:#7c3aed}
+    .lead-name{font-weight:600;font-size:14px;margin-bottom:4px;color:#1e293b}
+    .lead-company{font-size:13px;color:#64748b;margin-bottom:8px}
+    .lead-value{font-size:15px;font-weight:700;color:#10b981;margin-bottom:4px}
+    .lead-meta{font-size:12px;color:#94a3b8;display:flex;gap:12px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
+    th{background:#f8fafc;font-weight:600;color:#475569;text-transform:uppercase;font-size:12px}
+    .status-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600}
+    .status-new{background:#dbeafe;color:#1e40af}
+    .status-contacted{background:#fef3c7;color:#92400e}
+    .status-qualified{background:#d1fae5;color:#065f46}
+    .status-proposal{background:#e0e7ff;color:#3730a3}
+    .status-negotiation{background:#fce7f3;color:#831843}
+    .status-won{background:#d1fae5;color:#065f46}
+    .status-lost{background:#fee2e2;color:#991b1b}
+    .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center}
+    .modal.open{display:flex}
+    .modal-content{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto}
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;color:#374151}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit}
+    .form-textarea{min-height:80px;resize:vertical}
+    .tabs{display:flex;gap:4px;border-bottom:2px solid #e2e8f0;margin-bottom:20px}
+    .tab{padding:10px 16px;cursor:pointer;font-weight:600;font-size:14px;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s}
+    .tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
+    .tab:hover{color:#7c3aed}
+    .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .metric-card{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:20px;border-radius:12px}
+    .metric-value{font-size:32px;font-weight:700;margin-bottom:4px}
+    .metric-label{font-size:14px;opacity:0.9}
+  </style>
+</head>
+<body>
+  <div class="dashboard-header">
+    <div class="header-left"><img src="/logo.png" class="logo-small"><div class="dashboard-title">Lead Management</div></div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="shell">
+    <div class="header">
+      <h1 style="margin:0;font-size:24px">Sales Pipeline</h1>
+      <button class="btn" onclick="openAddLeadModal()">➕ Add New Lead</button>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-value" id="totalLeads">0</div>
+        <div class="metric-label">Total Leads</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#10b981,#059669)">
+        <div class="metric-value" id="totalValue">$0</div>
+        <div class="metric-label">Pipeline Value</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+        <div class="metric-value" id="conversionRate">0%</div>
+        <div class="metric-label">Conversion Rate</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+        <div class="metric-value" id="avgDealSize">$0</div>
+        <div class="metric-label">Avg Deal Size</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchView('pipeline')">Pipeline View</div>
+      <div class="tab" onclick="switchView('list')">List View</div>
+    </div>
+
+    <!-- Pipeline View -->
+    <div id="pipelineView" class="pipeline">
+      <div class="pipeline-stage">
+        <div class="stage-header">
+          <div class="stage-title">🆕 New</div>
+          <div class="stage-count" id="countNew">0</div>
+        </div>
+        <div id="stageNew" class="stage-leads"></div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-header">
+          <div class="stage-title">📞 Contacted</div>
+          <div class="stage-count" id="countContacted">0</div>
+        </div>
+        <div id="stageContacted" class="stage-leads"></div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-header">
+          <div class="stage-title">✅ Qualified</div>
+          <div class="stage-count" id="countQualified">0</div>
+        </div>
+        <div id="stageQualified" class="stage-leads"></div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-header">
+          <div class="stage-title">📝 Proposal</div>
+          <div class="stage-count" id="countProposal">0</div>
+        </div>
+        <div id="stageProposal" class="stage-leads"></div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-header">
+          <div class="stage-title">🤝 Negotiation</div>
+          <div class="stage-count" id="countNegotiation">0</div>
+        </div>
+        <div id="stageNegotiation" class="stage-leads"></div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-header">
+          <div class="stage-title">🎉 Won</div>
+          <div class="stage-count" id="countWon">0</div>
+        </div>
+        <div id="stageWon" class="stage-leads"></div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div id="listView" class="card" style="display:none">
+      <div class="section-title">All Leads</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Lead Name</th>
+            <th>Company</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Value</th>
+            <th>Source</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leadsTable">
+          <tr><td colspan="8" style="text-align:center;color:#64748b">No leads yet. Click "Add New Lead" to get started.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add/Edit Lead Modal -->
+  <div id="leadModal" class="modal">
+    <div class="modal-content">
+      <h2 style="margin:0 0 20px 0" id="modalTitle">Add New Lead</h2>
+      <form id="leadForm" onsubmit="saveLead(event)">
+        <input type="hidden" id="leadId">
+        <div class="form-group">
+          <label class="form-label">Lead Name *</label>
+          <input id="leadName" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Company *</label>
+          <input id="leadCompany" class="form-input" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input id="leadEmail" type="email" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input id="leadPhone" class="form-input">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Status *</label>
+            <select id="leadStatus" class="form-select" required>
+              <option value="New">New</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Qualified">Qualified</option>
+              <option value="Proposal">Proposal</option>
+              <option value="Negotiation">Negotiation</option>
+              <option value="Won">Won</option>
+              <option value="Lost">Lost</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estimated Value *</label>
+            <input id="leadValue" type="number" step="0.01" class="form-input" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Source</label>
+          <select id="leadSource" class="form-select">
+            <option value="Website">Website</option>
+            <option value="Referral">Referral</option>
+            <option value="Cold Call">Cold Call</option>
+            <option value="Email Campaign">Email Campaign</option>
+            <option value="Social Media">Social Media</option>
+            <option value="Trade Show">Trade Show</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea id="leadNotes" class="form-textarea"></textarea>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn" style="background:#64748b" onclick="closeLeadModal()">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let leads = [];
+    let currentView = 'pipeline';
+
+    async function loadLeads() {
+      try {
+        const response = await fetch('/api/crm/leads');
+        const result = await response.json();
+        leads = result.data || [];
+        renderView();
+        updateMetrics();
+      } catch (error) {
+        console.error('Failed to load leads:', error);
+      }
+    }
+
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (view === 'pipeline') {
+        document.getElementById('pipelineView').style.display = 'flex';
+        document.getElementById('listView').style.display = 'none';
+      } else {
+        document.getElementById('pipelineView').style.display = 'none';
+        document.getElementById('listView').style.display = 'block';
+      }
+      renderView();
+    }
+
+    function renderView() {
+      if (currentView === 'pipeline') {
+        renderPipeline();
+      } else {
+        renderList();
+      }
+    }
+
+    function renderPipeline() {
+      const stages = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won'];
+      stages.forEach(stage => {
+        const stageLeads = leads.filter(l => l.Status === stage);
+        const container = document.getElementById('stage' + stage);
+        const count = document.getElementById('count' + stage);
+        
+        count.textContent = stageLeads.length;
+        
+        if (stageLeads.length === 0) {
+          container.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;font-size:13px">No leads</div>';
+        } else {
+          container.innerHTML = stageLeads.map(lead => `
+            <div class="lead-card" onclick="editLead(${lead.Id})" draggable="true">
+              <div class="lead-name">${escapeHtml(lead.LeadName)}</div>
+              <div class="lead-company">${escapeHtml(lead.Company)}</div>
+              <div class="lead-value">$${Number(lead.EstimatedValue || 0).toLocaleString()}</div>
+              <div class="lead-meta">
+                <span>${escapeHtml(lead.Source || 'Unknown')}</span>
+                <span>${new Date(lead.CreatedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          `).join('');
+        }
+      });
+    }
+
+    function renderList() {
+      const tbody = document.getElementById('leadsTable');
+      if (leads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#64748b">No leads yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = leads.map(lead => `
+        <tr>
+          <td>${escapeHtml(lead.LeadName)}</td>
+          <td>${escapeHtml(lead.Company)}</td>
+          <td>${escapeHtml(lead.Email)}</td>
+          <td>${escapeHtml(lead.Phone || '-')}</td>
+          <td><span class="status-badge status-${lead.Status.toLowerCase()}">${lead.Status}</span></td>
+          <td>$${Number(lead.EstimatedValue || 0).toLocaleString()}</td>
+          <td>${escapeHtml(lead.Source || '-')}</td>
+          <td>
+            <button class="btn" style="padding:6px 12px;font-size:12px" onclick="editLead(${lead.Id})">Edit</button>
+            <button class="btn" style="padding:6px 12px;font-size:12px;background:#10b981" onclick="convertToOrder(${lead.Id})">Convert to Order</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateMetrics() {
+      const total = leads.length;
+      const totalValue = leads.reduce((sum, l) => sum + Number(l.EstimatedValue || 0), 0);
+      const wonLeads = leads.filter(l => l.Status === 'Won').length;
+      const conversionRate = total > 0 ? ((wonLeads / total) * 100).toFixed(1) : 0;
+      const avgDealSize = total > 0 ? (totalValue / total).toFixed(0) : 0;
+
+      document.getElementById('totalLeads').textContent = total;
+      document.getElementById('totalValue').textContent = '$' + totalValue.toLocaleString();
+      document.getElementById('conversionRate').textContent = conversionRate + '%';
+      document.getElementById('avgDealSize').textContent = '$' + Number(avgDealSize).toLocaleString();
+    }
+
+    function openAddLeadModal() {
+      document.getElementById('modalTitle').textContent = 'Add New Lead';
+      document.getElementById('leadForm').reset();
+      document.getElementById('leadId').value = '';
+      document.getElementById('leadModal').classList.add('open');
+    }
+
+    function closeLeadModal() {
+      document.getElementById('leadModal').classList.remove('open');
+    }
+
+    function editLead(id) {
+      const lead = leads.find(l => l.Id === id);
+      if (!lead) return;
+      
+      document.getElementById('modalTitle').textContent = 'Edit Lead';
+      document.getElementById('leadId').value = lead.Id;
+      document.getElementById('leadName').value = lead.LeadName;
+      document.getElementById('leadCompany').value = lead.Company;
+      document.getElementById('leadEmail').value = lead.Email;
+      document.getElementById('leadPhone').value = lead.Phone || '';
+      document.getElementById('leadStatus').value = lead.Status;
+      document.getElementById('leadValue').value = lead.EstimatedValue;
+      document.getElementById('leadSource').value = lead.Source || 'Website';
+      document.getElementById('leadNotes').value = lead.Notes || '';
+      document.getElementById('leadModal').classList.add('open');
+    }
+
+    async function saveLead(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('leadId').value;
+      const data = {
+        leadName: document.getElementById('leadName').value,
+        company: document.getElementById('leadCompany').value,
+        email: document.getElementById('leadEmail').value,
+        phone: document.getElementById('leadPhone').value,
+        status: document.getElementById('leadStatus').value,
+        estimatedValue: parseFloat(document.getElementById('leadValue').value),
+        source: document.getElementById('leadSource').value,
+        notes: document.getElementById('leadNotes').value
+      };
+
+      try {
+        const url = id ? `/api/crm/leads/${id}` : '/api/crm/leads';
+        const method = id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          closeLeadModal();
+          loadLeads();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error saving lead:', error);
+        alert('Failed to save lead');
+      }
+    }
+
+    async function convertToOrder(leadId) {
+      if (!confirm('Convert this lead to an order?')) return;
+      
+      const lead = leads.find(l => l.Id === leadId);
+      if (!lead) return;
+      
+      // Navigate to order management with lead data
+      localStorage.setItem('newOrderFromLead', JSON.stringify(lead));
+      window.location.href = '/crm/order-management.html?from=lead&id=' + leadId;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load leads on page load
+    window.addEventListener('load', loadLeads);
+  </script>
+</body>
+</html>
